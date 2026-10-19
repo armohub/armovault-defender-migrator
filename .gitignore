@@ -1,0 +1,12 @@
+# Local inputs (never commit)
+private/
+*.docx
+*.local.*
+
+# Build and tooling output
+node_modules/
+dist/
+test-results/
+playwright-report/
+.tmp/
+.claude/

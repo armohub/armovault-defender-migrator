@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>P1 platform probe</title>
+<script src="classic.js"></script>
+<script type="module" src="module.mjs"></script>
+</head>
+<body>
+<h1>file:// platform probe</h1>
+<input type="file" id="f" accept="image/*">
+<pre id="out"></pre>
+<script>
+window.probe = async function () {
+  const r = {};
+  r.protocol = location.protocol;
+  r.origin = self.origin;
+  r.isSecureContext = window.isSecureContext;
+  r.ua = navigator.userAgent;
+  r.classicScriptLoaded = !!window.__classicLoaded;
+  r.moduleScriptLoaded = !!window.__moduleLoaded;
+  try { const resp = await fetch('data.json'); r.fetchJson = 'ok:' + (await resp.text()).length; } catch (e) { r.fetchJson = 'FAIL: ' + e.message; }
+  try { const x = new XMLHttpRequest(); x.open('GET', 'data.json', false); x.send(); r.xhrJson = 'status ' + x.status + ' len ' + (x.responseText||'').length; } catch (e) { r.xhrJson = 'FAIL: ' + e.message; }
+  try { localStorage.setItem('probe', 'v1'); r.localStorage = localStorage.getItem('probe') === 'v1' ? 'ok' : 'mismatch'; r.localStoragePrev = localStorage.getItem('persisted-marker'); } catch (e) { r.localStorage = 'FAIL: ' + e.message; }
+  r.idb = await new Promise((resolve) => {
+    try {
+      const req = indexedDB.open('probe-db', 1);
+      req.onupgradeneeded = () => req.result.createObjectStore('kv');
+      req.onerror = () => resolve('FAIL: ' + (req.error && req.error.message));
+      req.onsuccess = () => {
+        const db = req.result;
+        const blob = new Blob([new Uint8Array(1024 * 1024 * 3)], { type: 'image/png' });
+        const tx = db.transaction('kv', 'readwrite');
+        tx.objectStore('kv').put(blob, 'blob3mb');
+        tx.oncomplete = () => {
+          const tx2 = db.transaction('kv', 'readonly');
+          const g = tx2.objectStore('kv').get('blob3mb');
+          g.onsuccess = () => resolve('ok blob size ' + (g.result && g.result.size));
+          g.onerror = () => resolve('FAIL get');
+        };
+        tx.onerror = () => resolve('FAIL put: ' + (tx.error && tx.error.message));
+      };
+    } catch (e) { resolve('FAIL: ' + e.message); }
+  });
+  r.fsAccess = { showOpenFilePicker: typeof window.showOpenFilePicker, showSaveFilePicker: typeof window.showSaveFilePicker, showDirectoryPicker: typeof window.showDirectoryPicker };
+  r.compressionStream = typeof CompressionStream === 'function';
+  if (r.compressionStream) {
+    try {
+      const cs = new CompressionStream('deflate-raw');
+      const data = new TextEncoder().encode('hello hello hello hello');
+      const out = await new Response(new Blob([data]).stream().pipeThrough(cs)).arrayBuffer();
+      const ds = new DecompressionStream('deflate-raw');
+      const back = await new Response(new Blob([out]).stream().pipeThrough(ds)).text();
+      r.deflateRawRoundTrip = back === 'hello hello hello hello';
+    } catch (e) { r.deflateRawRoundTrip = 'FAIL: ' + e.message; }
+  }
+  r.cryptoSubtle = !!(window.crypto && crypto.subtle);
+  try { const h = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('x')); r.sha256 = h.byteLength === 32; } catch (e) { r.sha256 = 'FAIL: ' + e.message; }
+  r.randomUUID = typeof crypto.randomUUID === 'function';
+  try { r.storagePersisted = await navigator.storage.persisted(); r.storagePersistRequest = await navigator.storage.persist(); const est = await navigator.storage.estimate(); r.storageQuotaMB = Math.round(est.quota / 1048576); } catch (e) { r.storagePersist = 'FAIL: ' + e.message; }
+  r.broadcastChannel = typeof BroadcastChannel === 'function';
+  return r;
+};
+window.writeMarker = function () { localStorage.setItem('persisted-marker', 'written-at-' + Date.now()); };
+window.readMarker = function () { return localStorage.getItem('persisted-marker'); };
+window.idbMarker = function (mode) {
+  return new Promise((resolve) => {
+    const req = indexedDB.open('probe-db', 1);
+    req.onupgradeneeded = () => req.result.createObjectStore('kv');
+    req.onsuccess = () => {
+      const db = req.result;
+      if (mode === 'write') { const tx = db.transaction('kv', 'readwrite'); tx.objectStore('kv').put('idb-marker-value', 'marker'); tx.oncomplete = () => resolve('written'); }
+      else { const g = db.transaction('kv').objectStore('kv').get('marker'); g.onsuccess = () => resolve(g.result || null); }
+    };
+    req.onerror = () => resolve('FAIL');
+  });
+};
+window.readInputFile = async function () {
+  const f = document.getElementById('f').files[0];
+  if (!f) return null;
+  const buf = await f.arrayBuffer();
+  return { name: f.name, type: f.type, size: f.size, firstBytes: Array.from(new Uint8Array(buf.slice(0, 8))) };
+};
+window.downloadTest = function () {
+  const blob = new Blob([JSON.stringify({ hello: 'world' })], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'export-test.json'; document.body.appendChild(a); a.click(); a.remove();
+};
+</script>
+</body></html>

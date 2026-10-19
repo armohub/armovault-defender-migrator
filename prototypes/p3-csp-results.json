@@ -1,0 +1,44 @@
+{
+  "msedge": {
+    "fetch": "blocked",
+    "xhr": "sent?",
+    "beacon": "true",
+    "blobImage": "rendered 1x1",
+    "injectedInlineScriptRan": false,
+    "evalAllowed": false,
+    "violations": [
+      "connect-src https://example.com/",
+      "connect-src https://example.com/",
+      "connect-src https://example.com/b",
+      "img-src https://example.com/i.png",
+      "script-src-elem inline",
+      "script-src eval"
+    ],
+    "networkRequestsObserved": [
+      "FAILED https://example.com/ csp",
+      "FAILED https://example.com/i.png csp"
+    ],
+    "pdfBytes": 10931
+  },
+  "chrome": {
+    "fetch": "blocked",
+    "xhr": "sent?",
+    "beacon": "true",
+    "blobImage": "rendered 1x1",
+    "injectedInlineScriptRan": false,
+    "evalAllowed": false,
+    "violations": [
+      "connect-src https://example.com/",
+      "connect-src https://example.com/",
+      "connect-src https://example.com/b",
+      "img-src https://example.com/i.png",
+      "script-src-elem inline",
+      "script-src eval"
+    ],
+    "networkRequestsObserved": [
+      "FAILED https://example.com/ csp",
+      "FAILED https://example.com/i.png csp"
+    ],
+    "pdfBytes": 10917
+  }
+}

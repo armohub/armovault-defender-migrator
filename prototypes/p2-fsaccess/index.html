@@ -1,0 +1,17 @@
+<!doctype html><html><head><meta charset="utf-8"><title>P2 FS Access</title></head><body>
+<button id="open">Open project file</button><button id="save">Save as</button>
+<script>
+const idb = () => new Promise((res, rej) => { const r = indexedDB.open('p2', 1); r.onupgradeneeded = () => r.result.createObjectStore('h'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+window.log = [];
+async function storeHandle(h) { const db = await idb(); return new Promise((res) => { const tx = db.transaction('h', 'readwrite'); tx.objectStore('h').put(h, 'project'); tx.oncomplete = () => res('stored'); tx.onerror = () => res('FAIL ' + tx.error); }); }
+window.loadHandle = async function () { const db = await idb(); return new Promise((res) => { const g = db.transaction('h').objectStore('h').get('project'); g.onsuccess = () => res(g.result); g.onerror = () => res(null); }); };
+document.getElementById('open').onclick = async () => {
+  try { const [h] = await showOpenFilePicker({ types: [{ description: 'Project', accept: { 'application/json': ['.json'] } }] });
+    window.log.push('opened ' + h.name); window.log.push(await storeHandle(h));
+    const f = await h.getFile(); window.log.push('read ' + (await f.text()));
+    window.log.push('perm readwrite: ' + await h.queryPermission({ mode: 'readwrite' }));
+    try { const req = await h.requestPermission({ mode: 'readwrite' }); window.log.push('request readwrite: ' + req); const w = await h.createWritable(); await w.write('{"saved":true}'); await w.close(); window.log.push('wrote ok'); } catch (e) { window.log.push('write FAIL ' + e.name + ': ' + e.message); }
+  } catch (e) { window.log.push('open FAIL ' + e.name + ': ' + e.message); }
+};
+window.checkStored = async function () { const h = await window.loadHandle(); if (!h) return 'no handle'; let s = 'handle ' + h.name + ' kind ' + h.kind; try { s += ' perm(read)=' + await h.queryPermission({ mode: 'read' }); s += ' perm(rw)=' + await h.queryPermission({ mode: 'readwrite' }); } catch (e) { s += ' query FAIL ' + e.message; } try { const f = await h.getFile(); s += ' getFile=' + (await f.text()); } catch (e) { s += ' getFile FAIL ' + e.name; } return s; };
+</script></body></html>

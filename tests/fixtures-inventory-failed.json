@@ -1,0 +1,92 @@
+﻿{
+    "schema":  "armohub.dma.inventory",
+    "schemaVersion":  1,
+    "tool":  {
+                 "name":  "Get-ArMoSentinelInventory.ps1",
+                 "version":  "0.9.0"
+             },
+    "collectedAt":  "2026-10-19T10:45:48Z",
+    "workspace":  {
+                      "alias":  "MOCK-WS"
+                  },
+    "analyticsRules":  [
+                           {
+                               "name":  "Create incidents from MDC",
+                               "kind":  "MicrosoftSecurityIncidentCreation",
+                               "enabled":  true,
+                               "createIncident":  null,
+                               "groupingEnabled":  null,
+                               "reopenClosed":  null,
+                               "correlationTag":  "",
+                               "usesIdentityInfo":  false,
+                               "usesLegacyTI":  false,
+                               "productFilter":  "Azure Security Center",
+                               "apiVersion":  "2025-09-01"
+                           },
+                           {
+                               "name":  "NRT identity rule",
+                               "kind":  "NRT",
+                               "enabled":  true,
+                               "createIncident":  true,
+                               "groupingEnabled":  true,
+                               "reopenClosed":  true,
+                               "correlationTag":  "",
+                               "usesIdentityInfo":  true,
+                               "usesLegacyTI":  true,
+                               "productFilter":  "",
+                               "apiVersion":  "2025-07-01-preview"
+                           },
+                           {
+                               "name":  "Alert only rule",
+                               "kind":  "Scheduled",
+                               "enabled":  true,
+                               "createIncident":  false,
+                               "groupingEnabled":  false,
+                               "reopenClosed":  false,
+                               "correlationTag":  "#DONT_CORR#",
+                               "usesIdentityInfo":  false,
+                               "usesLegacyTI":  false,
+                               "productFilter":  "",
+                               "apiVersion":  "2025-09-01"
+                           },
+                           {
+                               "name":  "Advanced Multistage Attack Detection",
+                               "kind":  "Fusion",
+                               "enabled":  true,
+                               "createIncident":  null,
+                               "groupingEnabled":  null,
+                               "reopenClosed":  null,
+                               "correlationTag":  "",
+                               "usesIdentityInfo":  false,
+                               "usesLegacyTI":  false,
+                               "productFilter":  "",
+                               "apiVersion":  "2025-09-01"
+                           }
+                       ],
+    "automationRules":  [
+
+                        ],
+    "dataConnectors":  [
+                           {
+                               "kind":  "MicrosoftDefenderAdvancedThreatProtection",
+                               "name":  "c1"
+                           },
+                           {
+                               "kind":  "AzureSecurityCenter",
+                               "name":  "c2"
+                           },
+                           {
+                               "kind":  "Office365",
+                               "name":  "c3"
+                           }
+                       ],
+    "watchlists":  [
+                       {
+                           "alias":  "vip-users",
+                           "name":  "VIP users"
+                       }
+                   ],
+    "errors":  [
+                   "GET automationRules returned HTTP 403"
+               ]
+}

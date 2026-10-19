@@ -1,0 +1,8 @@
+{
+  "chooserFired": false,
+  "log": [
+    "open FAIL AbortError: Failed to execute 'showOpenFilePicker' on 'Window': Intercepted by Page.setInterceptFileChooserDialog()."
+  ],
+  "fileOnDiskAfter": "{\"v\":1}",
+  "afterRestart": "no handle"
+}

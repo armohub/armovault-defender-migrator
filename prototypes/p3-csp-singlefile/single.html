@@ -1,0 +1,19 @@
+<!doctype html><html><head><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'sha256-Bc9enfDG0hXDg4/DFj3RCzs89AOdUmS9TSl2fpDDaUc='; style-src 'unsafe-inline'; img-src blob: data:; font-src data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'none'"><title>P3</title><style>body{font-family:Segoe UI,system-ui,sans-serif}</style></head><body><h1>CSP single file</h1><script>
+window.cspViolations = [];
+document.addEventListener('securitypolicyviolation', (e) => window.cspViolations.push(e.violatedDirective + ' ' + e.blockedURI));
+window.run = async () => {
+  const r = {};
+  try { await fetch('https://example.com/'); r.fetch = 'NOT BLOCKED'; } catch (e) { r.fetch = 'blocked'; }
+  try { const x = new XMLHttpRequest(); x.open('GET', 'https://example.com/'); x.send(); r.xhr = 'sent?'; } catch (e) { r.xhr = 'blocked'; }
+  r.beacon = navigator.sendBeacon ? String(navigator.sendBeacon('https://example.com/b', 'x')) : 'n/a';
+  const img = new Image(); img.src = 'https://example.com/i.png'; document.body.appendChild(img);
+  const blob = new Blob([Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=='), c => c.charCodeAt(0))], { type: 'image/png' });
+  const bimg = new Image(); bimg.src = URL.createObjectURL(blob); document.body.appendChild(bimg);
+  await new Promise((res) => { bimg.onload = () => { r.blobImage = 'rendered ' + bimg.naturalWidth + 'x' + bimg.naturalHeight; res(); }; bimg.onerror = () => { r.blobImage = 'FAILED'; res(); }; });
+  const s = document.createElement('script'); s.textContent = 'window.__injected = true'; document.body.appendChild(s);
+  r.injectedInlineScriptRan = !!window.__injected;
+  try { r.evalAllowed = eval('1+1') === 2; } catch (e) { r.evalAllowed = false; }
+  await new Promise((res) => setTimeout(res, 500));
+  r.violations = window.cspViolations;
+  return r;
+};</script></body></html>

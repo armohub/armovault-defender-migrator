@@ -1,0 +1,18 @@
+/* Print / Save as PDF. Only the report document is printed. */
+@page { size: A4; margin: 14mm 12mm 16mm; @bottom-right { content: "Page " counter(page) " of " counter(pages); font-size: 8pt; color: #4b5563; } @bottom-left { content: "Not affiliated with Microsoft · generated offline"; font-size: 8pt; color: #4b5563; } }
+@media print {
+  html, body { background: #fff !important; height: auto; }
+  .sidebar, .topbar, .banners, .no-print, .skip, .toasts, dialog { display: none !important; }
+  .shell, .workspace, .main { display: block !important; height: auto !important; overflow: visible !important; }
+  .report-page { padding: 0 !important; }
+  .report { box-shadow: none !important; border: 0 !important; max-width: none !important; padding: 0 !important; margin: 0 !important; }
+  .r-section { break-inside: auto; }
+  .r-section h2, .r-section h3 { break-after: avoid; }
+  .r-row, .r-table tr { break-inside: avoid; }
+  .r-table thead { display: table-header-group; }
+  details { display: block; }
+  details > summary { list-style: none; }
+  details > summary::-webkit-details-marker { display: none; }
+  .report a { color: #0b5753; text-decoration: none; }
+  .report-demo::before { content: "DEMO — FICTIONAL DATA"; position: fixed; top: 45%; left: 10%; font-size: 64pt; color: rgba(180, 35, 35, .08); transform: rotate(-30deg); z-index: 0; }
+}

@@ -1,0 +1,5 @@
+<!doctype html><html><head><meta charset="utf-8"><title>other</title></head><body>
+<script>
+window.readMarker = function () { try { return localStorage.getItem('persisted-marker'); } catch (e) { return 'FAIL ' + e.message; } };
+window.idbMarker = function () { return new Promise((resolve) => { const req = indexedDB.open('probe-db', 1); req.onupgradeneeded = () => req.result.createObjectStore('kv'); req.onsuccess = () => { try { const g = req.result.transaction('kv').objectStore('kv').get('marker'); g.onsuccess = () => resolve(g.result || null); } catch (e) { resolve('FAIL ' + e.message); } }; req.onerror = () => resolve('FAIL'); }); };
+</script></body></html>

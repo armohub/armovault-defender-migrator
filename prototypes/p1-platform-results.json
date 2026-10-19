@@ -1,0 +1,197 @@
+{
+  "msedge": {
+    "probe": {
+      "protocol": "file:",
+      "origin": "null",
+      "isSecureContext": true,
+      "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36 Edg/155.0.0.0",
+      "classicScriptLoaded": true,
+      "moduleScriptLoaded": false,
+      "fetchJson": "FAIL: Failed to fetch",
+      "xhrJson": "FAIL: Failed to execute 'send' on 'XMLHttpRequest': Failed to load 'file:///<repo>/prototypes/p1-platform/data.json'.",
+      "localStorage": "ok",
+      "localStoragePrev": null,
+      "idb": "ok blob size 3145728",
+      "fsAccess": {
+        "showOpenFilePicker": "function",
+        "showSaveFilePicker": "function",
+        "showDirectoryPicker": "function"
+      },
+      "compressionStream": true,
+      "deflateRawRoundTrip": true,
+      "cryptoSubtle": true,
+      "sha256": true,
+      "randomUUID": true,
+      "storagePersisted": false,
+      "storagePersistRequest": false,
+      "storageQuotaMB": 10243,
+      "broadcastChannel": true
+    },
+    "consoleErrors": [
+      "Access to script at 'file:///<repo>/prototypes/p1-platform/module.mjs' from origin 'null' has been blocked by CORS policy: Cross origin requests are only supported for protocol schemes: chrome-experimental-site-token-provider, chrome-extension, chrome-untrusted, data, edge, http, https, isolated-app.",
+      "Failed to load resource: net::ERR_FAILED",
+      "Access to fetch at 'file:///<repo>/prototypes/p1-platform/data.json' from origin 'null' has been blocked by CORS policy: Cross origin requests are only supported for protocol schemes: chrome-experimental-site-token-provider, chrome-extension, chrome-untrusted, data, edge, http, https, isolated-app.",
+      "Failed to load resource: net::ERR_FAILED",
+      "Access to XMLHttpRequest at 'file:///<repo>/prototypes/p1-platform/data.json' from origin 'null' has been blocked by CORS policy: Cross origin requests are only supported for protocol schemes: chrome-experimental-site-token-provider, chrome-extension, chrome-untrusted, data, edge, http, https, isolated-app."
+    ],
+    "fileInput": {
+      "name": "p1-probe.png",
+      "type": "image/png",
+      "size": 66,
+      "firstBytes": [
+        137,
+        80,
+        78,
+        71,
+        13,
+        10,
+        26,
+        10
+      ]
+    },
+    "download": {
+      "suggestedFilename": "export-test.json",
+      "content": "{\"hello\":\"world\"}"
+    },
+    "otherFileSameProfile": {
+      "localStorageMarker": "written-at-1792398429619",
+      "idbMarker": "idb-marker-value"
+    },
+    "movedFileSameProfile": {
+      "localStorageMarker": "written-at-1792398429619",
+      "idbMarker": "idb-marker-value"
+    },
+    "pdf": {
+      "bytes": 31433,
+      "header": "%PDF-",
+      "pages": 2
+    },
+    "afterRestart": {
+      "localStorageMarker": "written-at-1792398429619",
+      "idbMarker": "idb-marker-value"
+    },
+    "externalRequests": [
+      "edge://downloads-hub/",
+      "edge://downloads-hub/downloads-hub-app.css",
+      "edge://downloads-hub/edge-hub-toolbar.css",
+      "edge://downloads-hub/downloads-list.css",
+      "edge://downloads-hub/download-item.css",
+      "edge://downloads-hub/text.styles.css",
+      "edge://downloads-hub/button.styles.css",
+      "edge://downloads-hub/text-input.styles.css",
+      "edge://downloads-hub/link.styles.css",
+      "edge://downloads-hub/progress-bar.styles.css",
+      "edge://downloads-hub/downloads-header.css",
+      "edge://downloads-hub/edge-hub-header.css",
+      "edge://downloads-hub/mai-button.css",
+      "edge://downloads-hub/mai-text-input.css",
+      "edge://downloads-hub/mai-message-bar.css",
+      "edge://downloads-hub/mai-text.css",
+      "edge://downloads-hub/download-group.css",
+      "edge://downloads-hub/mai-link.css",
+      "edge://downloads-hub/mai-progress-bar.css",
+      "edge://downloads-hub/downloads-modal-dialog.css",
+      "edge://downloads-hub/mai-menu-list.css",
+      "edge://downloads-hub/mai-menu-item.css",
+      "edge://fileicon/?path=<redacted>",
+      "edge://downloads-hub/icons.svg",
+      "edge://downloads-hub/icons.svg",
+      "edge://downloads-hub/icons.svg",
+      "edge://resources/js/edge-color-change-listener.js",
+      "edge://downloads-hub/hub.js",
+      "edge://downloads-hub/chunk-4MIULB4A.js",
+      "edge://resources/js/edge-error-reporting.js",
+      "edge://resources/js/edge_color_change_listener_browser_proxy-2FITRY4R.js",
+      "edge://resources/js/edge_color_change_listener.mojom-webui.js",
+      "edge://resources/mojo/mojo/public/js/bindings.js",
+      "edge://resources/mojo/mojo_browser_proxy.js",
+      "edge://resources/js/load_time_data.js",
+      "edge://resources/js/assert.js",
+      "edge://downloads-hub/icons.svg",
+      "edge://downloads-hub/edge_downloads.mojom-webui.js",
+      "edge://resources/mojo/mojo/public/mojom/base/string16.mojom-webui.js",
+      "edge://resources/mojo/url/mojom/url.mojom-webui.js",
+      "edge://resources/mojo/mojo/public/mojom/base/big_buffer.mojom-webui.js",
+      "edge://resources/mojo/mojo/public/mojom/base/string16.mojom-converters.js",
+      "edge://resources/mojo/mojo/public/mojom/base/string16_converter.js",
+      "edge://resources/mojo/url/mojom/url.mojom-converters.js",
+      "edge://resources/mojo/url/mojom/url_converter.js",
+      "edge://downloads-hub/edge_downloads_btr.mojom-webui.js",
+      "edge://downloads-hub/icons.svg",
+      "edge://downloads-hub/icons.svg"
+    ]
+  },
+  "chrome": {
+    "probe": {
+      "protocol": "file:",
+      "origin": "null",
+      "isSecureContext": true,
+      "ua": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+      "classicScriptLoaded": true,
+      "moduleScriptLoaded": false,
+      "fetchJson": "FAIL: Failed to fetch",
+      "xhrJson": "FAIL: Failed to execute 'send' on 'XMLHttpRequest': Failed to load 'file:///<repo>/prototypes/p1-platform/data.json'.",
+      "localStorage": "ok",
+      "localStoragePrev": null,
+      "idb": "ok blob size 3145728",
+      "fsAccess": {
+        "showOpenFilePicker": "function",
+        "showSaveFilePicker": "function",
+        "showDirectoryPicker": "function"
+      },
+      "compressionStream": true,
+      "deflateRawRoundTrip": true,
+      "cryptoSubtle": true,
+      "sha256": true,
+      "randomUUID": true,
+      "storagePersisted": false,
+      "storagePersistRequest": false,
+      "storageQuotaMB": 10243,
+      "broadcastChannel": true
+    },
+    "consoleErrors": [
+      "Access to script at 'file:///<repo>/prototypes/p1-platform/module.mjs' from origin 'null' has been blocked by CORS policy: Cross origin requests are only supported for protocol schemes: chrome, chrome-experimental-site-token-provider, chrome-extension, chrome-untrusted, data, http, https, isolated-app.",
+      "Failed to load resource: net::ERR_FAILED",
+      "Access to fetch at 'file:///<repo>/prototypes/p1-platform/data.json' from origin 'null' has been blocked by CORS policy: Cross origin requests are only supported for protocol schemes: chrome, chrome-experimental-site-token-provider, chrome-extension, chrome-untrusted, data, http, https, isolated-app.",
+      "Failed to load resource: net::ERR_FAILED",
+      "Access to XMLHttpRequest at 'file:///<repo>/prototypes/p1-platform/data.json' from origin 'null' has been blocked by CORS policy: Cross origin requests are only supported for protocol schemes: chrome, chrome-experimental-site-token-provider, chrome-extension, chrome-untrusted, data, http, https, isolated-app."
+    ],
+    "fileInput": {
+      "name": "p1-probe.png",
+      "type": "image/png",
+      "size": 66,
+      "firstBytes": [
+        137,
+        80,
+        78,
+        71,
+        13,
+        10,
+        26,
+        10
+      ]
+    },
+    "download": {
+      "suggestedFilename": "export-test.json",
+      "content": "{\"hello\":\"world\"}"
+    },
+    "otherFileSameProfile": {
+      "localStorageMarker": "written-at-1792398458374",
+      "idbMarker": "idb-marker-value"
+    },
+    "movedFileSameProfile": {
+      "localStorageMarker": "written-at-1792398458374",
+      "idbMarker": "idb-marker-value"
+    },
+    "pdf": {
+      "bytes": 31419,
+      "header": "%PDF-",
+      "pages": 2
+    },
+    "afterRestart": {
+      "localStorageMarker": "written-at-1792398458374",
+      "idbMarker": "idb-marker-value"
+    },
+    "externalRequests": []
+  }
+}
