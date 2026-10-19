@@ -70,6 +70,19 @@ steps: [
 
 Allowed keys: `text` (required), `bullets` (list of strings), `tip` (one string). Nothing else.
 
+### Decision helpers (`helper`)
+
+A decision step with a long read can carry a small helper under **Do it here** (`tool: 'mdc'`, `'urbac'` or `'tenants'`, with `helper` on the same step). The reader answers a few questions and sees both approaches side by side.
+
+- **Restate, never add.** Every question, approach, point and rule restates a fact from the same step (steps, why, caveats, interpret) or its cited sources. If the step gives no basis for a verdict, add no `recommends` or `requires` rule: the helper then shows the trade-offs side by side and says so.
+- `questions`: `{ id, text, hint?, multi?, options: [{ id, label }] }`. Ask what the reader knows about their environment, in their words. Offer a "Not checked yet" or "Not sure yet" option.
+- `choices`: `{ id, title, summary, badge?, pros, cons, todo }`. `todo` is what the reader does next for that approach, verb first.
+- `rules`: `{ when: { questionId: [optionIds] }, kind, on?, point?, say }`. `kind` is `requires` (the step states that the answer needs this approach), `recommends` (the step or Microsoft recommends it for that answer), `pro`, `con`, or `note` (applies whatever you choose, no `on`). `point` marks the listed pro or con that the answer confirms, so it is not repeated. Write `say` to the reader ("You need row-level access...").
+- `notes` are shown above the questions; `person` adds a name field (used per tenant).
+- The validator checks that every rule names a real question, answer, approach and point.
+
+Steps with a helper say so in their text: "Answer the questions in **Do it here**...", and keep the `[[do:add-decision|...]]` action for readers who prefer to write the decision themselves.
+
 ## 3. Links and actions
 
 The assistant is the place where the work happens. Whenever text tells the reader to go somewhere or record something, make it clickable. Four kinds of markup are allowed inside any reading text (not in `title` and not in `where` paths):

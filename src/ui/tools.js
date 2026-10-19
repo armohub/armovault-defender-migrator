@@ -3,8 +3,12 @@
 import { h, icon, toast, field, copyText, savedPulse, externalLink } from './dom.js';
 import { state, mutate } from '../app/store.js';
 import { render } from './shell.js';
-import { setEnvironments, setWorkstreamOwners, setApprovers, DEFENDER_STATES, ENV_KINDS, workstreamKey, knownPeople, addAudit } from '../core/model.js';
+import { setEnvironments, setWorkstreamOwners, setApprovers, DEFENDER_STATES, ENV_KINDS, workstreamKey, knownPeople, addAudit, setHelper, MAX_HELPER_SUBJECTS } from '../core/model.js';
+import { evaluateHelper, decisionDraft } from '../core/decision-helper.js';
+import { formatDate } from '../core/util.js';
 import { btn, callout } from './components.js';
+import { rich, renderList } from './rich.js';
+import { editRegisterItem } from './views/records.js';
 
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
@@ -279,6 +283,139 @@ export function windowTool() {
     h('p', { class: 'small muted' }, plan.note));
 }
 
-export const TOOLS = { workspaces: () => workspaceTool(), connection: () => workspaceTool({ show: 'connection' }), primary: primaryTool, owners: ownersTool, briefing: briefingTool, window: windowTool };
-export const TOOL_TITLES = { workspaces: 'Your workspaces', connection: 'Connection state of your workspaces', primary: 'Choose the primary workspace', owners: 'Owners and approvers', briefing: 'Brief your stakeholders', window: 'Plan your window' };
+// ───────── Decision helpers ─────────
+// A few targeted questions instead of a long read. The words, the approaches and the rules come from the step
+// (`helper` in the knowledge base); src/core/decision-helper.js decides whether the step gives a verdict.
+const helperDrafts = new Map(); // `${projectId}:${tool}` -> { base, start, subjects }
+const blankSubject = (label = '') => ({ label, answers: {}, choice: '', person: '' });
+const inventoryTenants = (p) => [...new Set((p.meta.environments || []).map((e) => (e.tenant || '').trim()).filter(Boolean))];
+const valuesOf = (a) => (Array.isArray(a) ? a : a ? [a] : []);
+
+function helperDraft(key, c) {
+  const p = state.project;
+  const saved = (p.meta.helpers || {})[key];
+  const base = JSON.stringify(saved ? saved.subjects : null);
+  const id = `${p.id}:${key}`;
+  let d = helperDrafts.get(id);
+  if (!d || (JSON.stringify(d.subjects) === d.start && d.base !== base)) {
+    let subjects = saved ? JSON.parse(JSON.stringify(saved.subjects)) : [];
+    if (!subjects.length && c.helper.per === 'tenant') subjects = inventoryTenants(p).map((t) => blankSubject(t));
+    if (!subjects.length) subjects.push(blankSubject());
+    d = { base, start: JSON.stringify(subjects), subjects };
+    helperDrafts.set(id, d);
+  }
+  return d;
+}
+
+function setHelperAnswer(s, q, optionId, on) {
+  if (!q.multi) { s.answers[q.id] = optionId; return; }
+  // "None of these" excludes the other options, and the other way round.
+  let vals = valuesOf(s.answers[q.id]).filter((v) => v !== optionId);
+  if (on) vals = optionId === 'none' ? ['none'] : [...vals.filter((v) => v !== 'none'), optionId];
+  if (vals.length) s.answers[q.id] = vals; else delete s.answers[q.id];
+}
+
+export function decisionHelperTool(key, c, ctx = { kb: state.kb }) {
+  const helper = c && c.helper;
+  if (!helper) return null;
+  const p = state.project;
+  const d = helperDraft(key, c);
+  const saved = (p.meta.helpers || {})[key];
+  const perTenant = helper.per === 'tenant';
+  const dirty = () => JSON.stringify(d.subjects) !== d.start;
+  const choiceOf = (s) => helper.choices.find((x) => x.id === s.choice);
+  const barSlot = h('div');
+  const refresh = () => barSlot.replaceChildren(saveBar(dirty(), save, discard, saved ? `Saved by ${saved.by}, ${formatDate(saved.at, true)}.` : 'Nothing saved yet.'));
+
+  function save() {
+    // Empty tenant cards are dropped; a card with answers needs the tenant's name.
+    const keep = d.subjects.filter((s) => !perTenant || s.label.trim() || Object.keys(s.answers).length || s.choice || s.person.trim());
+    if (perTenant && keep.some((s) => !s.label.trim())) { toast('Give each tenant a name (an alias is enough), or remove the card.', 'bad', 6000); return; }
+    const detail = `${helper.decision}: ${keep.map((s) => `${s.label ? `${s.label.trim()}: ` : ''}${choiceOf(s) ? choiceOf(s).title : 'no choice yet'}`).join('; ') || 'cleared'}`;
+    const res = mutate((pr) => setHelper(pr, key, keep, { detail, ref: c.id }));
+    if (res && !res.ok) { toast(res.error, 'bad'); return; }
+    helperDrafts.delete(`${p.id}:${key}`);
+    savedPulse(keep.some((s) => s.choice) ? 'Saved. Record it as a decision when you are ready.' : 'Answers saved');
+    render();
+  }
+  function discard() { helperDrafts.delete(`${p.id}:${key}`); render(); }
+  function recordDecision(s) {
+    if (dirty()) { toast('Save your changes first, then record the decision.', 'bad'); return; }
+    const draft = decisionDraft(c, s, state.kb);
+    if (draft) editRegisterItem(null, { type: 'decision', checkId: c.id, title: draft.title, description: draft.description });
+  }
+
+  // One side of an approach: lines from your answers first, then the listed points (those your answers confirm on top).
+  const points = (title, iconName, side, listed) => {
+    const mine = (x) => h('li', { class: 'helper-mine' }, h('span', { class: 'chip chip-accent' }, 'Your answers'), ' ', rich(x, ctx));
+    const rows = [...side.mine.map(mine), ...listed.filter((x, i) => side.marked.includes(i)).map(mine), ...listed.filter((x, i) => !side.marked.includes(i)).map((x) => h('li', null, rich(x, ctx)))];
+    return rows.length ? h('div', { class: 'helper-points' }, h('div', { class: 'helper-points-title' }, icon(iconName, 'icon-xs'), title), h('ul', null, ...rows)) : null;
+  };
+
+  const subjectBlock = (s, i) => {
+    const ev = evaluateHelper(helper, s.answers);
+    const fk = `hlp-${key}-${i}`;
+    const question = (q) => {
+      const vals = valuesOf(s.answers[q.id]);
+      return h('fieldset', { class: 'helper-q' }, h('legend', null, rich(q.text, ctx)),
+        q.hint ? h('p', { class: 'small muted' }, rich(q.hint, ctx)) : null,
+        h('div', { class: 'helper-opts' }, q.options.map((o) => h('label', { class: ['helper-opt', vals.includes(o.id) && 'selected'] },
+          h('input', { type: q.multi ? 'checkbox' : 'radio', name: `${fk}-${q.id}`, checked: vals.includes(o.id), 'data-focus-key': `${fk}-${q.id}-${o.id}`, onchange: (e) => { setHelperAnswer(s, q, o.id, e.target.checked); render(); } }),
+          h('span', null, o.label)))));
+    };
+    const fit = ev.verdict && helper.choices.find((x) => x.id === ev.verdict);
+    const findings = ev.answered === 0
+      ? h('p', { class: 'small muted' }, 'Answer the questions to see what this step says for your situation.')
+      : fit
+        ? callout('info', `${ev.strength === 'requires' ? 'Your answers need' : 'For your answers, the guidance points to'}: ${fit.title}`, renderList(ev.reasons, ctx), h('p', { class: 'small' }, 'You still choose below. Both approaches are shown with their trade-offs.'))
+        : callout('info', ev.split ? 'Your answers point both ways.' : ev.answered < ev.total ? 'No firm answer from this step yet.' : 'This step gives no reason to prefer one approach for your answers.', h('p', { class: 'small' }, ev.answered < ev.total ? `${ev.answered} of ${ev.total} questions answered. Compare the approaches side by side below, then choose.` : 'Compare the approaches side by side below, then choose.'));
+    const choice = choiceOf(s);
+    const savedSubject = !dirty() && saved && choice;
+    const draft = savedSubject ? decisionDraft(c, s, state.kb) : null;
+    const recorded = draft ? p.register.find((r) => r.checkId === c.id && r.type === 'decision' && r.title === draft.title) : null;
+    const nameInput = (k, label, attrs, hint) => field(label, h('input', { type: 'text', value: s[k], 'data-focus-key': `${fk}-${k}`, oninput: (e) => { s[k] = e.target.value; refresh(); }, ...attrs }), hint ? { hint: rich(hint, ctx) } : {});
+    return h('div', { class: ['helper-subject', perTenant && 'ws-card'] },
+      perTenant ? h('div', { class: 'ws-card-head' }, h('strong', null, s.label || `Tenant ${i + 1}`),
+        d.subjects.length > 1 ? h('button', { type: 'button', class: 'btn-icon', 'aria-label': `Remove ${s.label || `tenant ${i + 1}`}`, onclick: () => { d.subjects.splice(i, 1); render(); } }, icon('trash', 'icon-sm')) : null) : null,
+      perTenant ? h('div', { class: 'tool-grid two' }, nameInput('label', 'Tenant (alias)', { maxlength: '120', placeholder: 'For example: Contoso EU' }), helper.person ? nameInput('person', helper.person.label, { maxlength: '200', list: 'people-list', placeholder: 'Name or team' }, helper.person.hint) : null) : null,
+      h('div', { class: 'helper-questions' }, helper.questions.map(question)),
+      h('div', { class: 'helper-findings', 'aria-live': 'polite' }, findings, ev.notes.length ? h('div', null, h('h3', null, icon('info', 'icon-sm'), 'Good to know'), renderList(ev.notes, ctx)) : null),
+      h('fieldset', { class: 'helper-choices' }, h('legend', null, helper.choiceText || 'Your choice'),
+        h('div', { class: 'helper-compare' }, helper.choices.map((ch) => h('label', { class: ['choice', 'helper-choice', s.choice === ch.id && 'selected'] },
+          h('input', { type: 'radio', name: `${fk}-choice`, checked: s.choice === ch.id, 'data-focus-key': `${fk}-choice-${ch.id}`, onchange: () => { s.choice = ch.id; render(); } }),
+          h('div', null, h('strong', null, ch.title),
+            ch.badge || ev.verdict === ch.id ? h('div', { class: 'item-chips' }, ch.badge ? h('span', { class: 'chip chip-info' }, ch.badge) : null, ev.verdict === ch.id ? h('span', { class: 'chip chip-accent' }, ev.strength === 'requires' ? 'Needed for your answers' : 'Fits your answers') : null) : null,
+            h('p', { class: 'small' }, rich(ch.summary, ctx)),
+            points('For', 'check', ev.byChoice[ch.id].pros, ch.pros || []),
+            points('Against', 'alert', ev.byChoice[ch.id].cons, ch.cons || [])))))),
+      choice && choice.todo && choice.todo.length ? h('div', null, h('h3', null, icon('check', 'icon-sm'), `What you do next: ${choice.title}`), renderList(choice.todo, ctx)) : null,
+      savedSubject ? h('div', { class: 'helper-record' },
+        icon('gate', 'icon-sm'),
+        h('div', null, recorded ? h('strong', null, 'Recorded in the register') : h('strong', null, `Saved: ${choice.title}`),
+          recorded ? h('div', { class: 'small' }, h('button', { type: 'button', class: 'linklike', onclick: () => editRegisterItem(recorded) }, recorded.title))
+            : h('p', { class: 'small muted' }, 'Record it as a decision, so the register shows who decided and why. Your answers and the reasons are filled in for you.')),
+        recorded ? btn('Record again', () => recordDecision(s), { small: true, kind: 'ghost' }) : btn('Record as a decision', () => recordDecision(s), { small: true, kind: 'primary', iconName: 'gate' }))
+        : choice ? h('p', { class: 'small muted' }, 'Save your choice, then record it as a decision.') : null);
+  };
+
+  const missing = perTenant ? inventoryTenants(p).filter((t) => !d.subjects.some((s) => s.label.trim() === t)) : [];
+  refresh();
+  return h('div', { class: 'tool helper' },
+    h('p', { class: 'small muted' }, rich(helper.intro, ctx)),
+    helper.notes && helper.notes.length ? renderList(helper.notes, ctx, 'bullets small') : null,
+    ...d.subjects.map(subjectBlock),
+    perTenant ? h('div', { class: 'row-actions' },
+      d.subjects.length < MAX_HELPER_SUBJECTS ? btn('Add a tenant', () => { d.subjects.push(blankSubject()); render(); }, { small: true, iconName: 'plus' }) : null,
+      missing.length ? btn(`Add ${missing.length === 1 ? 'the tenant' : `the ${missing.length} tenants`} from your inventory`, () => { d.subjects.push(...missing.map((t) => blankSubject(t))); render(); }, { small: true, kind: 'ghost' }) : null) : null,
+    barSlot);
+}
+
+export const TOOLS = {
+  workspaces: () => workspaceTool(), connection: () => workspaceTool({ show: 'connection' }), primary: () => primaryTool(), owners: () => ownersTool(), briefing: () => briefingTool(), window: () => windowTool(),
+  mdc: (c, ctx) => decisionHelperTool('mdc', c, ctx), urbac: (c, ctx) => decisionHelperTool('urbac', c, ctx), tenants: (c, ctx) => decisionHelperTool('tenants', c, ctx),
+};
+export const TOOL_TITLES = {
+  workspaces: 'Your workspaces', connection: 'Connection state of your workspaces', primary: 'Choose the primary workspace', owners: 'Owners and approvers', briefing: 'Brief your stakeholders', window: 'Plan your window',
+  mdc: 'Choose your connector approach', urbac: 'Decide on unified RBAC', tenants: 'Access model per tenant',
+};
 export { same };

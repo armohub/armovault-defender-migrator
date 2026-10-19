@@ -15,6 +15,7 @@ The first public version, released as one final version. There are no release ca
 ### Do it here: work inside the steps
 
 - Steps carry the form they need, under **Do it here**: a stakeholder briefing with a ready-to-send email (copy formatted into Outlook, or open in the email app), owners and approvers per workstream, a window planner with typical durations (practical guidance, labelled as such), the workspace inventory, the connection state of each workspace, and the primary workspace choice. The same forms appear in Project setup, so information is entered once and reused in steps and reports.
+- Decision helpers on the three longest decisions: the Defender for Cloud connector approach, unified RBAC for Sentinel, and the multi-tenant access model (one card per tenant). You answer a few questions and see both approaches side by side with what your answers mean for each. The helper names an approach only where the step's own content gives a basis (for example, row-level access requires unified RBAC). Saved choices travel with the project and its packages, and **Record as a decision** opens the register decision with the choice, reasons, trade-offs and answers filled in.
 - Gate steps lead with the decision form, and can save a report snapshot right on the step.
 - Every step has **Leave for now** and **Next step** at the top. Parked steps never block the next suggestion and are listed on the overview under **Parked for later**.
 - **Not needed for us**: a team can record, with a reason, that a step needs no evidence. The step can then pass, and reports show "Passed, evidence not needed" with the reason, name and date.
@@ -55,6 +56,7 @@ The first public version, released as one final version. There are no release ca
   - inline buttons act on the step: add a decision, risk, issue, action or exception to the register, linked to the step; add evidence; jump to the owner, due date, notes or gate form; import inventory results or download the inventory script;
   - **Previous step** and **Next step** cards at the bottom.
 - Project setup is now a page (`#/project`). Links can open it at the planned transition window or the workspaces section.
+- **Cancel** closes a dialog without saving. In the nine dialogs that ask for a reason or details (register items, status and applicability reasons, **Not needed for us**, evidence details, observation notes, links and the test environment reason) it used to do nothing, and only Escape or the close button worked.
 
 ### Demo and thanks
 

@@ -4,7 +4,7 @@
 
 import {
   PROJECT_SCHEMA, PROJECT_SCHEMA_VERSION, STATUS_IDS, ANSWER_IDS, REGISTER_TYPE_IDS, REGISTER_STATUS_IDS,
-  SEVERITY_IDS, GATE_DECISION_IDS, EVIDENCE_KINDS, MAX_TEXT,
+  SEVERITY_IDS, GATE_DECISION_IDS, EVIDENCE_KINDS, MAX_TEXT, HELPER_KEYS, MAX_HELPER_SUBJECTS, cleanHelperSubject,
 } from './model.js';
 import { FORBIDDEN_KEYS, isPlainObject } from './util.js';
 
@@ -78,7 +78,18 @@ export function validateProject(input, { kb } = {}) {
     workstreamOwners: {},
     plannedPrimary: str(m.plannedPrimary, 120),
     approvers: Array.isArray(m.approvers) ? m.approvers.slice(0, 30).filter(isPlainObject).map((a) => ({ role: str(a.role, 200), name: str(a.name, 200) })).filter((a) => a.role && a.name) : [],
+    helpers: {},
   };
+  // Decision helpers: known helpers only; answers and choices are short identifiers, never text.
+  if (isPlainObject(m.helpers)) {
+    for (const key of HELPER_KEYS) {
+      const x = Object.prototype.hasOwnProperty.call(m.helpers, key) ? m.helpers[key] : null;
+      if (!isPlainObject(x) || !Array.isArray(x.subjects)) continue;
+      const subjects = x.subjects.slice(0, MAX_HELPER_SUBJECTS).filter(isPlainObject)
+        .map((s) => cleanHelperSubject({ label: str(s.label, 120), answers: isPlainObject(s.answers) ? Object.fromEntries(safeEntries(s.answers, warnings, `helper ${key} answers`, 20)) : {}, choice: s.choice, person: str(s.person, 200) }));
+      p.meta.helpers[key] = { subjects, by: str(x.by, 200), at: iso(x.at) };
+    }
+  }
   if (isPlainObject(m.workstreamOwners)) {
     for (const [k, v] of Object.entries(m.workstreamOwners).slice(0, 100)) {
       if (FORBIDDEN_KEYS.has(k) || !/^[a-z-]+:[a-z-]+$/.test(k)) continue;

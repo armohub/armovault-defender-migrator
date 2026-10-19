@@ -45,5 +45,5 @@ All 35 questions were answered with a realistic mix. Findings:
 1. **Tenants in the workspace list:** done. When you answer that you run several tenants, each workspace gets a tenant alias, and "one primary" is checked per tenant.
 2. **Snapshot from the gate step:** done. The four gate steps now offer "Save a snapshot" right on the step.
 3. **Fewer questions up front.** Consider offering the inventory script import before the questionnaire, so nine answers arrive pre-filled.
-4. **Longest steps.** The Defender for Cloud connector choice, unified RBAC and the multi-tenant access model are the longest reads (about 300 words). They would benefit from a small decision helper, like the window planner.
+4. **Longest steps:** done. The Defender for Cloud connector choice, unified RBAC and the multi-tenant access model now lead with a decision helper under **Do it here**: three, five and two questions (the last per tenant), both approaches side by side, a verdict only where the step gives one, and **Record as a decision** with the reasons filled in.
 5. **Templates.** Decision and risk records could offer short templates (for example "Approved by, on, conditions").

@@ -342,6 +342,47 @@ export const PREPARE_1 = [
     sources: [src('automation', 'Transfer automation rules to the relevant workspace; portal: Incident provider condition values Microsoft Sentinel and Microsoft 365 Defender'), src('multiws', 'Defender XDR alerts and incidents sync to the primary only'), src('exportauto', 'Automation rule export/import'), src('autorules', 'The Automation rules tab lists all rules on the workspace with their status and the analytics rules they apply to; rules can be opened and edited there')],
   }),
   k({
+    tool: 'tenants',
+    // The decision helper restates this step and its sources only (see src/core/decision-helper.js for the rule kinds).
+    helper: {
+      decision: 'Access model',
+      per: 'tenant',
+      intro: 'One card per tenant in scope. Tenants from [[PREP-TOP-01|your workspace inventory]] are filled in for you. Answer two questions for each, choose how analysts reach its Sentinel data in multitenant management (MTO), and name who connects its workspaces.',
+      questions: [
+        {
+          id: 'today', multi: true, text: 'How do people from other tenants access this tenant today?', hint: 'Select all that apply.',
+          options: [{ id: 'lighthouse', label: 'Azure Lighthouse' }, { id: 'b2b', label: 'Entra B2B' }, { id: 'gdap', label: 'GDAP' }, { id: 'govrel', label: 'Governance relationships' }, { id: 'none', label: 'None of these' }],
+        },
+        {
+          id: 'queries', text: 'Do you need cross-tenant queries with workspace(), or to query a secondary workspace in another tenant?',
+          options: [{ id: 'yes', label: 'Yes' }, { id: 'no', label: 'No' }, { id: 'unknown', label: 'Not sure yet' }],
+        },
+      ],
+      choiceText: 'Access to Sentinel data in MTO',
+      choices: [
+        {
+          id: 'b2b', title: 'Entra B2B',
+          summary: 'Plan Entra B2B access to this tenant for its Sentinel data in MTO.',
+          pros: [], cons: [],
+          todo: ['Plan Entra B2B for Sentinel data in this tenant.', 'Sign in to MTO, select **Add tenants**, choose the tenant and select **Add**.'],
+        },
+        {
+          id: 'govrel', title: 'Governance relationships',
+          summary: 'Plan a governance relationship with this tenant for its Sentinel data in MTO. You manage them in the Defender portal under System > Permissions > Delegated Access.',
+          pros: [], cons: [],
+          todo: ['Plan the governance relationship with this tenant.', 'Sign in to MTO, select **Add tenants**, choose the tenant and select **Add**.'],
+        },
+      ],
+      person: { label: 'Who connects its workspaces, inside this tenant', hint: 'Someone with the [[PREP-ACC-01|onboarding roles]] in this tenant.' },
+      rules: [
+        { when: { today: ['b2b'] }, kind: 'pro', on: 'b2b', say: 'Entra B2B is already in place for this tenant.' },
+        { when: { today: ['govrel'] }, kind: 'pro', on: 'govrel', say: 'Governance relationships are already in place for this tenant.' },
+        { when: { today: ['gdap'] }, kind: 'note', say: 'Don\'t rely on GDAP for Sentinel data until you have confirmed its status for your scenario with Microsoft. Microsoft pages currently disagree about it.' },
+        { when: { today: ['lighthouse'] }, kind: 'note', say: 'Connect the workspaces from within this tenant. A community report (not Microsoft) describes failures when onboarding through Lighthouse delegation.' },
+        { when: { queries: ['yes'] }, kind: 'note', say: 'Keep Azure Lighthouse for this tenant. It remains required for cross-tenant queries with workspace() and to query a secondary workspace in another tenant.' },
+      ],
+      notes: ['Each workspace must be connected in its own tenant, by someone with the [[PREP-ACC-01|onboarding roles]] in that tenant.', 'MTO supports up to 100 target tenants.'],
+    },
     id: 'PREP-TOP-05', stage: 'prepare', workstream: 'topology', order: 50, kind: 'decision', criticality: 'high', applicability: q('multi_tenant'), validation: 'needs-review', confidence: 'medium',
     title: 'Define the multi-tenant access model',
     objective: 'For each tenant, decide how analysts and partners will access Sentinel data in the Defender portal, and who will connect each workspace.',
@@ -354,7 +395,7 @@ export const PREPARE_1 = [
     where: [at(DP, 'https://mto.security.microsoft.com (multitenant management)'), at(DP, 'System > Permissions > Delegated Access (governance relationships)')],
     steps: [
       {
-        text: 'List the tenants in scope and today\'s access method for each one:',
+        text: 'List the tenants in scope in **Do it here**, with today\'s access method for each one:',
         bullets: ['Azure Lighthouse', 'Entra B2B', 'GDAP', 'Governance relationships'],
       },
       'Plan to connect each workspace inside its own tenant, by someone with the [[PREP-ACC-01|onboarding roles]] in that tenant.',
@@ -371,12 +412,12 @@ export const PREPARE_1 = [
         ],
       },
       'Don\'t rely on GDAP for Sentinel data until you have confirmed its status for your scenario with Microsoft (see **Watch out** below).',
-      '[[do:add-decision|Add a decision to the register]] for the access model of each tenant.',
+      'Save the cards in **Do it here**, then record the access model of each tenant as a decision from its card. You can also [[do:add-decision|add a decision to the register]] yourself.',
     ],
     expected: 'Each tenant has a documented, tested access model.',
     record: [
-      'The access model per tenant: [[do:add-decision|add a decision]]',
-      'Who connects each workspace, in [[do:write-notes|this step\'s notes]]',
+      'The access model per tenant: in **Do it here**, recorded as a decision from each card, or [[do:add-decision|add a decision]]',
+      'Who connects each workspace: in **Do it here**, or in [[do:write-notes|this step\'s notes]]',
     ],
     evidence: [
       'The decision record: [[do:add-decision|add it to the register]]',
@@ -486,6 +527,71 @@ export const PREPARE_1 = [
     sources: [src('onboard', 'Roles to view Sentinel, query, and take actions in the Defender portal'), src('ah', 'Unified advanced hunting needs at least Microsoft Sentinel Reader'), src('runplaybooks', 'Playbook Operator for manual runs'), src('roles', 'Role definitions; resource-group scope and SecurityInsights solution note'), src('multiws', 'Primary-workspace access includes Defender XDR data')],
   }),
   k({
+    tool: 'urbac',
+    // The decision helper restates this step and its sources only (see src/core/decision-helper.js for the rule kinds).
+    helper: {
+      decision: 'Unified RBAC for Sentinel',
+      intro: 'Answer five questions. This step gives a firm answer only where you need row-level access. Otherwise you see both ways side by side, with what your answers mean for each, and you choose.',
+      questions: [
+        {
+          id: 'state', text: 'Is unified RBAC already active in your tenant?', hint: 'In the Defender portal: System > Permissions > Microsoft Defender XDR > Roles.',
+          options: [{ id: 'sentinel', label: 'Yes, for Sentinel workspaces' }, { id: 'other', label: 'Yes, for other workloads only' }, { id: 'no', label: 'No' }, { id: 'unknown', label: 'Not checked yet' }],
+        },
+        {
+          id: 'rowlevel', text: 'Do you need row-level access to Sentinel data (Sentinel scoping)?',
+          options: [{ id: 'yes', label: 'Yes' }, { id: 'no', label: 'No' }, { id: 'unknown', label: 'Not sure yet' }],
+        },
+        {
+          id: 'nonhuman', text: 'Do service principals or managed identities have Sentinel roles?', hint: 'Use [[PREP-ACC-06|your list of non-human identities]].',
+          options: [{ id: 'yes', label: 'Yes' }, { id: 'no', label: 'No' }, { id: 'unknown', label: 'Not checked yet' }],
+        },
+        {
+          id: 'azureroles', text: 'Does anyone need Playbook Operator, Automation Contributor or Workbook Contributor?',
+          options: [{ id: 'yes', label: 'Yes' }, { id: 'no', label: 'No' }, { id: 'unknown', label: 'Not checked yet' }],
+        },
+        {
+          id: 'azureportal', text: 'Will your team keep making Sentinel permission changes in the Azure portal?',
+          options: [{ id: 'yes', label: 'Yes' }, { id: 'no', label: 'No' }, { id: 'unknown', label: 'Not decided yet' }],
+        },
+      ],
+      choices: [
+        {
+          id: 'keep', title: 'Keep Azure RBAC for now',
+          summary: 'Sentinel permissions stay in Azure RBAC, as today.',
+          pros: ['No change to where Sentinel permissions are managed.'],
+          cons: ['No row-level access (Sentinel scoping, in preview): it requires unified RBAC.'],
+          todo: ['Record the timing and the owner with the decision.'],
+        },
+        {
+          id: 'activate', title: 'Activate unified RBAC per workspace, after the transition',
+          summary: 'Unified RBAC becomes the source of permissions for Sentinel in the Defender portal. Assignments sync to Azure RBAC.',
+          pros: ['Row-level access (Sentinel scoping, in preview) requires it.'],
+          cons: [
+            'It does not support service principal assignments. Those accounts stay on Azure RBAC.',
+            'Playbook Operator, Automation Contributor and Workbook Contributor have no unified RBAC equivalent and stay in Azure.',
+            'Permission changes made in the Azure portal after activation may cause sync errors.',
+          ],
+          todo: [
+            'Plan the activation per workspace, after the transition, as its own change.',
+            'Activation needs Security Administrator plus Owner, or User Access Administrator and Microsoft Sentinel Contributor on the workspace.',
+            'Map the roles: Microsoft Sentinel Reader to "Defender Unified RBAC Reader", Responder to "Defender Unified RBAC Responder", and Contributor to "Defender Unified RBAC Contributor and Responder".',
+            'Keep service principals, managed identities and the roles without an equivalent on Azure RBAC.',
+            'Record the timing and the owner with the decision.',
+          ],
+        },
+      ],
+      rules: [
+        { when: { rowlevel: ['yes'] }, kind: 'requires', on: 'activate', point: 0, say: 'You need row-level access. Sentinel scoping (in preview) requires unified RBAC.' },
+        { when: { rowlevel: ['yes'] }, kind: 'con', on: 'keep', point: 0, say: 'You need row-level access, and Sentinel scoping requires unified RBAC.' },
+        { when: { state: ['sentinel'] }, kind: 'note', say: 'Unified RBAC is already the source of permissions for Sentinel in the Defender portal. Record which workspaces it covers in [[do:write-notes|this step\'s notes]].' },
+        { when: { state: ['unknown'] }, kind: 'note', say: 'Check first whether unified RBAC is active in the tenant, and for which workloads.' },
+        { when: { nonhuman: ['yes'] }, kind: 'con', on: 'activate', point: 0, say: 'Your service principals and managed identities must stay on Azure RBAC: unified RBAC does not support service principal assignments.' },
+        { when: { nonhuman: ['unknown'] }, kind: 'note', say: 'List the service principals and managed identities with Sentinel roles first, from [[PREP-ACC-06|your list of non-human identities]]. They must stay on Azure RBAC.' },
+        { when: { azureroles: ['yes'] }, kind: 'con', on: 'activate', point: 1, say: 'You need Playbook Operator, Automation Contributor or Workbook Contributor. They have no unified RBAC equivalent and stay in Azure.' },
+        { when: { azureportal: ['yes'] }, kind: 'con', on: 'activate', point: 2, say: 'You keep making permission changes in the Azure portal. After activation, they may cause sync errors.' },
+      ],
+      notes: ['Unverified: a non-Microsoft blog reports that Microsoft may enable unified RBAC automatically for some tenants between late September and December 2026. Check your tenant\'s Message Center.'],
+    },
     id: 'PREP-ACC-03', stage: 'prepare', workstream: 'access', order: 30, kind: 'decision', criticality: 'high', validation: 'needs-review', confidence: 'medium', testable: true,
     title: 'Decide whether and when to use Defender unified RBAC for Sentinel',
     objective: 'Make an explicit decision about unified RBAC (URBAC) for Sentinel workspaces, and understand its limitations.',
@@ -509,7 +615,7 @@ export const PREPARE_1 = [
       },
       'List the service principals and managed identities with Sentinel roles, from [[PREP-ACC-06|your list of non-human identities]]. They must stay on Azure RBAC.',
       {
-        text: 'Decide which way to go:',
+        text: 'Answer the questions in **Do it here** and decide which way to go:',
         bullets: [
           'Keep Azure RBAC for now.',
           'Or activate URBAC per workspace after the transition. Microsoft requires per-workspace activation.',
@@ -517,12 +623,12 @@ export const PREPARE_1 = [
         tip: 'Treat activation as its own change.',
       },
       'If you need row-level access (Sentinel scoping, in preview), note that it requires URBAC.',
-      '[[do:add-decision|Add the decision to the register]], with its timing and owner.',
+      'Save your choice in **Do it here**, then record it as a decision, with its timing and owner. You can also [[do:add-decision|add the decision to the register]] yourself.',
     ],
     expected: 'A recorded decision with its timing and owner.',
     record: [
       'The current URBAC state, in [[do:write-notes|this step\'s notes]]',
-      'The decision and its timing: [[do:add-decision|add the decision]]',
+      'The decision and its timing: choose it in **Do it here** and record it from there, or [[do:add-decision|add the decision]]',
       'Accounts that must stay on Azure RBAC, in [[do:write-notes|this step\'s notes]]',
     ],
     evidence: [

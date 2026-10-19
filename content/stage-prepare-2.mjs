@@ -50,6 +50,56 @@ export const PREPARE_2 = [
     sources: [src('xdrint', 'Automatic connection when licensed; standalone connectors disconnected'), src('xdrconnector', 'Connector sections; automatic enablement on onboarding; checkbox behaviour; portal: connector page Configuration sections and the data graph with one line each for incidents, alerts and events'), src('move', 'Make sure incidents and alerts from this connector are turned on'), src('multiws', 'Connector attached to the primary workspace only'), src('schemadiff', 'Schema and filtering differences')],
   }),
   k({
+    tool: 'mdc',
+    // The decision helper restates this step and its sources only (see src/core/decision-helper.js for the rule kinds).
+    helper: {
+      decision: 'Defender for Cloud connector approach',
+      intro: 'Answer three questions. You see what this step says for your answers, and both approaches side by side. You choose.',
+      questions: [
+        {
+          id: 'today', text: 'Which Defender for Cloud connector do your workspaces use today?', hint: 'The connector pages in the Azure portal show it: see **No query access? Use the portal** below.',
+          options: [{ id: 'legacy', label: 'The legacy subscription-based connector' }, { id: 'tenant', label: 'The tenant-based connector' }, { id: 'both', label: 'Both' }, { id: 'unknown', label: 'Not checked yet' }],
+        },
+        {
+          id: 'correlated', text: 'Do you want tenant-correlated Defender for Cloud data in the primary workspace?',
+          options: [{ id: 'yes', label: 'Yes' }, { id: 'no', label: 'No' }, { id: 'unknown', label: 'Not decided yet' }],
+        },
+        {
+          id: 'incidents', text: 'Do you want incidents from Defender for Cloud alerts, or only the alerts?',
+          options: [{ id: 'incidents', label: 'Incidents and alerts' }, { id: 'alerts', label: 'Only the alerts' }, { id: 'unknown', label: 'Not decided yet' }],
+        },
+      ],
+      choices: [
+        {
+          id: 'tenant', title: 'Tenant-based connector on the primary', badge: 'Microsoft recommends it',
+          summary: 'Connect the tenant-based connector (preview) in the primary workspace, and disconnect the legacy subscription-based connector from all workspaces.',
+          pros: ['Avoids duplicates. That is why Microsoft recommends it.', 'You get tenant-correlated Defender for Cloud data in the primary workspace.'],
+          cons: ['The tenant-based connector is labelled preview.', 'You turn off the rules that create incidents from Defender for Cloud alerts, and handle noise with automation rules or alert tuning.'],
+          todo: [
+            'Connect the tenant-based connector in the primary workspace, in the Azure portal.',
+            'Disconnect the legacy connector from all workspaces.',
+            'Turn off the incident-creating rules for Defender for Cloud alerts: Microsoft incident creation rules with the product filter "Azure Security Center", and scheduled rules that query those alerts.',
+            'Handle noise with automation rules or alert tuning.',
+          ],
+        },
+        {
+          id: 'legacy', title: 'Keep the legacy subscription-based connector',
+          summary: 'Keep the legacy connector if you do not want tenant-correlated Defender for Cloud data in the primary workspace.',
+          pros: ['No tenant-correlated Defender for Cloud data in the primary workspace, if you do not want it.'],
+          cons: ['With only the legacy connector and Defender XDR incident integration, you may receive Defender for Cloud incidents with empty alerts. You accept that risk.'],
+          todo: ['Keep the legacy connector configured in the Azure portal.', 'Record the empty-alert risk and who accepts it: [[do:add-risk|add a risk]].'],
+        },
+      ],
+      rules: [
+        { when: { correlated: ['yes'] }, kind: 'recommends', on: 'tenant', point: 1, say: 'You want tenant-correlated data. Microsoft recommends the tenant-based connector on the primary, with the legacy connector disconnected from all workspaces, to avoid duplicates.' },
+        { when: { correlated: ['no'] }, kind: 'recommends', on: 'legacy', point: 0, say: 'You don\'t want tenant-correlated data. For that case, this step says to keep the legacy connector and accept the empty-alert risk.' },
+        { when: { today: ['both'] }, kind: 'pro', on: 'tenant', point: 0, say: 'You use both connectors today. Disconnecting the legacy connector from all workspaces avoids duplicates.' },
+        { when: { today: ['tenant'] }, kind: 'pro', on: 'tenant', say: 'You already use the tenant-based connector. Check that it is on the primary workspace and that the legacy connector is disconnected everywhere.' },
+        { when: { today: ['unknown'] }, kind: 'note', say: 'Check the connector pages first. The legacy connector page lists your subscriptions and the status of their connection.' },
+        { when: { incidents: ['alerts'] }, kind: 'note', say: 'If you want Defender for Cloud alerts but not incidents, Microsoft suggests automation rules that close those incidents as they arrive.' },
+      ],
+      notes: ['Both connectors are hidden from the Defender portal\'s Data connectors page, so you configure them in the Azure portal.'],
+    },
     id: 'PREP-CON-02', stage: 'prepare', workstream: 'connectors', order: 20, kind: 'decision', criticality: 'high', applicability: q('mdc'), validation: 'needs-review', confidence: 'medium', testable: true,
     title: 'Choose the Defender for Cloud connector approach to avoid duplicate or empty incidents',
     objective: 'Decide between the tenant-based and the legacy subscription-based Defender for Cloud connector, and the rule changes that go with it.',
@@ -70,14 +120,14 @@ export const PREPARE_2 = [
         ],
       },
       {
-        text: 'Decide which approach to take:',
+        text: 'Answer the questions in **Do it here** and choose one of the two approaches:',
         bullets: [
           '**Recommended:** the tenant-based connector on the primary, the legacy connector disconnected everywhere, incident-creating rules for Defender for Cloud alerts turned off, and noise handled with automation rules or alert tuning.',
           '**Keep the legacy connector** if you do not want tenant-correlated Defender for Cloud data in the primary workspace. You then accept the empty-alert risk.',
         ],
         tip: 'If you want Defender for Cloud alerts but not incidents, Microsoft suggests automation rules that close those incidents as they arrive.',
       },
-      '[[do:add-decision|Add the decision to the register]], with the implementation steps for [[go:stage:transition|Stage 2]].',
+      'Save your choice in **Do it here**, then record it as a decision. The assistant fills in your reasons and the implementation steps for [[go:stage:transition|Stage 2]]. You can also [[do:add-decision|add the decision to the register]] yourself.',
     ],
     portalWay: [
       "Open **Microsoft Sentinel > Configuration > Data connectors** in the Azure portal. Open the page of **Subscription-based Microsoft Defender for Cloud (Legacy)** and of **Tenant-based Microsoft Defender for Cloud (Preview)**. Under **Configuration**, the legacy connector lists your subscriptions and the status of their connection.",
@@ -88,7 +138,7 @@ export const PREPARE_2 = [
     expected: 'A recorded decision that lists the rule changes needed.',
     record: [
       'The connectors in use today, in [[do:write-notes|this step\'s notes]]',
-      'The decision: [[do:add-decision|add it to the register]]',
+      'The decision: choose it in **Do it here** and record it from there, or [[do:add-decision|add it to the register]]',
       'The rules to turn off, in the decision or in [[do:write-notes|this step\'s notes]]',
     ],
     evidence: [

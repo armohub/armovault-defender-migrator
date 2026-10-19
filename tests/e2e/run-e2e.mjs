@@ -262,6 +262,36 @@ await step('Step page: cross-references are links, and "do it here" buttons act 
   await page.locator('[data-focus-key="next-step-top"]').waitFor();
 });
 
+await step('Cancel closes a dialog without saving; a check on the input keeps it open', async () => {
+  await go(page, '#/item/PREP-SCOPE-03');
+  const follow = page.locator('.register-actions');
+  const linked = await follow.locator('.list-row').count();
+  await follow.getByRole('button', { name: 'Decision', exact: true }).click();
+  await dlg(page).getByRole('heading', { name: 'New decision' }).waitFor();
+  // An empty title is refused and the dialog stays open.
+  await clickDlg(page, 'Add');
+  await page.getByText('Please enter a title.').waitFor();
+  assert.equal(await dlg(page).count(), 1, 'the check keeps the dialog open');
+  await dlg(page).getByLabel('Title').fill('Typed, then cancelled');
+  await clickDlg(page, 'Cancel');
+  await dlg(page).waitFor({ state: 'detached' });
+  assert.equal(await page.locator('dialog[open]').count(), 0, 'Cancel closes the register dialog');
+  assert.equal(await follow.locator('.list-row').count(), linked, 'nothing was added to the register');
+  // The status reason and the evidence waiver also close on Cancel and change nothing.
+  const status = await page.locator('.status-opt[aria-checked="true"]').getAttribute('data-focus-key');
+  await page.locator('.status-opt[title^="Failed"]').click();
+  await dlg(page).getByLabel('Reason').fill('Cancelled on purpose');
+  await clickDlg(page, 'Cancel');
+  await dlg(page).waitFor({ state: 'detached' });
+  assert.equal(await page.locator('.status-opt[aria-checked="true"]').getAttribute('data-focus-key'), status, 'the status is unchanged');
+  await btn(page, 'Not needed for us').click();
+  await dlg(page).getByLabel('Reason').fill('Cancelled on purpose');
+  await clickDlg(page, 'Cancel');
+  await dlg(page).waitFor({ state: 'detached' });
+  assert.equal(await page.locator('.waiver').count(), 0, 'no waiver was recorded');
+  await btn(page, 'Not needed for us').waitFor();
+});
+
 await step('Do it here: owners flow into steps, workspaces into reports, briefing email copies, "Leave for now" moves on', async () => {
   await go(page, '#/item/PREP-SCOPE-02');
   await page.locator('input[id="own-prepare:access"]').fill('IAM team');
@@ -284,6 +314,32 @@ await step('Do it here: owners flow into steps, workspaces into reports, briefin
   await page.waitForURL(/#\/item\/PREP-SCOPE-02$/);
   await go(page, '#/item/PREP-SCOPE-01');
   await page.locator('button[role="radio"][aria-checked="true"][title^="In progress"]').waitFor();
+});
+
+await step('Decision helper: a verdict only where the step gives one, and the saved choice is recorded as a decision', async () => {
+  await go(page, '#/item/PREP-ACC-03');
+  const tool = page.locator('#do-it-here');
+  await tool.getByText('Answer the questions to see what this step says for your situation.').waitFor();
+  // Limitations alone are trade-offs side by side, not a verdict.
+  await tool.locator('[data-focus-key="hlp-urbac-0-nonhuman-yes"]').click();
+  await tool.getByText('No firm answer from this step yet.').waitFor();
+  await tool.locator('.helper-mine', { hasText: 'It does not support service principal assignments.' }).waitFor();
+  await tool.locator('[data-focus-key="hlp-urbac-0-rowlevel-yes"]').click();
+  await tool.getByText('Your answers need: Activate unified RBAC per workspace, after the transition').waitFor();
+  await tool.locator('[data-focus-key="hlp-urbac-0-choice-activate"]').click();
+  await tool.getByText('Save your choice, then record it as a decision.').waitFor();
+  await tool.getByRole('button', { name: 'Save', exact: true }).click();
+  await tool.getByRole('button', { name: 'Record as a decision' }).click();
+  await dlg(page).getByRole('heading', { name: 'New decision' }).waitFor();
+  assert.equal(await dlg(page).getByLabel('Title').inputValue(), 'Unified RBAC for Sentinel: Activate unified RBAC per workspace, after the transition');
+  const desc = await dlg(page).getByLabel('Description').inputValue();
+  assert.match(desc, /Why:\n- You need row-level access/);
+  assert.match(desc, /Do service principals or managed identities have Sentinel roles\? Yes/);
+  await clickDlg(page, 'Add');
+  await tool.getByText('Recorded in the register').waitFor();
+  await page.locator('.register-actions').getByText('Decision: Unified RBAC for Sentinel: Activate unified RBAC per workspace, after the transition').waitFor();
+  assert.deepEqual(await a11yAudit(page), []);
+  assert.equal(await visibleCodes(page), null);
 });
 
 await step('"Not needed for us" lets a step pass and the report says why', async () => {
@@ -396,7 +452,7 @@ await step('Import read-only inventory results as labelled evidence and confirme
 });
 
 await step('Every main view renders without errors, passes basic accessibility checks and hides item codes', async () => {
-  for (const h of ['#/overview', '#/stage/prepare', '#/stage/transition', '#/stage/validate', '#/item/TRN-10', '#/item/PREP-DET-01', '#/project', '#/answers', '#/questionnaire/q/multi_tenant', '#/register', '#/evidence', '#/reports', '#/knowledge/changes', '#/knowledge/catalogue', '#/knowledge/sources', '#/knowledge/coverage', '#/settings', '#/about']) {
+  for (const h of ['#/overview', '#/stage/prepare', '#/stage/transition', '#/stage/validate', '#/item/TRN-10', '#/item/PREP-DET-01', '#/item/PREP-CON-02', '#/item/PREP-TOP-05', '#/project', '#/answers', '#/questionnaire/q/multi_tenant', '#/register', '#/evidence', '#/reports', '#/knowledge/changes', '#/knowledge/catalogue', '#/knowledge/sources', '#/knowledge/coverage', '#/settings', '#/about']) {
     await go(page, h);
     const problems = await a11yAudit(page);
     assert.deepEqual(problems, [], `${h}: ${problems.join('; ')}`);
@@ -464,6 +520,8 @@ await step('Browser autosave survives a full browser restart (project and screen
   await go(page, '#/item/PREP-SCOPE-01');
   await page.locator('button[role="radio"][aria-checked="true"][title^="Passed"]').waitFor();
   await page.waitForFunction(() => { const i = document.querySelector('.evidence-item img.thumb'); return i && i.naturalWidth === 1; }, null, { timeout: 10000 });
+  await go(page, '#/item/PREP-ACC-03');
+  assert.equal(await page.locator('[data-focus-key="hlp-urbac-0-choice-activate"]').isChecked(), true, 'the helper choice survives the restart');
 });
 
 await step('Malformed, foreign and tampered files are refused without changing anything', async () => {
@@ -503,6 +561,9 @@ await step('Delete browser data, then reopen from the package: statuses, evidenc
   await page.waitForFunction(() => { const i = document.querySelector('.evidence-item img.thumb'); return i && i.naturalWidth === 1; }, null, { timeout: 10000 });
   await go(page, '#/item/PREP-AUT-01');
   await page.getByText('accepted by CISO Example').waitFor();
+  await go(page, '#/item/PREP-ACC-03');
+  assert.equal(await page.locator('[data-focus-key="hlp-urbac-0-rowlevel-yes"]').isChecked(), true, 'helper answers come back from the package');
+  await page.locator('#do-it-here').getByText('Recorded in the register').waitFor();
   await go(page, '#/reports');
   await page.getByText('Readiness gate').waitFor();
 });

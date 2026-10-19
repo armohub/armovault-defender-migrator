@@ -206,7 +206,12 @@ export function modal({ title, body, actions = [], wide = false, onOpen }) {
     };
     const header = h('div', { class: 'modal-head' }, h('h2', { id: titleId }, title), h('button', { class: 'btn-icon', type: 'button', 'aria-label': 'Close dialog', onclick: () => close(undefined) }, icon('x')));
     const content = h('div', { class: 'modal-body' }, typeof body === 'function' ? body(close) : body);
-    const footer = h('div', { class: 'modal-foot' }, actions.map((a) => h('button', { type: 'button', class: ['btn', a.kind && `btn-${a.kind}`], onclick: () => { const v = a.value === undefined ? true : typeof a.value === 'function' ? a.value() : a.value; if (v !== null) close(v); } }, a.label)));
+    // A function value is a validator: returning null keeps the dialog open. A plain value, null included (Cancel), closes it.
+    const footer = h('div', { class: 'modal-foot' }, actions.map((a) => h('button', { type: 'button', class: ['btn', a.kind && `btn-${a.kind}`], onclick: () => {
+      if (typeof a.value !== 'function') { close(a.value === undefined ? true : a.value); return; }
+      const v = a.value();
+      if (v !== null) close(v);
+    } }, a.label)));
     dlg.append(header, content, actions.length ? footer : null);
     dlg.addEventListener('cancel', (e) => { e.preventDefault(); close(undefined); });
     document.body.appendChild(dlg);

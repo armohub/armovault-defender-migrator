@@ -64,7 +64,8 @@ In full-checklist mode every step is `applies`. A reviewer override (`applies` o
   schema, schemaVersion, id, createdAt, updatedAt, createdWith: { appVersion, kbVersion }, isDemo,
   meta: { name, organisation, operatorName, operatorRole, startDate, windowStart, windowEnd, notes,
           environments: [{ alias, kind, tenant, subscription, resourceGroup, region, owner, defender, notes }],  // defender: unknown | not_connected | primary | secondary; one primary per tenant
-          workstreamOwners: { "<stage>:<workstream>": name }, approvers: [{ role, name }], plannedPrimary },
+          workstreamOwners: { "<stage>:<workstream>": name }, approvers: [{ role, name }], plannedPrimary,
+          helpers: { mdc | urbac | tenants: { subjects: [{ label, answers: { [questionId]: optionId | [optionId] }, choice, person }], by, at } } },  // decision helpers; ids only, one subject per tenant for "tenants"
   mode: 'tailored' | 'full',
   answers: { [questionId]: { value, reason, by, at } },
   checks: { [itemId]: { status, statusReason, owner, due, notes, evidenceIds, evidenceWaiver: { reason, by, at } | null, updatedAt, updatedBy, kbVersion, override, history: [...] } },  // "passed" needs evidence or an evidenceWaiver

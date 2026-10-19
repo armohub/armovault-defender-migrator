@@ -15,7 +15,57 @@ const NOT_TEXT = new Set(['tool', 'id', 'dependsOn', 'snippets', 'code', 'url', 
 const BANNED_WORDS = /\b(seamless(?:ly)?|leverag(?:e|es|ed|ing)|utili[sz](?:e|es|ed|ing|ation)|delve|robust|streamlin(?:e|ed|es|ing)|cutting-edge|game-?changer|empower(?:s|ed|ing)?|holistic|synerg(?:y|ies)|paradigm|in order to)\b/i;
 const STEP_KEYS = new Set(['text', 'bullets', 'tip']);
 // Interactive tools a step can show under "Do it here" (src/ui/tools.js).
-const TOOLS = ['workspaces', 'connection', 'primary', 'owners', 'briefing', 'window'];
+const TOOLS = ['workspaces', 'connection', 'primary', 'owners', 'briefing', 'window', 'mdc', 'urbac', 'tenants'];
+// Tools that are decision helpers: they render the step's `helper` (src/core/decision-helper.js).
+const HELPER_TOOLS = ['mdc', 'urbac', 'tenants'];
+const HELPER_ID = /^[a-z][a-z0-9_-]{0,39}$/;
+const RULE_KINDS = ['requires', 'recommends', 'pro', 'con', 'note'];
+
+// The shape of a decision helper. Its words are linted with the rest of the step.
+function checkHelper(c, errors) {
+  const x = c.helper;
+  const bad = (m) => errors.push(`${c.id}: helper ${m}`);
+  const strs = (v) => Array.isArray(v) && v.every((s) => typeof s === 'string' && s);
+  if (!x || typeof x !== 'object') { bad('is missing.'); return; }
+  if (typeof x.decision !== 'string' || !x.decision) bad('needs a decision name.');
+  if (x.per !== undefined && x.per !== 'tenant') bad('"per" can only be "tenant".');
+  if (!Array.isArray(x.questions) || !x.questions.length) { bad('needs questions.'); return; }
+  const qs = new Map();
+  for (const q of x.questions) {
+    if (!q || !HELPER_ID.test(q.id || '') || qs.has(q.id)) { bad(`question id "${q && q.id}" is invalid or repeated.`); continue; }
+    if (typeof q.text !== 'string' || !q.text) bad(`question ${q.id} needs text.`);
+    if (!Array.isArray(q.options) || q.options.length < 2 || !q.options.every((o) => o && HELPER_ID.test(o.id || '') && typeof o.label === 'string' && o.label)) bad(`question ${q.id} needs at least two options with an id and a label.`);
+    else if (new Set(q.options.map((o) => o.id)).size !== q.options.length) bad(`question ${q.id} repeats an option id.`);
+    qs.set(q.id, new Set((q.options || []).map((o) => o && o.id)));
+  }
+  const choices = new Set();
+  if (!Array.isArray(x.choices) || x.choices.length < 2) bad('needs at least two choices.');
+  for (const ch of x.choices || []) {
+    if (!ch || !HELPER_ID.test(ch.id || '') || choices.has(ch.id)) { bad(`choice id "${ch && ch.id}" is invalid or repeated.`); continue; }
+    choices.add(ch.id);
+    if (typeof ch.title !== 'string' || !ch.title || /\[\[|\*\*/.test(ch.title)) bad(`choice ${ch.id} needs a plain title.`);
+    if (typeof ch.summary !== 'string' || !ch.summary) bad(`choice ${ch.id} needs a summary.`);
+    for (const f of ['pros', 'cons', 'todo']) if (ch[f] !== undefined && !(Array.isArray(ch[f]) && (ch[f].length === 0 || strs(ch[f])))) bad(`choice ${ch.id} ${f} must be a list of strings.`);
+  }
+  for (const [i, r] of (x.rules || []).entries()) {
+    const at = `rule ${i + 1}`;
+    if (!r || !RULE_KINDS.includes(r.kind)) { bad(`${at} has an unknown kind.`); continue; }
+    if (typeof r.say !== 'string' || !r.say) bad(`${at} needs "say".`);
+    if (r.kind === 'note' ? r.on !== undefined : !choices.has(r.on)) bad(`${at}: "on" must name a choice (and notes have none).`);
+    if (r.point !== undefined) {
+      const ch = (x.choices || []).find((y) => y && y.id === r.on);
+      const listed = ch ? (r.kind === 'con' ? ch.cons : ch.pros) || [] : [];
+      if (r.kind === 'note' || !Number.isInteger(r.point) || r.point < 0 || r.point >= listed.length) bad(`${at}: "point" must be the index of one of the choice's ${r.kind === 'con' ? 'cons' : 'pros'}.`);
+    }
+    if (!r.when || typeof r.when !== 'object' || !Object.keys(r.when).length) bad(`${at} needs "when".`);
+    for (const [q, vals] of Object.entries(r.when || {})) {
+      if (!qs.has(q)) bad(`${at} uses unknown question "${q}".`);
+      else if (!Array.isArray(vals) || !vals.length || !vals.every((v) => qs.get(q).has(v))) bad(`${at} uses an unknown answer for "${q}".`);
+    }
+  }
+  if (x.notes !== undefined && !strs(x.notes)) bad('notes must be a list of strings.');
+  if (x.person !== undefined && (!x.person || typeof x.person.label !== 'string' || !x.person.label)) bad('person needs a label.');
+}
 
 // Checks one reading-text string. `allowDo` is true only inside a check (step page).
 function lintText(s, where, allowDo, ctx, out) {
@@ -158,6 +208,10 @@ export function validateKb(kb) {
     if (c.criticality === 'critical' && c.provenance === 'official' && c.validation === 'docs-verified' && c.confidence !== 'high') warnings.push(`${label}: critical docs-verified item with confidence ${c.confidence}.`);
     if (c.changesState && !c.steps.some(Boolean)) errors.push(`${label}: state-changing task without steps.`);
     if (c.tool !== undefined && !TOOLS.includes(c.tool)) errors.push(`${label}: unknown tool "${c.tool}".`);
+    if (HELPER_TOOLS.includes(c.tool) || c.helper !== undefined) {
+      if (!HELPER_TOOLS.includes(c.tool)) errors.push(`${label}: a helper needs a decision helper tool (${HELPER_TOOLS.join(', ')}).`);
+      checkHelper(c, errors);
+    }
     ctx.selfId = c.id; ctx.kind = c.kind; ctx.tool = c.tool;
     walk(c, label, true, ctx, out);
     for (const s of c.sources || []) if (s.supports && DASHES.test(s.supports)) errors.push(`${label}: source ${s.id} "supports" contains a long dash.`);

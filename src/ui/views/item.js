@@ -119,7 +119,7 @@ function guidance(c, app, ctx) {
   const why = Array.isArray(c.why) ? renderList(c.why, ctx) : h('p', null, rich(c.why, ctx));
   const needs = [...c.roles, ...c.prerequisites];
   return h('div', null,
-    c.tool && TOOLS[c.tool] ? h('section', { class: 'g-section' }, h('h2', null, icon('edit', 'icon-sm'), `Do it here: ${TOOL_TITLES[c.tool]}`), h('div', { class: 'g-panel do-here', id: 'do-it-here' }, TOOLS[c.tool]())) : null,
+    c.tool && TOOLS[c.tool] ? h('section', { class: 'g-section' }, h('h2', null, icon('edit', 'icon-sm'), `Do it here: ${TOOL_TITLES[c.tool]}`), h('div', { class: 'g-panel do-here', id: 'do-it-here' }, TOOLS[c.tool](c, ctx))) : null,
     c.kind === 'gate' ? h('section', { class: 'g-section' }, h('h2', null, icon('gate', 'icon-sm'), 'Do it here: record the decision'), h('div', { class: 'g-panel do-here', id: 'do-it-here' }, gateForm(c))) : null,
     applicabilitySection(c, app),
     section('Where', 'route',

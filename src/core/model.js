@@ -80,6 +80,7 @@ export function createProject({ meta = {}, mode = 'tailored', appVersion, kbVers
       workstreamOwners: {},
       approvers: [],
       plannedPrimary: '',
+      helpers: {},
       notes: '',
       ...meta,
     },
@@ -461,6 +462,37 @@ export function knownPeople(project) {
   Object.values(project.meta.workstreamOwners || {}).forEach(add);
   (project.meta.approvers || []).forEach((a) => add(a.name));
   (project.meta.environments || []).forEach((e) => add(e.owner));
+  Object.values(project.meta.helpers || {}).forEach((x) => (x.subjects || []).forEach((s) => add(s.person)));
   Object.values(project.checks).forEach((c) => add(c.owner));
   return [...names].sort((a, b) => a.localeCompare(b));
+}
+
+// ───────── Decision helpers ─────────
+// The answers and the chosen approach of a step's decision helper (content: `helper` on the step).
+// One subject per helper, or one per tenant. Who approved the choice is recorded in the register, not here.
+export const HELPER_KEYS = ['mdc', 'urbac', 'tenants'];
+export const MAX_HELPER_SUBJECTS = 100;
+const HELPER_ID = /^[a-z][a-z0-9_-]{0,39}$/;
+
+export function cleanHelperSubject(s) {
+  const t = (v, n) => String(v == null ? '' : v).trim().slice(0, n);
+  const answers = {};
+  for (const [q, v] of Object.entries((s && typeof s.answers === 'object' && s.answers) || {}).slice(0, 20)) {
+    if (!HELPER_ID.test(q)) continue;
+    const vals = (Array.isArray(v) ? v : [v]).filter((x) => typeof x === 'string' && HELPER_ID.test(x)).slice(0, 10);
+    if (!vals.length) continue;
+    answers[q] = Array.isArray(v) ? [...new Set(vals)] : vals[0];
+  }
+  const choice = s && typeof s.choice === 'string' && HELPER_ID.test(s.choice) ? s.choice : '';
+  return { label: t(s && s.label, 120), answers, choice, person: t(s && s.person, 200) };
+}
+
+export function setHelper(project, key, subjects, { detail, ref } = {}) {
+  if (!HELPER_KEYS.includes(key)) return { ok: false, error: 'Unknown decision helper.' };
+  const list = (Array.isArray(subjects) ? subjects : []).slice(0, MAX_HELPER_SUBJECTS).map(cleanHelperSubject);
+  if (!project.meta.helpers) project.meta.helpers = {};
+  project.meta.helpers[key] = { subjects: list, by: actor(project), at: nowIso() };
+  const fallback = list.map((s) => `${s.label ? `${s.label}: ` : ''}${s.choice || 'no choice yet'}`).join('; ');
+  addAudit(project, 'project.helper', detail || `Decision helper "${key}" saved (${fallback})`, ref ? { ref } : undefined);
+  return { ok: true };
 }
