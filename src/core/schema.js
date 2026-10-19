@@ -74,8 +74,18 @@ export function validateProject(input, { kb } = {}) {
   p.meta = {
     name: str(m.name, 200), organisation: str(m.organisation, 200), operatorName: str(m.operatorName, 200), operatorRole: str(m.operatorRole, 200),
     startDate: iso(m.startDate), windowStart: iso(m.windowStart), windowEnd: iso(m.windowEnd), notes: str(m.notes, MAX_TEXT),
-    environments: Array.isArray(m.environments) ? m.environments.slice(0, 50).filter(isPlainObject).map((e) => ({ alias: str(e.alias, 120), kind: oneOf(e.kind, ['production', 'test', 'other'], 'other'), notes: str(e.notes, 2000) })) : [],
+    environments: Array.isArray(m.environments) ? m.environments.slice(0, 50).filter(isPlainObject).map((e) => ({ alias: str(e.alias, 120), kind: oneOf(e.kind, ['production', 'test', 'other'], 'other'), tenant: str(e.tenant, 120), subscription: str(e.subscription, 200), resourceGroup: str(e.resourceGroup, 200), region: str(e.region, 80), owner: str(e.owner, 200), defender: oneOf(e.defender, ['unknown', 'not_connected', 'primary', 'secondary'], 'unknown'), notes: str(e.notes, 2000) })) : [],
+    workstreamOwners: {},
+    plannedPrimary: str(m.plannedPrimary, 120),
+    approvers: Array.isArray(m.approvers) ? m.approvers.slice(0, 30).filter(isPlainObject).map((a) => ({ role: str(a.role, 200), name: str(a.name, 200) })).filter((a) => a.role && a.name) : [],
   };
+  if (isPlainObject(m.workstreamOwners)) {
+    for (const [k, v] of Object.entries(m.workstreamOwners).slice(0, 100)) {
+      if (FORBIDDEN_KEYS.has(k) || !/^[a-z-]+:[a-z-]+$/.test(k)) continue;
+      const name = str(v, 200);
+      if (name) p.meta.workstreamOwners[k] = name;
+    }
+  }
 
   for (const [k, a] of safeEntries(raw.answers, warnings, 'answers', 500)) {
     if (!isPlainObject(a) || !ANSWER_IDS.includes(a.value)) { warnings.push(`Answer "${k}" ignored (invalid value).`); continue; }
@@ -106,9 +116,10 @@ export function validateProject(input, { kb } = {}) {
       // Evidence can only support the check it was recorded on.
       evidenceIds: Array.isArray(c.evidenceIds) ? [...new Set(c.evidenceIds)].filter((id) => safeId(id) && p.evidence[id] && (p.evidence[id].checkId === k || !p.evidence[id].checkId)).slice(0, 500) : [],
       updatedAt: iso(c.updatedAt), updatedBy: str(c.updatedBy, 200), kbVersion: str(c.kbVersion, 40), override: ov, history: sanitiseHistory(c.history),
+      evidenceWaiver: isPlainObject(c.evidenceWaiver) && str(c.evidenceWaiver.reason).trim() ? { reason: str(c.evidenceWaiver.reason, 2000), by: str(c.evidenceWaiver.by, 200), at: iso(c.evidenceWaiver.at) } : null,
     };
-    // Integrity rule: "passed" requires evidence. If evidence is gone, downgrade and say so.
-    if (p.checks[k].status === 'passed' && p.checks[k].evidenceIds.length === 0) {
+    // Integrity rule: "passed" requires evidence or a recorded "evidence not needed". Otherwise downgrade and say so.
+    if (p.checks[k].status === 'passed' && p.checks[k].evidenceIds.length === 0 && !p.checks[k].evidenceWaiver) {
       p.checks[k].status = 'not_verified';
       warnings.push(`${k}: was "Passed" but has no evidence in the file, so it was imported as "Done, not verified".`);
     }
@@ -121,7 +132,7 @@ export function validateProject(input, { kb } = {}) {
   }
   for (const ev of Object.values(p.evidence)) {
     if (!ev.checkId) continue;
-    if (!p.checks[ev.checkId]) p.checks[ev.checkId] = { status: 'not_started', notes: '', owner: '', due: '', statusReason: '', evidenceIds: [], updatedAt: '', updatedBy: '', kbVersion: '', override: null, history: [] };
+    if (!p.checks[ev.checkId]) p.checks[ev.checkId] = { status: 'not_started', notes: '', owner: '', due: '', statusReason: '', evidenceIds: [], updatedAt: '', updatedBy: '', kbVersion: '', override: null, evidenceWaiver: null, history: [] };
     if (!p.checks[ev.checkId].evidenceIds.includes(ev.id)) p.checks[ev.checkId].evidenceIds.push(ev.id);
   }
 

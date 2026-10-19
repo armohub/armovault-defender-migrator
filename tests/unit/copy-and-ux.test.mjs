@@ -49,7 +49,7 @@ test('guidance that sends people somewhere is clickable', () => {
     for (const t of texts) {
       const bare = t.replace(/\[\[[^\]]+\]\]/g, '');
       if (/\b(in|to) the register\b/i.test(bare) && !/\[\[(do|go):/.test(t)) loose.push(`${c.id}: ${t.slice(0, 80)}`);
-      if (/\bproject setup\b/i.test(bare) && !/\[\[go:(project|window|environments)/.test(t)) loose.push(`${c.id}: ${t.slice(0, 80)}`);
+      if (/\bproject setup\b/i.test(bare) && !/\[\[go:(project|window|environments|owners)/.test(t)) loose.push(`${c.id}: ${t.slice(0, 80)}`);
     }
   }
   assert.deepEqual(loose, []);

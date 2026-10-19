@@ -55,25 +55,30 @@ function partial(segs, i, t) {
 }
 
 const VIEW = { w: 1000, h: 250 };
-// Start, one stop per stage, end. Gently climbs left to right.
-const POINTS = [[22, 214], [236, 182], [470, 148], [712, 110], [930, 62], [984, 48]];
+// Start, one stop per stage, end. Gently climbs left to right. One point set per number of stops.
+const POINT_SETS = {
+  4: [[22, 214], [236, 182], [470, 148], [712, 110], [930, 62], [984, 48]],
+  5: [[22, 216], [178, 198], [366, 174], [560, 144], [750, 106], [930, 62], [984, 48]],
+};
 
 function contours() {
   return Array.from({ length: 8 }, (_, i) => s('path', { class: 'route-contour', d: `M-20 ${262 - i * 27} C 220 ${236 - i * 30}, 430 ${270 - i * 34}, 650 ${206 - i * 28} S 900 ${178 - i * 24}, 1030 ${150 - i * 26}` }));
 }
 
-// stages: [{ name, meta, href, state: 'done' | 'current' | 'todo' | 'skipped' }] (four entries)
-// marker: { index, fraction } where index is the stage being worked on (0..3) or 4 when everything is done.
+// stages: [{ name, meta, href, state: 'done' | 'current' | 'todo' | 'skipped' }] (four or five entries)
+// marker: { index, fraction } where index is the stage being worked on, or stages.length when everything is done.
 // Last marker position per route, so the marker glides to its new place when progress changes.
 const lastMarker = new Map();
 
 export function routeView({ stages, marker, animate = true, label = 'Your route', key = 'overview' }) {
+  const N = stages.length;
+  const POINTS = POINT_SETS[N] || POINT_SETS[4];
   const segs = smooth(POINTS);
-  const idx = Math.max(0, Math.min(4, marker.index));
-  const frac = idx >= 4 ? 1 : Math.max(0.04, Math.min(0.96, marker.fraction));
-  const done = idx >= 4 ? segs.slice(0, 5) : partial(segs, idx, frac);
+  const idx = Math.max(0, Math.min(N, marker.index));
+  const frac = idx >= N ? 1 : Math.max(0.04, Math.min(0.96, marker.fraction));
+  const done = idx >= N ? segs.slice(0, N + 1) : partial(segs, idx, frac);
   const doneLen = totalLength(done);
-  const pos = idx >= 4 ? POINTS[5] : bez(segs[idx], frac);
+  const pos = idx >= N ? POINTS[N + 1] : bez(segs[idx], frac);
   const tagW = 104;
   const tagX = Math.min(VIEW.w - tagW - 4, Math.max(4, pos[0] - tagW / 2));
   const tagAbove = pos[1] > 70;
@@ -94,15 +99,15 @@ export function routeView({ stages, marker, animate = true, label = 'Your route'
     s('path', { class: 'route-todo', d: pathD(segs) }),
     done.length ? s('path', { class: ['route-halo', animate && 'route-draw'].filter(Boolean).join(' '), d: pathD(done), style: `--len:${Math.ceil(doneLen) + 2}` }) : null,
     done.length ? s('path', { class: ['route-done', animate && 'route-draw'].filter(Boolean).join(' '), d: pathD(done), style: `--len:${Math.ceil(doneLen) + 2}` }) : null,
-    s('text', { class: 'route-end', x: POINTS[0][0], y: POINTS[0][1] + 28 }, 'AZURE PORTAL'),
-    s('text', { class: 'route-end', x: POINTS[5][0], y: POINTS[5][1] - 18, 'text-anchor': 'end' }, 'DEFENDER PORTAL'),
+    s('text', { class: 'route-end', x: POINTS[0][0], y: POINTS[0][1] + 26 }, s('tspan', { x: POINTS[0][0] }, 'SENTINEL IN THE'), s('tspan', { x: POINTS[0][0], dy: 14 }, 'AZURE PORTAL')),
+    s('text', { class: 'route-end', x: POINTS[N + 1][0], y: POINTS[N + 1][1] - 32, 'text-anchor': 'end' }, s('tspan', { x: POINTS[N + 1][0] }, 'SENTINEL IN THE'), s('tspan', { x: POINTS[N + 1][0], dy: 14 }, 'DEFENDER PORTAL')),
     ...stops,
     s('g', { class: 'route-marker', 'aria-hidden': 'true' },
       s('circle', { class: 'pulse', cx: pos[0], cy: pos[1], r: 15 }),
       s('circle', { class: 'core', cx: pos[0], cy: pos[1], r: 7 }),
       s('g', { class: 'tag', transform: `translate(${f(tagX)} ${f(tagAbove ? pos[1] - 46 : pos[1] + 20)})` },
         s('rect', { width: tagW, height: 26, rx: 7 }),
-        s('text', { x: tagW / 2, y: 17.5, 'text-anchor': 'middle' }, idx >= 4 ? 'You made it' : 'You are here'))));
+        s('text', { x: tagW / 2, y: 17.5, 'text-anchor': 'middle' }, idx >= N ? 'You made it' : 'You are here'))));
   const m = svg.querySelector('.route-marker');
   const prev = lastMarker.get(key);
   lastMarker.set(key, pos);
@@ -117,13 +122,13 @@ export function routeView({ stages, marker, animate = true, label = 'Your route'
 
 // Below 900px the same route runs top to bottom, so every stop stays readable on a phone.
 function verticalRoute(stages, idx, frac) {
-  const items = [h('li', { class: 'rv-end done' }, 'Azure portal')];
+  const items = [h('li', { class: 'rv-end done' }, 'Sentinel in the Azure portal')];
   stages.forEach((st, i) => {
     if (i === idx) items.push(h('li', { class: 'rv-here' }, h('span', { class: 'rv-dot', 'aria-hidden': 'true' }), h('span', { class: 'rv-tag' }, 'You are here'), h('span', { class: 'rv-meta num' }, `${Math.round(frac * 100)}% of ${st.name}`)));
     items.push(h('li', { class: ['rv-stop', st.state, i < idx && 'done'] }, h('a', { href: st.href }, h('span', { class: 'rv-ring', 'aria-hidden': 'true' }), h('b', null, st.name), h('span', { class: /\d/.test(st.meta) ? 'rv-meta num' : 'rv-meta' }, st.meta))));
   });
-  if (idx >= 4) items.push(h('li', { class: 'rv-here' }, h('span', { class: 'rv-dot', 'aria-hidden': 'true' }), h('span', { class: 'rv-tag' }, 'You made it')));
-  items.push(h('li', { class: ['rv-end', idx >= 4 && 'done'] }, 'Defender portal'));
+  if (idx >= stages.length) items.push(h('li', { class: 'rv-here' }, h('span', { class: 'rv-dot', 'aria-hidden': 'true' }), h('span', { class: 'rv-tag' }, 'You made it')));
+  items.push(h('li', { class: ['rv-end', idx >= stages.length && 'done'] }, 'Sentinel in the Defender portal'));
   return h('ol', { class: 'route-v', 'aria-label': 'Your route, top to bottom' }, items);
 }
 
@@ -144,7 +149,7 @@ export function questionStrip({ sections, position }) {
 // Builds the route model from stage summaries (see the overview).
 export function routeModel(kb, stageInfo) {
   // stageInfo: [{ id, name, assessed, inScope, skipped, gateDone, href }]
-  let index = 4;
+  let index = stageInfo.length;
   let fraction = 1;
   for (let i = 0; i < stageInfo.length; i += 1) {
     const st = stageInfo[i];
@@ -157,7 +162,7 @@ export function routeModel(kb, stageInfo) {
     if (st.skipped) state = 'skipped';
     else if (i < index) state = 'done';
     else if (i === index) state = 'current';
-    const meta = st.skipped ? 'skipped' : state === 'done' ? 'done' : `${st.assessed} of ${st.inScope}`;
+    const meta = st.skipped ? 'skipped' : state === 'done' ? 'done' : st.meta || `${st.assessed} of ${st.inScope}`;
     return { name: st.name, meta, href: st.href, state };
   });
   return { stages, marker: { index, fraction } };

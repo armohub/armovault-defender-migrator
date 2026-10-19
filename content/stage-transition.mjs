@@ -69,11 +69,15 @@ export const TRANSITION = [
       'Repeat the exports from [[PREP-PLN-01|the Stage 1 backup]].',
       `Record the location, time and hashes in ${NOTES}.`,
     ],
+    portalWay: [
+      "Export the analytics rules and automation rules: select the rules on **Microsoft Sentinel > Configuration > Analytics** and on **Microsoft Sentinel > Configuration > Automation**, then **Export**. Each export covers one page of rules at a time.",
+      "Open each playbook or workbook resource, or its resource group, in the Azure portal and select **Export template**, then download it. Microsoft notes that export isn't guaranteed to succeed, and a resource group with more than 200 resources can't be exported.",
+    ],
     snippets: ['REST_INVENTORY_CLI'],
     expected: 'You have a backup taken within the change window.',
     record: [`The backup location and time, in ${NOTES}`],
     evidence: ['The backup manifest: [[do:add-file|attach it as a file]]'],
-    sources: [src('exportrules', 'Analytics export'), src('exportauto', 'Automation export')],
+    sources: [src('exportrules', 'Analytics export; portal: export one page of rules at a time'), src('exportauto', 'Automation export; portal: export one page of rules at a time'), src('armexport', 'Export template from a resource or a resource group; export is not guaranteed to succeed; 200 resource limit')],
   }),
   k({
     id: 'TRN-04', stage: 'transition', workstream: 'pre-change', phase: 'pre', order: 40, kind: 'task', criticality: 'high', applicability: q('automation_rules'), changesState: true, dependsOn: ['PREP-AUT-01'],
@@ -111,12 +115,16 @@ export const TRANSITION = [
       },
       `Record each change and its time in ${NOTES}.`,
     ],
+    portalWay: [
+      "Check the result on each Defender for Cloud connector page in the Azure portal (**Microsoft Sentinel > Configuration > Data connectors**). The legacy connector lists your subscriptions with their connection **Status**, and a connected connector shows the **Data received** graph.",
+      "Check that the planned rules are off: on the **Active rules** tab of **Microsoft Sentinel > Configuration > Analytics**, filter by rule type and read the status column.",
+    ],
     snippets: ['K_MDC_ALERTS'],
     expected: 'The connectors are configured as decided.',
     record: [`Each change and its time, in ${NOTES}`],
     evidence: ['Screenshots of the connectors: [[do:add-screenshot|attach a screenshot]]'],
     rollback: ['If the change causes loss of Defender for Cloud alerts, reconnect the previous connector configuration.'],
-    sources: [src('onboard', 'Defender for Cloud prerequisite'), src('mdcxdr', 'Prevent duplicates'), src('mdcalerts', 'Connector hidden in the Defender portal')],
+    sources: [src('onboard', 'Defender for Cloud prerequisite'), src('mdcxdr', 'Prevent duplicates'), src('mdcalerts', 'Connector hidden in the Defender portal; portal: the connector page lists subscriptions and their connection status'), src('configconnector', 'A connected connector page shows the Data received graph'), src('fusionconfig', 'The Active rules tab can be filtered by rule type and shows each rule status')],
   }),
   k({
     id: 'TRN-06', stage: 'transition', workstream: 'pre-change', phase: 'pre', order: 60, kind: 'task', criticality: 'high', applicability: q('irm'), changesState: true, dependsOn: ['PREP-CON-03'],
@@ -179,11 +187,16 @@ export const TRANSITION = [
       },
       '[[do:add-file|Attach the results]] with the time they were taken.',
     ],
+    portalWay: [
+      "Use the **Data collection health monitoring** workbook for freshness: its **Overview** tab shows volume and the time the last log was received.",
+      "Open **Microsoft Sentinel > Threat management > Incidents** in the Azure portal and note the counts of open incidents at the top of the page.",
+      "Open the **Analytics Health & Audit** and **Automation health** workbooks under **Microsoft Sentinel > Threat management > Workbooks** for health. Workbooks show only data you have permission to read.",
+    ],
     snippets: ['K_USAGE_LASTSEEN', 'K_INCIDENTS_BY_PROVIDER', 'K_HEALTH_OVERVIEW'],
     expected: 'You have a timestamped snapshot.',
     record: [`The snapshot time, in ${NOTES}`],
     evidence: ['The CSV exports: [[do:add-file|attach them as files]]'],
-    sources: [src('usage', 'Usage'), src('healthtables', 'Health')],
+    sources: [src('usage', 'Usage'), src('healthtables', 'Health'), src('connectorhealth', 'Data collection health monitoring workbook; Overview tab shows volume and time last log received'), src('triageincidents', 'Incidents page counts of open incidents'), src('rulehealth', 'Analytics Health & Audit workbook'), src('autohealth', 'Automation health workbook'), src('workbooks', 'Workbooks are under Threat management > Workbooks'), src('azworkbooks', 'Workbook permissions are based on the permissions you have for the resources the workbook uses')],
   }),
 
   // Change
@@ -210,10 +223,10 @@ export const TRANSITION = [
     ],
     expected: 'The workspace(s) are connected with the intended primary.',
     record: [
-      `The connection time (UTC), in ${NOTES}`,
-      `The operator who performed it, in ${NOTES}`,
-      `The workspaces and the primary you selected, in ${NOTES}`,
-      `The options you selected, in ${NOTES}`,
+      "The connection time (UTC), in [[do:write-notes|this step's notes]]",
+      "Who performed it, if not you, in [[do:write-notes|this step's notes]]. Your own name and the time are recorded when you set the status.",
+      "The workspaces and the primary you selected, in [[do:write-notes|this step's notes]]",
+      "The options you selected, in [[do:write-notes|this step's notes]]"
     ],
     evidence: [
       'A screenshot of the product-change screen: [[do:add-screenshot|attach a screenshot]]',
@@ -254,6 +267,10 @@ export const TRANSITION = [
       'In multi-workspace setups, confirm standalone connectors are disconnected in secondary workspaces.',
       'Confirm Microsoft Sentinel Contributor is assigned to the "Microsoft Threat Protection" and "WindowsDefenderATP" apps.',
     ],
+    portalWay: [
+      "Open the **Active rules** tab on **Microsoft Sentinel > Configuration > Analytics** and filter by the **Fusion** rule type. The status column shows whether **Advanced Multistage Attack Detection** is enabled or disabled. Filter by **Microsoft security** to check those rules the same way.",
+      "Open the **Microsoft Defender XDR** connector page on the primary workspace (**Microsoft Sentinel > Configuration > Data connectors** in the Azure portal). Its data graph shows one line each for incidents, alerts and events.",
+    ],
     snippets: ['PS_ANALYTICS_SCAN'],
     expected: 'You observed all the documented changes and no unexpected ones.',
     record: [`The state you observed for each item, in ${NOTES}`],
@@ -261,7 +278,7 @@ export const TRANSITION = [
       'The scan CSV: [[do:add-file|attach it as a file]]',
       'Screenshots: [[do:add-screenshot|attach a screenshot]]',
     ],
-    sources: [src('move', 'Changes applied on onboarding'), src('xdrint', 'Connector and rule changes'), src('multiws', 'Connector placement')],
+    sources: [src('move', 'Changes applied on onboarding'), src('xdrint', 'Connector and rule changes'), src('multiws', 'Connector placement'), src('fusionconfig', 'Find Advanced Multistage Attack Detection by filtering Active rules for the Fusion type; the status column shows enabled or disabled'), src('createincidents', 'Microsoft security rule type on the Analytics page'), src('xdrconnector', 'Connector page data graph with one line each for incidents, alerts and events')],
   }),
   k({
     id: 'TRN-13', stage: 'transition', workstream: 'post-change', phase: 'post', order: 130, kind: 'check', criticality: 'critical', dependsOn: ['TRN-10'],
@@ -277,6 +294,10 @@ export const TRANSITION = [
       'Run the Microsoft XDR incidents query in the workspace.',
       'Compare the volume with [[TRN-09|the pre-change snapshot]].',
     ],
+    portalWay: [
+      "Open **Investigation & response > Incidents & alerts > Incidents** in the Defender portal and add the **Service/detection sources** filter for **Microsoft Sentinel**. Set the same time range as your snapshot; the total number of incidents shows next to the time selector. Select **Most recent incidents and alerts** for a chart of the last 24 hours.",
+      "Open the **Microsoft Defender XDR** connector page in the Azure portal: its data graph shows one line each for incidents, alerts and events.",
+    ],
     snippets: ['K_XDR_INCIDENTS', 'K_XDR_TREND'],
     expected: 'New incidents appear within the expected time.',
     interpret: [outcome('No new incidents after the expected time', 'Incidents are not arriving as expected. Check the connector, rule health and correlation settings, and consider [[PREP-PLN-03|the rollback trigger]].')],
@@ -285,7 +306,7 @@ export const TRANSITION = [
       'A screenshot of the incident queue: [[do:add-screenshot|attach a screenshot]]',
       'The query output: [[do:add-file|attach it as a file]]',
     ],
-    sources: [src('xdrconnector', 'Microsoft XDR incidents query'), src('automation', 'Sync delay message')],
+    sources: [src('xdrconnector', 'Microsoft XDR incidents query; portal: connector page data graph with one line each for incidents, alerts and events'), src('automation', 'Sync delay message'), src('incidentqueue', 'Incident queue filters, time range, total count and the Most recent incidents and alerts chart')],
   }),
   k({
     id: 'TRN-14', stage: 'transition', workstream: 'post-change', phase: 'post', order: 140, kind: 'task', criticality: 'high', changesState: true, dependsOn: ['PREP-DET-05'],
@@ -342,6 +363,11 @@ export const TRANSITION = [
       'Collect analyst feedback.',
       '[[do:add-issue|Log each issue in the register]].',
     ],
+    portalWay: [
+      "Open the **Automation health** and **Analytics Health & Audit** workbooks under **Microsoft Sentinel > Threat management > Workbooks** at each agreed interval. They show failed automation rule runs, playbook trigger failures and failed analytics rule runs. Workbooks show only data you have permission to read.",
+      "Use the **Data collection health monitoring** workbook to spot ingestion problems: its **Data collection anomalies** tab flags anomalies by table and data source.",
+      "Filter the Defender incident queue (**Investigation & response > Incidents & alerts > Incidents**) by **Service/detection sources**, for example **Microsoft Defender for Cloud**, to look for duplicates and gaps.",
+    ],
     snippets: ['K_AUTOMATION_FAILURES', 'K_HEALTH_OVERVIEW', 'K_INCIDENTS_BY_PROVIDER'],
     expected: 'Issues are detected and logged early.',
     record: [
@@ -349,7 +375,7 @@ export const TRANSITION = [
       'Issues found: [[do:add-issue|add each one to the register]]',
     ],
     evidence: ['The query outputs: [[do:add-file|attach them as files]]'],
-    sources: [src('autohealth', 'Automation health'), src('rulehealth', 'Analytics rule health')],
+    sources: [src('autohealth', 'Automation health; portal: Automation health workbook'), src('rulehealth', 'Analytics rule health; portal: Analytics Health & Audit workbook'), src('workbooks', 'Workbooks are under Threat management > Workbooks'), src('azworkbooks', 'Workbook permissions are based on the permissions you have for the resources the workbook uses'), src('connectorhealth', 'Data collection anomalies tab of the Data collection health monitoring workbook'), src('incidentqueue', 'Incident queue Service/detection sources filter')],
   }),
   k({
     id: 'TRN-17', stage: 'transition', workstream: 'post-change', phase: 'post', order: 170, kind: 'gate', criticality: 'critical',
@@ -365,11 +391,11 @@ export const TRANSITION = [
       'If you are rolling back, follow [[PREP-PLN-03|the rollback plan]].',
       `If you rolled back, record each rollback step in ${NOTES}.`,
       '[[do:record-gate|Record the decision]] with the decision maker\'s name and role.',
-      'Save a snapshot of the [[go:report:transition|transition execution report]] on [[go:reports|the Reports page]].',
+      '[[do:save-snapshot|Save a snapshot]] of the [[go:report:transition|transition execution report]].',
     ],
     expected: 'The outcome is recorded and an execution report snapshot is saved.',
     record: ['The outcome and who decided, in [[do:record-gate|the gate decision form]]'],
-    evidence: ['The execution report snapshot, saved on [[go:reports|the Reports page]]'],
+    evidence: ['The execution report snapshot: [[do:save-snapshot|save it now]]'],
     sources: [src('onboard', 'Disconnect procedure (if rolling back)')],
   }),
 ];

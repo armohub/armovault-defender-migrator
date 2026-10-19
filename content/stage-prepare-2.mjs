@@ -37,6 +37,9 @@ export const PREPARE_2 = [
         ],
       },
     ],
+    portalWay: [
+      "Open **Microsoft Sentinel > Configuration > Data connectors** in the Azure portal, select **Microsoft Defender XDR**, then **Open connector page**. The **Configuration** section shows its three parts, and the data graph shows one line each for incidents, alerts and events. This confirms data is arriving without a query.",
+    ],
     snippets: ['K_XDR_INCIDENTS'],
     expected: 'The connector state is documented for each workspace, and the plan confirms that incidents and alerts are on for the primary.',
     record: [
@@ -44,7 +47,7 @@ export const PREPARE_2 = [
       'The event tables that are streamed, in [[do:write-notes|this step\'s notes]]',
     ],
     evidence: ['A screenshot of the connector page: [[do:add-screenshot|attach a screenshot]]'],
-    sources: [src('xdrint', 'Automatic connection when licensed; standalone connectors disconnected'), src('xdrconnector', 'Connector sections; automatic enablement on onboarding; checkbox behaviour'), src('move', 'Make sure incidents and alerts from this connector are turned on'), src('multiws', 'Connector attached to the primary workspace only'), src('schemadiff', 'Schema and filtering differences')],
+    sources: [src('xdrint', 'Automatic connection when licensed; standalone connectors disconnected'), src('xdrconnector', 'Connector sections; automatic enablement on onboarding; checkbox behaviour; portal: connector page Configuration sections and the data graph with one line each for incidents, alerts and events'), src('move', 'Make sure incidents and alerts from this connector are turned on'), src('multiws', 'Connector attached to the primary workspace only'), src('schemadiff', 'Schema and filtering differences')],
   }),
   k({
     id: 'PREP-CON-02', stage: 'prepare', workstream: 'connectors', order: 20, kind: 'decision', criticality: 'high', applicability: q('mdc'), validation: 'needs-review', confidence: 'medium', testable: true,
@@ -76,6 +79,11 @@ export const PREPARE_2 = [
       },
       '[[do:add-decision|Add the decision to the register]], with the implementation steps for [[go:stage:transition|Stage 2]].',
     ],
+    portalWay: [
+      "Open **Microsoft Sentinel > Configuration > Data connectors** in the Azure portal. Open the page of **Subscription-based Microsoft Defender for Cloud (Legacy)** and of **Tenant-based Microsoft Defender for Cloud (Preview)**. Under **Configuration**, the legacy connector lists your subscriptions and the status of their connection.",
+      "Find the Microsoft incident creation rules: on the **Active rules** tab of **Microsoft Sentinel > Configuration > Analytics**, filter by the **Microsoft security** rule type. Open each rule to see its **Microsoft security service**.",
+      "Export the analytics rules from **Microsoft Sentinel > Configuration > Analytics**: select the rules, then **Export**. Search the file for Azure Security Center, the product name of Defender for Cloud alerts, to find scheduled rules that query them. The file includes each scheduled rule's query.",
+    ],
     snippets: ['K_MDC_ALERTS', 'PS_ANALYTICS_SCAN'],
     expected: 'A recorded decision that lists the rule changes needed.',
     record: [
@@ -87,7 +95,7 @@ export const PREPARE_2 = [
       'Connector screenshots: [[do:add-screenshot|attach a screenshot]]',
       'The query results: [[do:add-file|attach a file]]',
     ],
-    sources: [src('onboard', 'Tenant-based connector in primary; disconnect legacy, or keep legacy if no tenant-correlated data wanted'), src('mdcxdr', 'Steps to prevent duplicate alerts and incidents'), src('mdcincidents', 'Empty alerts risk; close incidents with automation rules'), src('mdcalerts', 'Connector not listed in the Defender portal Data connectors page; KQL sample'), src('move', 'Prevent duplicate events and alerts with the tenant-based connector; hidden connectors')],
+    sources: [src('onboard', 'Tenant-based connector in primary; disconnect legacy, or keep legacy if no tenant-correlated data wanted'), src('mdcxdr', 'Steps to prevent duplicate alerts and incidents'), src('mdcincidents', 'Empty alerts risk; close incidents with automation rules'), src('mdcalerts', 'Connector not listed in the Defender portal Data connectors page; KQL sample; portal: connector pages, list of subscriptions and their connection status; product name Azure Security Center'), src('move', 'Prevent duplicate events and alerts with the tenant-based connector; hidden connectors'), src('createincidents', 'Microsoft security rule type filter on the Analytics page and the Microsoft security service field'), src('fusionconfig', 'The Active rules tab can be filtered by rule type and shows each rule status'), src('exportrules', 'Export from the Analytics page; the file includes the query of scheduled rules')],
     caveats: ['No current Microsoft page fetched on 2026-10-19 documents a UI path to "opt out" of Defender for Cloud incident sync into Defender XDR. Treat older guidance that describes an opt-out as possibly outdated.', 'The tenant-based connector is labelled preview.'],
   }),
   k({
@@ -126,6 +134,11 @@ export const PREPARE_2 = [
       'Write down the freshness you expect for each critical table, in [[do:write-notes|this step\'s notes]].',
       'Optionally, run the exact last-record query for the critical tables only. It is expensive.',
     ],
+    portalWay: [
+      "Open **Log Analytics workspaces** in the Azure portal, choose the workspace, then **Monitoring > Insights** and the **Usage** tab. It shows how much data each table received in the time range you set (24 hours by default), grouped by solution, and whether it's billable. Its last update time is when usage statistics were refreshed, not when the last record arrived. You need read access to the workspace, for example **Log Analytics Reader**.",
+      "Select **Usage and estimated costs** on the workspace menu. It charts billable data ingestion by solution over the past 31 days.",
+      "Install the **Data collection health monitoring** workbook from the **Content hub** for freshness, then open it from the **Templates** tab of **Microsoft Sentinel > Threat management > Workbooks**. Its **Overview** tab shows volume, events per second and the time the last log was received. Workbooks show only data you have permission to read.",
+    ],
     snippets: ['K_USAGE_BY_TABLE', 'K_USAGE_LASTSEEN', 'K_UNION_LASTRECORD'],
     expected: 'Dated baseline files for each workspace, and a list of critical tables with their expected freshness.',
     record: [
@@ -133,7 +146,7 @@ export const PREPARE_2 = [
       'The run time and workspace of each baseline, in the title of each [[go:evidence|evidence]] file',
     ],
     evidence: ['CSV exports of the queries: [[do:add-file|attach a file]]'],
-    sources: [src('usage', 'Usage table analysis'), src('union', 'union operator cost guidance'), src('move', 'Non-Microsoft connectors continue operating without interruption')],
+    sources: [src('usage', 'Usage table analysis; portal: Workspace Insights Usage tab and the Usage and estimated costs page'), src('union', 'union operator cost guidance'), src('move', 'Non-Microsoft connectors continue operating without interruption'), src('wsinsights', 'Workspace menu Monitoring > Insights; Usage tab per table and solution; usage statistics refresh hourly; read permissions needed'), src('costusage', 'Usage and estimated costs on the workspace menu shows billable ingestion by solution for the past 31 days'), src('connectorhealth', 'Data collection health monitoring workbook from the Content hub; Overview tab shows volume, EPS and time last log received'), src('azworkbooks', 'Workbook permissions are based on the permissions you have for the resources the workbook uses')],
     practiceNotes: ['Name evidence files consistently, for example "baseline-ingestion-<workspace>-<yyyymmdd>.csv". You will compare them in [[go:stage:validate|Stage 3]].'],
   }),
   k({
@@ -154,6 +167,10 @@ export const PREPARE_2 = [
         tip: 'You will use them as representative detections in testing and validation.',
       },
     ],
+    portalWay: [
+      "Open **Microsoft Sentinel > Threat management > Incidents** in the Azure portal. The top of the page shows the counts of open incidents, new or active, and of open incidents by severity. Filter the list by status, severity or product name to count each group.",
+      "Select one rule on **Microsoft Sentinel > Configuration > Analytics** and open the **Insights** tab. **Alert graph** shows how many alerts the rule generated in the time frame you choose, and **Incident classification** summarises its closed incidents. This preview covers Scheduled and NRT rules and needs analytics rule health monitoring turned on.",
+    ],
     snippets: ['K_ALERTS_BY_PRODUCT', 'K_INCIDENTS_BY_PROVIDER', 'K_INCIDENTS_BY_RULE'],
     expected: 'Dated baseline files for each workspace.',
     record: [
@@ -161,7 +178,7 @@ export const PREPARE_2 = [
       'The run times, in the title of each [[go:evidence|evidence]] file',
     ],
     evidence: ['CSV exports: [[do:add-file|attach a file]]'],
-    sources: [src('move', 'Provider name always Microsoft XDR; incident names may change'), src('schemadiff', 'Alert schema differences'), src('securityincidenttable', 'SecurityIncident columns')],
+    sources: [src('move', 'Provider name always Microsoft XDR; incident names may change'), src('schemadiff', 'Alert schema differences'), src('securityincidenttable', 'SecurityIncident columns'), src('triageincidents', 'Incidents page shows counts of open incidents and filters by status, severity and product name'), src('ruleinsights', 'Insights tab with alert graph and incident classification per rule; preview; Scheduled and NRT rules; needs analytics rule health monitoring')],
   }),
   k({
     id: 'PREP-CON-06', stage: 'prepare', workstream: 'connectors', order: 60, kind: 'task', criticality: 'high', changesState: true,
@@ -180,6 +197,10 @@ export const PREPARE_2 = [
       'Wait for events to be generated.',
       'Run the verification query.',
     ],
+    portalWay: [
+      "Go back to **Auditing and health monitoring** on the settings page you used. Once it's on, the button shows **Enabled**. Select **Configure diagnostic settings** to see the diagnostic settings it added. This confirms the setting, not that events are arriving.",
+      "Open the **Insights** tab of a scheduled rule on the **Analytics** page, or install the **Analytics Health & Audit** workbook from the **Content hub**, to see health events arriving. Both read the health data, which appears only after the first event.",
+    ],
     snippets: ['K_HEALTH_TAKE'],
     expected: 'The verification query returns rows from _SentinelHealth() and _SentinelAudit().',
     interpret: [
@@ -194,7 +215,7 @@ export const PREPARE_2 = [
       'A screenshot of the setting: [[do:add-screenshot|attach a screenshot]]',
       'The query result: [[do:add-file|attach a file]]',
     ],
-    sources: [src('enablehealth', 'How to enable; table creation at first event; coverage'), src('healthaudit', 'Billing of SentinelHealth and SentinelAudit'), src('connectorhealth', 'Connector types covered by health monitoring')],
+    sources: [src('enablehealth', 'How to enable; table creation at first event; coverage; portal: the Enable button shows Enabled; Configure diagnostic settings link to view the settings'), src('healthaudit', 'Billing of SentinelHealth and SentinelAudit'), src('connectorhealth', 'Connector types covered by health monitoring'), src('ruleinsights', 'Rule insights are based on the health and audit data'), src('rulehealth', 'Analytics Health & Audit workbook from the Content hub; SentinelHealth is created at the first event')],
   }),
   k({
     id: 'PREP-CON-07', stage: 'prepare', workstream: 'connectors', order: 70, kind: 'check', criticality: 'medium', applicability: q('standalone_connectors'), testable: true,
@@ -211,11 +232,15 @@ export const PREPARE_2 = [
       'List the affected items in [[do:write-notes|this step\'s notes]].',
       '[[do:add-action|Add an action]] for each planned update.',
     ],
+    portalWay: [
+      "Export the analytics rules from **Microsoft Sentinel > Configuration > Analytics**: select the rules, then **Export**. The file includes each scheduled rule's query, so you can search it for SecurityAlert and the fields on the schema differences page. Export works one page of rules at a time.",
+      "Open **Microsoft Sentinel > Threat management > Hunting**, select a query on the **Queries** tab and review its query in the details pane.",
+    ],
     snippets: ['PS_ANALYTICS_SCAN', 'REST_SAVED_SEARCHES'],
     expected: 'A list of affected content with planned changes.',
     record: ['The affected content, in [[do:write-notes|this step\'s notes]], with each planned update as an [[do:add-action|action]]'],
     evidence: ['The list of items: [[do:add-note|add it as a note]] or [[do:add-file|attach a file]]'],
-    sources: [src('schemadiff', 'Schema differences')],
+    sources: [src('schemadiff', 'Schema differences'), src('exportrules', 'Export from the Analytics page; the file includes the query of scheduled rules; one page of rules at a time'), src('hunting', 'Queries tab lists installed and custom hunting queries; the query is shown in the details pane')],
   }),
 
   // ───────────────────────── Analytics rules, correlation and incidents ─────────────────────────
@@ -257,6 +282,9 @@ export const PREPARE_2 = [
         tip: 'The **Import inventory results** button is also on the [[go:stage:prepare|Stage 1 page]].',
       },
     ],
+    portalWay: [
+      "Open the **Active rules** tab on **Microsoft Sentinel > Configuration > Analytics**. Select the check box in the header row to select the rules on the page, then **Export**, and repeat for each page. Any type of rule can be exported, not only Scheduled rules.",
+    ],
     snippets: ['PS_INVENTORY_SCRIPT', 'REST_INVENTORY_CLI', 'PS_ANALYTICS_SCAN'],
     expected: 'A complete export and a scan summary for every workspace.',
     record: [
@@ -268,7 +296,7 @@ export const PREPARE_2 = [
       'The scan CSV: [[do:add-file|attach a file]]',
       'A reference to the export file: [[do:add-note|add a note]] with its location. Do not attach large exports if your policy forbids it; record the location instead.',
     ],
-    sources: [src('exportrules', 'Export UI, preview, page limit, file names'), src('sialertrules', 'Alert rules list API and rule kinds per version'), src('siversions', 'Current stable and preview API versions'), src('move', 'Analytics rule functionality remains the same'), src('azcli', 'az sentinel list commands are labelled experimental; prefer az rest')],
+    sources: [src('exportrules', 'Export UI, preview, page limit, file names; portal: header check box selects one page of rules; any rule type can be exported'), src('sialertrules', 'Alert rules list API and rule kinds per version'), src('siversions', 'Current stable and preview API versions'), src('move', 'Analytics rule functionality remains the same'), src('azcli', 'az sentinel list commands are labelled experimental; prefer az rest'), src('createrules', 'Rules are listed on the Active rules tab of the Analytics page')],
   }),
   k({
     id: 'PREP-DET-02', stage: 'prepare', workstream: 'detections', order: 20, kind: 'check', criticality: 'high', applicability: q('fusion'), validation: 'needs-review', confidence: 'medium', testable: true,
@@ -325,6 +353,10 @@ export const PREPARE_2 = [
       },
       '[[do:add-decision|Add a decision]] for each rule.',
     ],
+    portalWay: [
+      "Open the **Active rules** tab on **Microsoft Sentinel > Configuration > Analytics** and filter by the **Microsoft security** rule type. The list shows your Microsoft incident creation rules, and the status column shows whether each one is enabled.",
+      "Select a rule, then **Edit**, to read its filters: the **Microsoft security service**, **Filter by severity** and any text filters on alert names.",
+    ],
     snippets: ['PS_ANALYTICS_SCAN'],
     expected: 'Each rule has a documented replacement.',
     record: [
@@ -336,7 +368,7 @@ export const PREPARE_2 = [
       'The scan CSV: [[do:add-file|attach a file]]',
       'The decision list, in the [[go:register|register]]',
     ],
-    sources: [src('move', 'Deactivated to avoid duplicates; not supported'), src('xdrint', 'Replacements: alert tuning, automation rules, tags, scheduled rules for non-XDR products'), src('migrategrouping', '"Retain Sentinel incident creation behavior for XDR alerts" option and validation'), src('createincidents', 'Scheduled rules for products not integrated')],
+    sources: [src('move', 'Deactivated to avoid duplicates; not supported'), src('xdrint', 'Replacements: alert tuning, automation rules, tags, scheduled rules for non-XDR products'), src('migrategrouping', '"Retain Sentinel incident creation behavior for XDR alerts" option and validation'), src('createincidents', 'Scheduled rules for products not integrated; portal: Microsoft security rule type filter; service, severity and alert name filters'), src('fusionconfig', 'Active rules tab filtered by rule type; status column; Edit from the rule preview pane')],
   }),
   k({
     id: 'PREP-DET-04', stage: 'prepare', workstream: 'detections', order: 40, kind: 'check', criticality: 'high', applicability: q('alert_only_rules'), testable: true,
@@ -362,6 +394,10 @@ export const PREPARE_2 = [
       '[[do:add-decision|Add each decision to the register]].',
       '[[do:add-action|Add an action]] for each change you need to implement.',
     ],
+    portalWay: [
+      "Open each scheduled rule from the **Active rules** tab on **Microsoft Sentinel > Configuration > Analytics**, select **Edit** and go to the **Incident settings** tab. **Create incidents from alerts triggered by this analytics rule** shows **Enabled** or **Disabled**.",
+      "Export the rules from the **Analytics** page to review many at once. The file includes each scheduled rule's incident creation setting.",
+    ],
     snippets: ['PS_ANALYTICS_SCAN'],
     expected: 'A decision for each alert-only rule.',
     record: ['The rules and their decisions: [[do:add-decision|add a decision]] for each'],
@@ -369,7 +405,7 @@ export const PREPARE_2 = [
       'The scan CSV: [[do:add-file|attach a file]]',
       'The decision list, in the [[go:register|register]]',
     ],
-    sources: [src('move', 'Alert-only rule alerts not visible in the Defender portal'), src('createrules', 'Leave incident creation enabled when onboarded'), src('autorules', 'Alert-trigger automation for rules without incidents'), src('comparerules', 'Custom detections cannot create alerts without incidents')],
+    sources: [src('move', 'Alert-only rule alerts not visible in the Defender portal'), src('createrules', 'Leave incident creation enabled when onboarded; portal: Incident settings tab and the Create incidents from alerts triggered by this analytics rule setting'), src('autorules', 'Alert-trigger automation for rules without incidents'), src('comparerules', 'Custom detections cannot create alerts without incidents'), src('fusionconfig', 'Select a rule on the Active rules tab, then Edit in the preview pane'), src('exportrules', 'The exported file includes incident creation settings of scheduled rules')],
     caveats: ['Microsoft does not state where alert-only alerts can be queried after the transition. The workspace SecurityAlert table is the likely place, but this is an inference.'],
   }),
   k({
@@ -402,6 +438,10 @@ export const PREPARE_2 = [
       '[[do:add-decision|Add the decision to the register]].',
       '[[do:add-action|Add an action]] to read the actual tenant setting after connection.',
     ],
+    portalWay: [
+      "Open a rule on the **Active rules** tab of **Microsoft Sentinel > Configuration > Analytics**, select **Edit** and go to the **Incident settings** tab. The **Alert grouping** section shows whether **Group related alerts, triggered by this analytics rule, into incidents** and **Re-open closed matching incidents** are enabled.",
+      "Export the rules from the **Analytics** page to review many at once. The file includes each scheduled rule's alert grouping settings.",
+    ],
     snippets: ['PS_ANALYTICS_SCAN'],
     expected: 'A documented correlation decision and a list of processes to adapt.',
     record: [
@@ -410,7 +450,7 @@ export const PREPARE_2 = [
       'The affected processes, in [[do:write-notes|this step\'s notes]]',
     ],
     evidence: ['The decision record, in the [[go:register|register]]'],
-    sources: [src('corrsettings', 'Default exclusion, tenant setting, per-rule options and tags, precedence'), src('move', 'Correlation engine controls grouping; closed incidents not reopened'), src('createrules', 'Re-open closed matching incidents not available'), src('automation', 'Incident names might change if correlation is applied'), src('correlation', 'Correlation and merging behaviour')],
+    sources: [src('corrsettings', 'Default exclusion, tenant setting, per-rule options and tags, precedence'), src('move', 'Correlation engine controls grouping; closed incidents not reopened'), src('createrules', 'Re-open closed matching incidents not available; portal: Alert grouping settings, including Re-open closed matching incidents, on the Incident settings tab'), src('automation', 'Incident names might change if correlation is applied'), src('correlation', 'Correlation and merging behaviour'), src('fusionconfig', 'Select a rule on the Active rules tab, then Edit in the preview pane'), src('exportrules', 'The exported file includes event and alert grouping settings of scheduled rules')],
     caveats: ['Microsoft pages describe correlation differently. The transition guide says the engine "fully controls" grouping; the correlation settings page says analytics rules are excluded by default. Verify the setting in your tenant.'],
   }),
   k({
@@ -428,11 +468,14 @@ export const PREPARE_2 = [
       'Plan alert tuning or rule changes to handle duplicates.',
       'Write the list in [[do:write-notes|this step\'s notes]].',
     ],
+    portalWay: [
+      "Export the analytics rules from **Microsoft Sentinel > Configuration > Analytics**: select the rules, then **Export**. Search the file for the tables that hold your third-party alerts, such as CrowdStrike. The file includes each scheduled rule's query.",
+    ],
     snippets: ['PS_ANALYTICS_SCAN'],
     expected: 'A list of potential duplicates and how you plan to handle them.',
     record: ['The potential duplicates, in [[do:write-notes|this step\'s notes]]'],
     evidence: ['The list: [[do:add-note|add it as a note]] or [[do:add-file|attach a file]]'],
-    sources: [src('move', 'Alert promotion; review rules for duplicates'), src('investigatealerts', 'Alert promotion sources and duplicates; alert tuning')],
+    sources: [src('move', 'Alert promotion; review rules for duplicates'), src('investigatealerts', 'Alert promotion sources and duplicates; alert tuning'), src('exportrules', 'Export from the Analytics page; the file includes the query of scheduled rules')],
   }),
   k({
     id: 'PREP-DET-07', stage: 'prepare', workstream: 'detections', order: 70, kind: 'task', criticality: 'medium', dependsOn: ['PREP-CON-06'],
@@ -445,11 +488,15 @@ export const PREPARE_2 = [
       'Export the result and [[do:add-file|attach it to this step]].',
       'Fix existing failures, or record them in [[do:write-notes|this step\'s notes]].',
     ],
+    portalWay: [
+      "Install the **Analytics Health & Audit** workbook from the **Content hub**, then open it from the **Templates** tab of **Microsoft Sentinel > Threat management > Workbooks**. The **Health** tab shows successful and failed rule runs, their reasons, and each rule's latest results. Workbooks show only data you have permission to read.",
+      "Select one rule on the **Analytics** page and open the **Insights** tab. **Failed executions** and **Top health issues** cover the time frame you choose. This preview covers Scheduled and NRT rules.",
+    ],
     snippets: ['K_RULE_HEALTH', 'K_HEALTH_OVERVIEW'],
     expected: 'A dated health baseline.',
     record: ['Existing failures, in [[do:write-notes|this step\'s notes]]'],
     evidence: ['The CSV export: [[do:add-file|attach a file]]'],
-    sources: [src('rulehealth', 'Analytics rule health queries')],
+    sources: [src('rulehealth', 'Analytics rule health queries; portal: Analytics Health & Audit workbook and its Health tab'), src('ruleinsights', 'Insights tab with failed executions and top health issues; preview; Scheduled and NRT rules'), src('azworkbooks', 'Workbook permissions are based on the permissions you have for the resources the workbook uses')],
   }),
   k({
     id: 'PREP-DET-08', stage: 'prepare', workstream: 'detections', order: 80, kind: 'decision', criticality: 'low', applicability: q('defender_xdr'),
@@ -500,6 +547,9 @@ export const PREPARE_2 = [
       'Decide which changes are safe to make before connection (for example adding analytic rule name conditions) and which must be made after.',
       '[[do:add-action|Add each change as an action]] with an owner, and link it to the Stage 2 step [[TRN-04]].',
     ],
+    portalWay: [
+      "Open **Microsoft Sentinel > Configuration > Automation** and the **Automation rules** tab. Open each rule and read its conditions, looking for **Incident provider**, title, description and **Updated by** conditions.",
+    ],
     snippets: ['PS_AUTOMATION_SCAN', 'PS_INVENTORY_SCRIPT'],
     expected: 'Every affected rule has a planned change.',
     interpret: [
@@ -512,7 +562,7 @@ export const PREPARE_2 = [
       'The scan CSV: [[do:add-file|attach a file]]',
       'A reference to the export file: [[do:add-note|add a note]] with its location',
     ],
-    sources: [src('automation', 'Provider condition removed; description; titles; Updated by → Other'), src('siautomation', 'Automation rule property names'), src('autoref', 'Automation rule conditions reference'), src('exportauto', 'Export/import of automation rules'), src('xdrint', 'Use tags for automation conditions')],
+    sources: [src('automation', 'Provider condition removed; description; titles; Updated by → Other'), src('siautomation', 'Automation rule property names'), src('autoref', 'Automation rule conditions reference'), src('exportauto', 'Export/import of automation rules'), src('xdrint', 'Use tags for automation conditions'), src('autorules', 'Automation rules tab lists the rules and lets you edit them; Updated by condition')],
   }),
   k({
     id: 'PREP-AUT-02', stage: 'prepare', workstream: 'automation', order: 20, kind: 'check', criticality: 'medium', applicability: q('automation_rules'), testable: true,
@@ -538,11 +588,14 @@ export const PREPARE_2 = [
         ],
       },
     ],
+    portalWay: [
+      "Open each rule on the **Automation rules** tab of **Microsoft Sentinel > Configuration > Automation** and check its trigger. Rules with **When alert is created** are alert-trigger rules, and their only condition is the analytics rule that created the alert.",
+    ],
     snippets: ['PS_AUTOMATION_SCAN'],
     expected: 'Each alert-trigger rule has a confirmed scope.',
     record: ['The rules and their intended scope, in [[do:write-notes|this step\'s notes]]'],
     evidence: ['The list: [[do:add-note|add it as a note]] or [[do:add-file|attach a file]]'],
-    sources: [src('automation', 'Alert triggers act only on Sentinel alerts'), src('genplaybook', 'Enhanced Alert Trigger limitations')],
+    sources: [src('automation', 'Alert triggers act only on Sentinel alerts'), src('genplaybook', 'Enhanced Alert Trigger limitations'), src('autorules', 'Automation rules tab; When alert is created trigger; the analytics rule is the only alert-trigger condition')],
   }),
   k({
     id: 'PREP-AUT-03', stage: 'prepare', workstream: 'automation', order: 30, kind: 'check', criticality: 'high', applicability: q('playbooks'), testable: true,
@@ -576,6 +629,11 @@ export const PREPARE_2 = [
       },
       '[[do:add-action|Add each finding as an action]], with its planned change.',
     ],
+    portalWay: [
+      "Open **Microsoft Sentinel > Configuration > Automation** and the **Active playbooks** tab. It lists the playbooks you have access to in the subscriptions shown, with **Status**, **Plan** and **Trigger kind**. In the Azure portal, change the subscriptions from the **Directory + subscription** menu in the page header.",
+      "Select a playbook to open its Azure Logic Apps page, where you can see its runs and, with the right permissions, open the designer to check its actions. **Logic App Operator** lets you read, enable and disable a Consumption playbook, but not edit it.",
+      "Open each rule on the **Automation rules** tab to see which playbooks its **Run playbook** actions call.",
+    ],
     snippets: ['ARG_LOGIC_APPS', 'PS_AUTOMATION_SCAN'],
     expected: 'A playbook inventory with findings and planned changes.',
     record: [
@@ -586,7 +644,7 @@ export const PREPARE_2 = [
       'The query result CSV: [[do:add-file|attach a file]]',
       'The findings list: [[do:add-note|add it as a note]] or [[do:add-file|attach a file]]',
     ],
-    sources: [src('move', 'Add/remove alerts not supported; Logic App-created incidents not synced'), src('automation', 'Playbook limitations after onboarding'), src('runplaybooks', 'Permissions; classic alert automation deprecated'), src('playbooks', 'Playbook roles'), src('createrules', 'Classic alert automation deprecation')],
+    sources: [src('move', 'Add/remove alerts not supported; Logic App-created incidents not synced'), src('automation', 'Playbook limitations after onboarding'), src('runplaybooks', 'Permissions; classic alert automation deprecated'), src('playbooks', 'Playbook roles; portal: Logic App Operator reads, enables and disables logic apps but cannot edit them'), src('createrules', 'Classic alert automation deprecation'), src('createplaybooks', 'Active playbooks tab, its columns and subscription filter; a playbook opens its Logic Apps page and designer'), src('autorules', 'Run playbook action in automation rules; rules can be opened on the Automation rules tab')],
     caveats: ['Microsoft does not document Logic Apps field-level changes. The provider, description and title changes apply to the incident object, and are inferred to affect playbooks that read them.'],
   }),
   k({
@@ -643,11 +701,15 @@ export const PREPARE_2 = [
       'Export the results and [[do:add-file|attach them to this step]].',
       'Fix existing failures, or record them in [[do:write-notes|this step\'s notes]].',
     ],
+    portalWay: [
+      "Use the **Automation health** workbook (workbooks are under **Microsoft Sentinel > Threat management > Workbooks**). It shows automation rule health, playbook trigger health and automation details per incident. Playbook run details need Logic Apps diagnostics turned on. Workbooks show only data you have permission to read.",
+      "Open the playbook's logic app in the Azure portal and select **Overview > Runs history** (Consumption), or **Tools > Run history** on the workflow (Standard). Each run shows a status such as **Succeeded** or **Failed**.",
+    ],
     snippets: ['K_AUTOMATION_FAILURES', 'K_PLAYBOOK_TRIGGERED', 'K_AUTOMATION_PLAYBOOK_JOIN'],
     expected: 'A dated baseline.',
     record: ['Existing failures, in [[do:write-notes|this step\'s notes]]'],
     evidence: ['CSV exports: [[do:add-file|attach a file]]'],
-    sources: [src('autohealth', 'Automation health queries')],
+    sources: [src('autohealth', 'Automation health queries; portal: Automation health workbook displays; playbook run details need Logic Apps diagnostics'), src('workbooks', 'Workbooks are under Threat management > Workbooks'), src('azworkbooks', 'Workbook permissions are based on the permissions you have for the resources the workbook uses'), src('larunhistory', 'Runs history for Consumption and Run history for Standard workflows, with run statuses')],
   }),
 
   // ───────────────────────── Integrations and APIs ─────────────────────────
@@ -741,11 +803,14 @@ export const PREPARE_2 = [
       'For each workflow, plan an alternative (for example an analytics rule or custom detection that raises the alert, or an external case process).',
       '[[do:add-decision|Add a decision]] for each workflow.',
     ],
+    portalWay: [
+      "Open **Microsoft Sentinel > Threat management > Incidents** in the Azure portal and look for incidents with no product name. Manually created incidents show no **Product name** in the queue, and their **Alerts** tab stays empty unless alerts are related to them. The queue shows **New** and **Active** incidents by default, so change the status filter to include closed ones.",
+    ],
     snippets: ['K_MANUAL_INCIDENTS'],
     expected: 'Every such workflow has an alternative.',
     record: ['The workflows and their alternatives: [[do:add-decision|add a decision]] for each'],
     evidence: ['The list: [[do:add-note|add it as a note]] or [[do:add-file|attach a file]]'],
-    sources: [src('move', 'Not synchronised to the Defender portal'), src('manualincidents', 'Manual incidents'), src('graphincident', 'No create method in Graph')],
+    sources: [src('move', 'Not synchronised to the Defender portal'), src('manualincidents', 'Manual incidents; portal: no Product name in the queue, empty Alerts tab, default status filter New and Active'), src('graphincident', 'No create method in Graph')],
   }),
 
 ];

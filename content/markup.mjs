@@ -9,6 +9,7 @@ export const GO_TARGETS = {
   project: '#/project',
   window: '#/project/window',
   environments: '#/project/environments',
+  owners: '#/project/owners',
   questionnaire: '#/questionnaire',
   answers: '#/answers',
   overview: '#/overview',
@@ -48,6 +49,9 @@ export const DO_ACTIONS = {
   'set-due': 'Moves focus to the Due date field of this step',
   'write-notes': 'Moves focus to the Notes field of this step',
   'record-gate': 'Moves focus to the gate decision form (gate steps only)',
+  'open-tool': 'Moves to the "Do it here" form of this step (steps with a tool only)',
+  'waive-evidence': 'Records that this step needs no evidence, with a reason',
+  'save-snapshot': 'Saves a snapshot of this stage\'s report right away',
   'import-inventory': 'Opens the import of the inventory script results',
   'download-inventory-script': 'Downloads the read-only inventory script',
 };

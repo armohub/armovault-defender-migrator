@@ -52,7 +52,7 @@ function append(el, children) {
 export function safeHref(v) {
   const s = String(v || '');
   if (s.startsWith('#') || s.startsWith('blob:')) return s;
-  if (/^https?:\/\//i.test(s)) return s;
+  if (/^https?:\/\//i.test(s) || /^mailto:/i.test(s)) return s;
   return '#';
 }
 
@@ -321,4 +321,19 @@ export function showSequence(title, steps, { totalMs = 1600 } = {}) {
     items.forEach((li, i) => timers.push(setTimeout(() => li.classList.add('done'), 200 + per * i)));
     timers.push(setTimeout(finish, 200 + per * steps.length + 260));
   });
+}
+
+// A calm "saved" notice, bottom right: fades in, stays a moment, fades out. One element, reused,
+// so it survives the page moving on underneath it.
+let pulseEl = null;
+let pulseTimer = null;
+export function savedPulse(text = 'Saved') {
+  if (!pulseEl) {
+    pulseEl = h('div', { class: 'saved-pulse', role: 'status', 'aria-live': 'polite' });
+    document.body.appendChild(pulseEl);
+  }
+  pulseEl.replaceChildren(icon('check', 'icon-sm'), h('span', null, text));
+  pulseEl.classList.add('show');
+  clearTimeout(pulseTimer);
+  pulseTimer = setTimeout(() => pulseEl.classList.remove('show'), 1300);
 }

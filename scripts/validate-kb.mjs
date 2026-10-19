@@ -10,10 +10,12 @@ const CRIT = ['critical', 'high', 'medium', 'low'];
 const KINDS = ['check', 'task', 'decision', 'gate'];
 const DASHES = /[\u2013\u2014]/;
 // Keys whose values are identifiers or code, not reading text.
-const NOT_TEXT = new Set(['id', 'dependsOn', 'snippets', 'code', 'url', 'stage', 'workstream', 'kind', 'criticality', 'provenance', 'confidence', 'validation', 'lastVerified', 'version', 'applicability', 'showIf', 'section', 'sources', 'language', 'status', 'readOnly', 'reportKind', 'number', 'pageDate', 'verified', 'publisher', 'date']);
+const NOT_TEXT = new Set(['tool', 'id', 'dependsOn', 'snippets', 'code', 'url', 'stage', 'workstream', 'kind', 'criticality', 'provenance', 'confidence', 'validation', 'lastVerified', 'version', 'applicability', 'showIf', 'section', 'sources', 'language', 'status', 'readOnly', 'reportKind', 'number', 'pageDate', 'verified', 'publisher', 'date']);
 // Words that make guidance sound machine-written. Plain alternatives are in the style guide.
 const BANNED_WORDS = /\b(seamless(?:ly)?|leverag(?:e|es|ed|ing)|utili[sz](?:e|es|ed|ing|ation)|delve|robust|streamlin(?:e|ed|es|ing)|cutting-edge|game-?changer|empower(?:s|ed|ing)?|holistic|synerg(?:y|ies)|paradigm|in order to)\b/i;
 const STEP_KEYS = new Set(['text', 'bullets', 'tip']);
+// Interactive tools a step can show under "Do it here" (src/ui/tools.js).
+const TOOLS = ['workspaces', 'connection', 'primary', 'owners', 'briefing', 'window'];
 
 // Checks one reading-text string. `allowDo` is true only inside a check (step page).
 function lintText(s, where, allowDo, ctx, out) {
@@ -32,6 +34,7 @@ function lintText(s, where, allowDo, ctx, out) {
       if (!allowDo) out.errors.push(`${where}: action "${target}" is only allowed in step content.`);
       else if (!(target.slice(3) in DO_ACTIONS)) out.errors.push(`${where}: unknown action "${target}".`);
       else if (target === 'do:record-gate' && ctx.kind !== 'gate') out.errors.push(`${where}: "do:record-gate" is only valid on gate steps.`);
+      else if (target === 'do:open-tool' && !ctx.tool) out.errors.push(`${where}: "do:open-tool" is only valid on steps that have a tool.`);
       if (!label) out.errors.push(`${where}: action "${target}" needs a label ([[${target}|label]]).`);
     } else if (!ctx.checkIds.has(target)) {
       out.errors.push(`${where}: link to unknown step "${target}".`);
@@ -136,6 +139,7 @@ export function validateKb(kb) {
       if (st.bullets !== undefined && (!Array.isArray(st.bullets) || !st.bullets.every((b) => typeof b === 'string' && b))) errors.push(`${label}: step ${i + 1} bullets must be a list of strings.`);
       if (st.tip !== undefined && typeof st.tip !== 'string') errors.push(`${label}: step ${i + 1} tip must be a string.`);
     });
+    if (c.portalWay !== undefined && (!Array.isArray(c.portalWay) || !c.portalWay.every((x) => typeof x === 'string' && x))) errors.push(`${label}: portalWay must be a list of strings.`);
     if (!c.where || !c.where.length) errors.push(`${label}: no location.`);
     for (const w of c.where || []) {
       if (!w.portal || !w.path) errors.push(`${label}: incomplete location entry.`);
@@ -153,10 +157,11 @@ export function validateKb(kb) {
     if (c.validation === 'needs-review' && (!c.caveats || !c.caveats.length)) errors.push(`${label}: needs-review items must explain the uncertainty in caveats.`);
     if (c.criticality === 'critical' && c.provenance === 'official' && c.validation === 'docs-verified' && c.confidence !== 'high') warnings.push(`${label}: critical docs-verified item with confidence ${c.confidence}.`);
     if (c.changesState && !c.steps.some(Boolean)) errors.push(`${label}: state-changing task without steps.`);
-    ctx.selfId = c.id; ctx.kind = c.kind;
+    if (c.tool !== undefined && !TOOLS.includes(c.tool)) errors.push(`${label}: unknown tool "${c.tool}".`);
+    ctx.selfId = c.id; ctx.kind = c.kind; ctx.tool = c.tool;
     walk(c, label, true, ctx, out);
     for (const s of c.sources || []) if (s.supports && DASHES.test(s.supports)) errors.push(`${label}: source ${s.id} "supports" contains a long dash.`);
-    ctx.selfId = null; ctx.kind = null;
+    ctx.selfId = null; ctx.kind = null; ctx.tool = null;
   }
   for (const id of snippetIds) if (!usedSnippets.has(id)) warnings.push(`Snippet ${id} is not used by any check.`);
   for (const id of sourceIds) if (!usedSources.has(id)) warnings.push(`Source ${id} is not cited by any check or snippet.`);

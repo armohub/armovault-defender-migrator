@@ -58,6 +58,38 @@ export const WORKSTREAMS = [
 
 // Reference material shown under Knowledge. Every entry cites sources.
 export const REFERENCE = {
+  // The stakeholder briefing on the first Prepare step: a short summary and a ready-to-send email.
+  // Every line restates a fact from the cited Microsoft Learn pages.
+  briefing: {
+    subject: 'Microsoft Sentinel is moving to the Microsoft Defender portal: what it means for us',
+    changes: [
+      'Analysts will work in the Microsoft Defender portal (security.microsoft.com) instead of the Azure portal.',
+      'Incidents are created and correlated by the Defender XDR engine. The Fusion rule is turned off.',
+      'Microsoft incident creation rules are deactivated.',
+      'Some automation rule conditions and playbook options change, so automation must be checked before the move.',
+      'Defender XDR data policies apply to Sentinel data used in the Defender portal.',
+    ],
+    same: [
+      'Microsoft Sentinel itself continues. Only its Azure portal experience is retired.',
+      'Our log data stays in Log Analytics, where it is today.',
+      'Microsoft states the transition has no extra cost. Sentinel billing continues as today.',
+    ],
+    deadline: 'After 31 March 2027, Microsoft Sentinel is no longer supported in the Azure portal and is available only in the Defender portal.',
+    sources: ['defportal', 'move', 'overview'],
+  },
+  // Planning ranges for the window planner. Practical guidance from the makers, not Microsoft guidance.
+  planning: {
+    note: 'Typical ranges from practice, not Microsoft guidance. Your timeline depends on the number of workspaces, tenants, automation rules, playbooks and integrations. Adjust them to your organisation.',
+    phases: [
+      { id: 'prepare', label: 'Prepare: find what changes, fix or accept it', smaller: [2, 4], larger: [4, 8] },
+      { id: 'test', label: 'Test run (optional, if you have a test environment)', smaller: [1, 2], larger: [2, 3] },
+      { id: 'approval', label: 'Change approval lead time', smaller: [1, 2], larger: [1, 3] },
+      { id: 'hypercare', label: 'Watch closely after the change, then validate and sign off', smaller: [1, 2], larger: [2, 4] },
+    ],
+    change: 'The change itself: plan one attended working day. Connecting a workspace takes minutes; the rest of the day is for checks.',
+    larger: 'Your answers suggest a larger environment (several workspaces or tenants, or playbooks), so the planner uses the longer ranges.',
+    smaller: 'Your answers suggest a smaller environment, so the planner uses the shorter ranges.',
+  },
   terminology: [
     { term: 'Transition (in this assistant)', meaning: 'Moving your SOC\'s day-to-day Microsoft Sentinel experience from the Azure portal to the Microsoft Defender portal, with the configuration and process changes that this requires.', sources: ['move'] },
     { term: 'Connect / onboard a workspace', meaning: 'The technical step that makes a Sentinel-enabled Log Analytics workspace available in the Defender portal. You take it in the Defender portal settings, under System > Settings > Microsoft Sentinel > Connect a workspace. Log data stays in Log Analytics.', sources: ['onboard', 'move'] },

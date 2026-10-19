@@ -108,6 +108,20 @@ export const SOURCES = [
   ms('quickstart', 'Onboard to Microsoft Sentinel', '/azure/sentinel/quickstart-onboard', '2026-07-02', '2026-09-23'),
   ms('xdrwhatsnew', "What's new in Microsoft Defender XDR", '/defender-xdr/whats-new', '2026-09-08', '2026-10-13'),
   ms('resourcectx', 'Manage access to Microsoft Sentinel data by resource', '/azure/sentinel/resource-context-rbac', '2026-07-02', '2026-08-08'),
+  ms('fusionconfig', 'Configure multistage attack detection (Fusion) rules in Microsoft Sentinel', '/azure/sentinel/configure-fusion-rules', '2026-07-02', '2026-08-11'),
+  ms('ruleinsights', 'Monitor and optimize the execution of your Microsoft Sentinel scheduled analytics rules', '/azure/sentinel/monitor-optimize-analytics-rule-execution', '2023-06-19', '2026-05-14'),
+  ms('azworkbooks', 'Azure Workbooks overview, Azure Monitor', '/azure/azure-monitor/visualize/workbooks-overview', '2026-04-02', '2026-04-02'),
+  ms('wsinsights', 'Log Analytics Workspace Insights, Azure Monitor', '/azure/azure-monitor/logs/log-analytics-workspace-insights-overview', '2025-08-29', '2025-08-29'),
+  ms('costusage', 'Azure Monitor cost and usage', '/azure/azure-monitor/fundamentals/cost-usage', '2026-08-07', '2026-09-22'),
+  ms('configconnector', 'Connect data sources to Microsoft Sentinel by using data connectors', '/azure/sentinel/configure-data-connector', '2026-07-01', '2026-08-12'),
+  ms('incidentqueue', 'Prioritize incidents in the Microsoft Defender portal (legacy incident queue)', '/defender-xdr/incident-queue', '2025-10-26', '2026-09-23'),
+  ms('triageincidents', 'Basic incident tasks for Microsoft Sentinel incidents in the Azure portal', '/azure/sentinel/incident-navigate-triage', '2026-07-02', '2026-08-08'),
+  ms('investigateincidents', 'Investigate Microsoft Sentinel incidents in depth in the Azure portal', '/azure/sentinel/investigate-incidents', '2026-07-02', '2026-08-12'),
+  ms('createplaybooks', 'Create and manage Microsoft Sentinel playbooks', '/azure/sentinel/automation/create-playbooks', '2026-07-01', '2026-10-14'),
+  ms('larunhistory', 'View workflow status and run history, Azure Logic Apps', '/azure/logic-apps/view-workflow-status-run-history', '2026-03-02', '2026-03-11'),
+  ms('watchlistedit', 'Edit watchlists, Microsoft Sentinel', '/azure/sentinel/watchlists-manage', '2026-07-01', '2026-08-08'),
+  ms('workti', 'Work with threat intelligence, Microsoft Sentinel', '/azure/sentinel/work-with-threat-indicators', '2026-07-02', '2026-09-23'),
+  ms('armexport', 'Export template in Azure portal, Azure Resource Manager', '/azure/azure-resource-manager/templates/export-template-portal', '2026-06-26', '2026-06-26'),
 ];
 
 export const SOURCE_IDS = new Set(SOURCES.map((s) => s.id));

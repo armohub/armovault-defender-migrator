@@ -161,7 +161,7 @@ export async function readProjectFile(bytes, { kb } = {}) {
 // a note or link, or an attachment whose file content was imported.
 function downgradeUnsupportedPasses(project, evidence, warnings) {
   for (const [checkId, st] of Object.entries(project.checks)) {
-    if (st.status !== 'passed') continue;
+    if (st.status !== 'passed' || st.evidenceWaiver) continue;
     const supported = st.evidenceIds.some((id) => {
       const ev = project.evidence[id];
       return ev && (ev.kind === 'note' || ev.kind === 'link' || evidence.has(id));

@@ -5,7 +5,7 @@ import { route, render, go, savePackageFlow } from '../shell.js';
 import { buildReportModel, createSnapshot, verifySnapshot, REPORT_KINDS, itemsCsvRows, DISCLAIMER_SHORT } from '../../core/report.js';
 import { assessStage, overallAssessment } from '../../core/readiness.js';
 import { applicabilityMap } from '../../core/applicability.js';
-import { GATE_DECISIONS, addAudit, statusById, MAX_SNAPSHOTS } from '../../core/model.js';
+import { GATE_DECISIONS, addAudit, statusById, MAX_SNAPSHOTS, DEFENDER_STATES } from '../../core/model.js';
 import { pageHead, btn, linkBtn, conclusionBadge, emptyState, callout } from '../components.js';
 import { toCsv } from '../../core/files.js';
 import { formatDate, slugify } from '../../core/util.js';
@@ -57,7 +57,7 @@ function exportItemsCsv() {
   saveBlob(new Blob([toCsv(cols, rows)], { type: 'text/csv' }), `${BRAND.fileStem}-${slugify(p.meta.name)}-checklist.csv`, { description: 'CSV', accept: { 'text/csv': ['.csv'] } });
 }
 
-async function saveSnapshotFlow(kind) {
+export async function saveSnapshotFlow(kind) {
   if (state.project.snapshots.length >= MAX_SNAPSHOTS) { toast(`This project already has ${MAX_SNAPSHOTS} snapshots, the maximum a package can carry. Delete older snapshots first.`, 'bad', 9000); return; }
   const note = h('input', { type: 'text', maxlength: '2000', placeholder: 'For example: readiness review' });
   const ok = await modal({ title: `Save snapshot: ${REPORT_KINDS[kind].title}`, body: h('div', { class: 'stack' }, h('p', null, 'The snapshot freezes the report as it is now: statuses, evidence index, register and decisions. Attachment files are not copied; they stay in the project.'), field('Note (optional)', note)), actions: [{ label: 'Cancel', value: false }, { label: 'Save snapshot', kind: 'primary', value: true }] });
@@ -131,7 +131,8 @@ export function renderReport(m, { live, snapshot, includeImages }) {
   const scope = sec(2, 'Scope, assumptions and method',
     h('p', null, m.scope), h('p', { class: 'small' }, m.method),
     h('h3', null, 'Environments in scope (aliases)'),
-    m.project.environments.length ? table(['Alias', 'Type', 'Notes'], m.project.environments.map((e) => h('tr', null, h('td', null, e.alias), h('td', null, e.kind), h('td', null, e.notes || '')))) : h('p', { class: 'small' }, 'No environments recorded.'),
+    m.project.environments.length ? table(['Workspace', 'Environment', 'Subscription', 'Resource group', 'Region', 'Owner', 'Defender portal', 'Notes'], m.project.environments.map((e) => h('tr', null, h('td', null, e.alias, e.tenant ? h('div', { class: 'small' }, `Tenant: ${e.tenant}`) : null, m.project.plannedPrimary === e.alias ? h('div', { class: 'small' }, 'Planned primary') : null), h('td', null, e.kind), h('td', null, e.subscription || ''), h('td', null, e.resourceGroup || ''), h('td', null, e.region || ''), h('td', null, e.owner || ''), h('td', null, (DEFENDER_STATES.find((d) => d.id === e.defender) || { label: '' }).label), h('td', null, e.notes || ''))), 'r-compact') : h('p', { class: 'small' }, 'No workspaces recorded.'),
+    m.project.owners && m.project.owners.length ? h('div', null, h('h3', null, 'Owners and approvers'), table(['Area', 'Owner'], m.project.owners.map((o) => h('tr', null, h('td', null, o.area), h('td', null, o.name))), 'r-compact')) : null,
     h('p', null, `Checklist mode: ${m.project.mode === 'full' ? 'full checklist (no tailoring)' : 'tailored to the answers below'}. Planned window: ${m.project.windowStart || 'not set'}${m.project.windowEnd ? ` to ${m.project.windowEnd}` : ''}.`),
     h('p', null, `Test stage: ${m.testStage.availability === 'unavailable' ? `not available: ${m.testStage.reason} (recorded by ${m.testStage.decidedBy})` : m.testStage.availability === 'available' ? 'available' : 'not decided'}.`),
     m.answers.length ? h('div', null, h('h3', null, 'Environment answers (assumptions)'), table(['Question', 'Answer', 'Note', 'Answered by'], m.answers.map((a) => h('tr', null, h('td', null, a.question), h('td', null, a.answer), h('td', null, a.reason || ''), h('td', { class: 'small' }, a.by ? `${a.by}, ${formatDate(a.at)}` : ''))), 'r-compact')) : null);
@@ -146,7 +147,7 @@ export function renderReport(m, { live, snapshot, includeImages }) {
           h('td', null, i.criticality),
           h('td', null, h('span', { class: ['r-status', `r-st-${i.status}`] }, statusById(i.status).short), h('div', { class: 'small' }, i.verification), i.exceptions.map((e) => h('div', { class: 'small' }, `Exception accepted by ${e.acceptedBy}${e.acceptedRole ? ` (${e.acceptedRole})` : ''}`))),
           h('td', null, i.owner || '', i.due ? h('div', { class: 'small' }, `due ${i.due}`) : null),
-          h('td', { class: 'small' }, i.evidence.length ? i.evidence.map((e) => h('div', null, `${e.kind}${e.origin === 'import' ? ' (imported)' : ''}: ${e.title || e.fileName}`)) : 'None'),
+          h('td', { class: 'small' }, i.evidence.length ? i.evidence.map((e) => h('div', null, `${e.kind}${e.origin === 'import' ? ' (imported)' : ''}: ${e.title || e.fileName}`)) : i.evidenceWaiver ? h('div', null, h('strong', null, 'Not needed'), `: ${i.evidenceWaiver.reason} (decided by ${i.evidenceWaiver.by}, ${formatDate(i.evidenceWaiver.at)})`) : 'None'),
           h('td', { class: 'small r-notes' }, i.statusReason ? h('div', null, i.statusReason) : null, i.notes ? h('div', null, i.notes) : null, !i.statusReason && !i.notes ? '' : null)))))) : h('p', null, 'No steps in scope.'),
       s.outOfScope.length ? h('details', { open: true }, h('summary', null, `Set aside (${s.outOfScope.length})`), table(['Step', 'Why it was set aside'], s.outOfScope.map((o) => h('tr', null, h('td', null, o.title), h('td', { class: 'small' }, o.reason))), 'r-compact')) : null);
   });

@@ -62,10 +62,12 @@ In full-checklist mode every step is `applies`. A reviewer override (`applies` o
 ```js
 {
   schema, schemaVersion, id, createdAt, updatedAt, createdWith: { appVersion, kbVersion }, isDemo,
-  meta: { name, organisation, operatorName, operatorRole, startDate, windowStart, windowEnd, environments: [{ alias, kind, notes }], notes },
+  meta: { name, organisation, operatorName, operatorRole, startDate, windowStart, windowEnd, notes,
+          environments: [{ alias, kind, tenant, subscription, resourceGroup, region, owner, defender, notes }],  // defender: unknown | not_connected | primary | secondary; one primary per tenant
+          workstreamOwners: { "<stage>:<workstream>": name }, approvers: [{ role, name }], plannedPrimary },
   mode: 'tailored' | 'full',
   answers: { [questionId]: { value, reason, by, at } },
-  checks: { [itemId]: { status, statusReason, owner, due, notes, evidenceIds, updatedAt, updatedBy, kbVersion, override, history: [...] } },
+  checks: { [itemId]: { status, statusReason, owner, due, notes, evidenceIds, evidenceWaiver: { reason, by, at } | null, updatedAt, updatedBy, kbVersion, override, history: [...] } },  // "passed" needs evidence or an evidenceWaiver
   evidence: { [evidenceId]: { id, checkId, kind: 'image'|'note'|'link'|'file', origin: 'user'|'import', title, text, url, fileName, mime, size, sha256, redactionConfirmed, createdAt, createdBy, stage } },
   register: [{ id, type: 'action'|'issue'|'risk'|'exception'|'decision', title, description, owner, due, severity, status, checkId, acceptedBy, acceptedRole, acceptedAt, rationale, createdAt, createdBy, updatedAt }],
   stages: { test: { availability: 'undecided'|'available'|'unavailable', reason, decidedBy, decidedAt } },

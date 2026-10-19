@@ -8,9 +8,10 @@ const ORG = 'Your organisation';
 export const PREPARE_1 = [
   // ───────────────────────── Scope, governance and timeline ─────────────────────────
   k({
+    tool: 'briefing',
     id: 'PREP-SCOPE-01', stage: 'prepare', workstream: 'scope', order: 10, kind: 'task', criticality: 'high',
     title: 'Agree what the transition changes, and what it does not',
-    objective: 'Give the project team and stakeholders one accurate picture. Sentinel\'s Azure portal experience is retiring, Sentinel continues in the Defender portal, log data stays in Log Analytics, and several behaviours change when you connect a workspace.',
+    objective: "Make sure everyone involved knows what the move changes and what stays the same, before any technical work starts.",
     why: [
       'Misunderstanding the change leads to the wrong scope, for example planning a SIEM replacement or a data migration that isn\'t needed.',
       'It can also make you miss the behaviour changes that actually break detections, automation and integrations.',
@@ -18,43 +19,31 @@ export const PREPARE_1 = [
     where: [at(ORG, 'Project kick-off or stakeholder briefing')],
     when: 'At project start, before any technical work.',
     steps: [
+      "Read the short summary in **Do it here**: what changes, what stays the same and the deadline, with links to the Microsoft pages behind it.",
       {
-        text: 'Read two Microsoft pages:',
-        bullets: [
-          'The transition guide, "Transition your Microsoft Sentinel environment to the Defender portal".',
-          'The feature reference, "Microsoft Sentinel in the Microsoft Defender portal", including the quick reference that maps Azure portal pages to Defender portal locations.',
-        ],
-        tip: 'Both pages are in the [[go:knowledge:sources|sources list]].',
+        "text": "Send the ready-made email to your stakeholders, or use it for a short briefing call.",
+        "tip": "No need to wait for replies or for the call. Choose **Leave for now** at the top of this page and carry on with the next steps."
       },
+      "[[do:add-action|Add each open question to the register]] so it is tracked.",
       {
-        text: 'Brief your stakeholders on these facts and quote the sources:',
-        bullets: [
-          '"After March 31, 2027, Microsoft Sentinel will no longer be supported in the Azure portal and will be available only in the Microsoft Defender portal."',
-          'Connecting a workspace does not change how Sentinel stores log data in Log Analytics.',
-          'Microsoft states the transition has no extra cost. Billing continues for Sentinel consumption.',
-          'Behaviour changes include: the Defender XDR engine generates incidents, the Fusion rule is disabled, Microsoft incident creation rules are deactivated, automation and playbooks change, and Defender XDR data policies apply to Sentinel data used in the Defender portal.',
+        "text": "If people are new to the words, explain them:",
+        "bullets": [
+          "**Transition**: moving your SOC's day-to-day Sentinel experience to the Defender portal.",
+          "**Connect** or **onboard a workspace**: the technical step in Defender portal settings.",
+          "**Defender XDR**: Microsoft's extended detection and response products that share the Defender portal."
         ],
-        tip: 'The [[go:knowledge:changes|feature changes list]] has these and the other behaviour changes in one place.',
-      },
-      {
-        text: 'Explain the terms the assistant uses:',
-        bullets: [
-          '**Transition**: moving your SOC\'s day-to-day Sentinel experience to the Defender portal.',
-          '**Connect** or **onboard a workspace**: the technical step in Defender portal settings.',
-          '**Defender XDR**: Microsoft\'s extended detection and response products that share the Defender portal.',
-        ],
-        tip: 'More terms are on the [[go:knowledge:terms|terminology page]].',
-      },
-      'Note the briefing date, the attendees and any open questions in [[do:write-notes|this step\'s notes]].',
-      '[[do:add-action|Add each open question to the register]] so it is tracked.',
+        "tip": "More terms are on the [[go:knowledge:terms|terminology page]]."
+      }
     ],
     expected: 'Stakeholders confirm the scope and the terminology, and the open questions are captured in the register.',
     record: [
-      'The briefing date and attendees, in [[do:write-notes|this step\'s notes]]',
-      'Open questions, in the register: [[do:add-action|add each one]]',
-      'The knowledge base version you used (shown on the [[go:about|About page]]), in [[do:write-notes|this step\'s notes]]',
+      "Who you briefed and when, in [[do:write-notes|this step's notes]]",
+      "Open questions: [[do:add-action|add each one to the register]]"
     ],
-    evidence: ['Meeting notes or a reference to the briefing material: [[do:add-file|attach the notes]] or [[do:add-link|add a link]]'],
+    evidence: [
+      "The email you sent or the meeting notes: [[do:add-file|attach them]] or [[do:add-link|add a link]]",
+      "If your team needs no evidence here, [[do:waive-evidence|record that instead]]"
+    ],
     sources: [
       src('defportal', 'Retirement statement and feature reference / quick reference'),
       src('overview', 'Retirement timeline wording'),
@@ -64,47 +53,51 @@ export const PREPARE_1 = [
     caveats: ['As of 2026-10-19, two pages linked from the transition guide, "Plan for unified security operations" and "Deploy for unified security operations", redirect to the Integrated SOC (ISOC) preview page. That page targets tenants without a Sentinel workspace. Use the transition guide as your primary reference.'],
   }),
   k({
+    tool: 'owners',
     id: 'PREP-SCOPE-02', stage: 'prepare', workstream: 'scope', order: 20, kind: 'task', criticality: 'high', provenance: 'practice', confidence: 'medium',
     title: 'Name owners, approvers and the change process',
-    objective: 'Give each workstream an accountable owner, and agree how changes will be approved.',
+    objective: "Give each workstream an owner and agree who approves the change. Enter them once in **Do it here**; every step then shows its owner.",
     why: [
       'The transition touches identity, compliance, detections, automation, integrations and SOC operations.',
       'Without named owners, decisions stall and approvals are missed.',
     ],
     where: [at(ORG, 'Project governance')],
     steps: [
+      "Type an owner for each workstream in **Do it here**. Every step in that workstream then shows this owner. You can still set a different owner on a single step.",
       {
-        text: 'Name an owner for each workstream the assistant uses:',
-        bullets: ['Scope', 'Workspaces and tenants', 'Access', 'Data governance', 'Connectors', 'Detections', 'Automation', 'Integrations', 'Content', 'SOC operations', 'Planning'],
-      },
-      {
-        text: 'Identify the approvers you\'ll need:',
-        bullets: [
-          'The change advisory board (or equivalent)',
-          'Data protection or compliance',
-          'Identity and access management',
-          'Owners of ticketing (ITSM) and other integrations',
-          'The SOC lead',
+        "text": "Add the approvers you'll need:",
+        "bullets": [
+          "The change advisory board (or equivalent)",
+          "Data protection or compliance",
+          "Identity and access management",
+          "Owners of ticketing (ITSM) and other integrations",
+          "The SOC lead"
         ],
+        "tip": "Their names are then suggested wherever the assistant asks who decided or approved something."
       },
       {
-        text: 'Agree how the production change will be approved and recorded:',
-        bullets: ['The change record type', 'The lead time', 'Freeze periods'],
-      },
-      'Enter each owner in the **Owner** field of the steps in their workstream. You find the steps on each stage page, starting with [[go:stage:prepare|Prepare]].',
-      '[[do:add-decision|Add each approver to the register as a decision]].',
+        "text": "Agree how the production change will be approved and recorded:",
+        "bullets": [
+          "The change record type",
+          "The lead time",
+          "Freeze periods"
+        ],
+        "tip": "Write these down in [[do:write-notes|this step's notes]]."
+      }
     ],
     expected: 'Every workstream has an owner, and you know the approval path for the production change.',
     record: [
-      'Owners per workstream, in the **Owner** field of their steps',
-      'Approvers: [[do:add-decision|add a decision]] for each one',
-      'The change process, in [[do:write-notes|this step\'s notes]]',
-      'Change freeze periods, in [[do:write-notes|this step\'s notes]]',
+      "Owners and approvers: in **Do it here** (saved to [[go:owners|Project setup]])",
+      "The change process and freeze periods, in [[do:write-notes|this step's notes]]"
     ],
-    evidence: ['A reference to the project RACI or governance document: [[do:add-link|add a link]] or [[do:add-file|attach the file]]'],
+    evidence: [
+      "A link to your RACI or governance document, if you have one: [[do:add-link|add a link]]",
+      "If the owners and approvers entered here are enough, [[do:waive-evidence|record that no evidence is needed]]"
+    ],
     sources: [src('move', 'Microsoft structures the transition by audience: security architects, security engineers, security analysts'), src('mssp', 'MSSPs: establish clear timelines and expectations with customers before beginning')],
   }),
   k({
+    tool: 'window',
     id: 'PREP-SCOPE-03', stage: 'prepare', workstream: 'scope', order: 30, kind: 'decision', criticality: 'critical',
     title: 'Set the transition window well before 31 March 2027',
     objective: 'Choose and approve a target date for connecting production workspaces. Leave time for testing, remediation and hypercare before Microsoft ends Azure portal support.',
@@ -114,24 +107,15 @@ export const PREPARE_1 = [
     ],
     where: [at(ORG, 'Project plan')],
     steps: [
-      'Enter the target window in [[go:window|Project setup > Planned transition window]].',
-      {
-        text: 'Work backwards from the window and leave time for:',
-        bullets: [
-          'Remediation in [[go:stage:prepare|Stage 1]]',
-          'The optional [[go:stage:test|test stage]]',
-          'Change approval lead time',
-          'A hypercare period after the change',
-        ],
-      },
-      'Check your organisation\'s change freezes (for example year-end) and avoid them.',
-      '[[do:add-decision|Add the decision to the register]], with the approver\'s name.',
+      "Enter your planned window in **Do it here**. The planner shows how long each phase usually takes, and when to start so you reach the window in time.",
+      "Check your organisation's change freezes (for example year-end) and avoid them.",
+      "[[do:add-decision|Add the decision to the register]], with the name of the person who approved the window."
     ],
     expected: 'You have an approved window that ends comfortably before 31 March 2027.',
     record: [
-      'The planned window, in [[go:window|Project setup]]',
-      'Who approved it: [[do:add-decision|add the decision]] with their name',
-      'Known freeze periods, in [[do:write-notes|this step\'s notes]]',
+      "The planned window: in **Do it here** (saved to [[go:window|Project setup]])",
+      "Who approved it: [[do:add-decision|add the decision]] with their name",
+      "Known freeze periods, in [[do:write-notes|this step's notes]]"
     ],
     evidence: ['The approved plan or change calendar entry: [[do:add-file|attach it]] or [[do:add-link|add a link]]'],
     sources: [src('defportal', 'Azure portal support until March 31, 2027; remaining customers redirected'), src('overview', 'Retirement timeline'), src('whatsnew', 'Date moved from July 2026 to March 31, 2027 in January 2026'), src('bestpractices', 'Still contains an outdated July 2026 bullet')],
@@ -141,6 +125,7 @@ export const PREPARE_1 = [
     ],
   }),
   k({
+    tool: 'connection',
     id: 'PREP-SCOPE-04', stage: 'prepare', workstream: 'scope', order: 40, kind: 'check', criticality: 'critical',
     title: 'Check whether any workspace is already connected to the Defender portal',
     objective: 'Find out whether Sentinel is already partly or fully in the Defender portal. Some customers were connected automatically.',
@@ -154,11 +139,11 @@ export const PREPARE_1 = [
     ],
     where: [at(DP, 'https://security.microsoft.com > System > Settings > Microsoft Sentinel > Workspaces')],
     steps: [
-      'Sign in to https://security.microsoft.com.',
-      'Look for **Microsoft Sentinel** in the left navigation. If it\'s there, at least one workspace is connected.',
-      'Open **System > Settings > Microsoft Sentinel**, then open the **Workspaces** page.',
-      'Note each workspace and whether it is the **Primary** workspace.',
-      'If you only see **Connect a workspace**, no workspace is connected yet. Keep in mind that you only see the workspaces you have the required permissions for.',
+      "Sign in to https://security.microsoft.com.",
+      "Look for **Microsoft Sentinel** in the left navigation. If it's there, at least one workspace is connected.",
+      "Open **System > Settings > Microsoft Sentinel**, then open the **Workspaces** page.",
+      "In **Do it here**, set each workspace to **Not connected**, **Connected, primary** or **Connected, secondary**.",
+      "If you only see **Connect a workspace**, no workspace is connected yet. Keep in mind that you only see the workspaces you have the required permissions for."
     ],
     expected: 'You have a clear list of connected workspaces, each marked primary or secondary, or confirmation that none are connected.',
     interpret: [
@@ -167,8 +152,7 @@ export const PREPARE_1 = [
       outcome('Unclear because of permissions', 'Ask an administrator with the [[PREP-ACC-01|onboarding roles]] to do this check.'),
     ],
     record: [
-      'Connected workspaces and their role (primary or secondary), in [[do:write-notes|this step\'s notes]]',
-      'The date and who checked, in [[do:write-notes|this step\'s notes]]',
+      "The connection state of each workspace: in **Do it here** (who checked and when is recorded for you when you set the status)"
     ],
     evidence: ['A screenshot of the Workspaces page: [[do:add-screenshot|attach it]]. Redact tenant and workspace IDs if your policy requires.'],
     sources: [src('overview', 'Automatic onboarding of new customers from July 2025 and its conditions'), src('onboard', 'Settings path, Workspaces page, permissions to see workspaces'), src('quickstart', 'Settings > Microsoft Sentinel > Workspaces')],
@@ -207,6 +191,7 @@ export const PREPARE_1 = [
 
   // ───────────────────────── Workspaces and tenants ─────────────────────────
   k({
+    tool: 'workspaces',
     id: 'PREP-TOP-01', stage: 'prepare', workstream: 'topology', order: 10, kind: 'check', criticality: 'critical',
     title: 'Inventory all Sentinel-enabled workspaces',
     objective: 'Build a complete list of the Sentinel workspaces in scope, with their subscription, resource group, region, environment and owner.',
@@ -218,19 +203,17 @@ export const PREPARE_1 = [
     roles: ['Read access on the subscriptions in scope'],
     where: [at(AP, 'Resource Graph Explorer'), at(AP, 'Microsoft Sentinel > workspace list')],
     steps: [
-      'Run the Resource Graph query below across all subscriptions you can read.',
-      'Export the results to CSV.',
-      'Cross-check the results against the Microsoft Sentinel workspace list in the Azure portal and with the platform team. Resource Graph only shows what you can read.',
       {
-        text: 'For each workspace, add:',
-        bullets: [
-          'The environment (production or test)',
-          'The owning team',
-          'The region',
-          'Whether it is connected to the Defender portal, from [[PREP-SCOPE-04|your check of connected workspaces]]',
+        "text": "Find your Sentinel workspaces. Choose the way that suits your access:",
+        "bullets": [
+          "**In the portal:** open the Azure portal, search for **Microsoft Sentinel** and open it. The list shows the Sentinel workspaces you can read.",
+          "**With a query:** run the Resource Graph query below. It searches every subscription you can read at once."
         ],
+        "tip": "Both ways only show what you have permission to read. Check with the platform team that nothing is missing."
       },
-      'Enter the workspace aliases (not secrets) in [[go:environments|Project setup > environment aliases]], so reports can refer to them.',
+      "Enter each workspace in **Do it here**: alias, environment, subscription, resource group, region and owner.",
+      "Set whether each workspace is already connected to the Defender portal, from [[PREP-SCOPE-04|your check of connected workspaces]].",
+      "Note any workspace you leave out of scope, and why, in [[do:write-notes|this step's notes]]."
     ],
     snippets: ['ARG_SENTINEL_WORKSPACES', 'PS_ONBOARDING_STATE'],
     expected: 'Every Sentinel workspace in scope is listed with its environment, region and owner.',
@@ -239,17 +222,18 @@ export const PREPARE_1 = [
       outcome('Workspaces in several tenants', 'Sentinel runs across more than one tenant. Answer **Yes** to the multi-tenant question in [[go:answers|your answers]], then complete [[PREP-TOP-05]].'),
     ],
     record: [
-      'The workspace inventory (alias, subscription, resource group, region, environment, owner): [[do:add-file|attach it as a file]]',
-      'The workspace aliases, in [[go:environments|Project setup]]',
+      "The workspace inventory: in **Do it here** (saved to [[go:environments|Project setup]] and used in your reports)",
+      "Workspaces left out of scope, and why, in [[do:write-notes|this step's notes]]"
     ],
     evidence: [
-      'The CSV export of the query: [[do:add-file|attach it as a file]]',
-      'A note of any workspaces you excluded and why: [[do:add-note|add a note]]',
+      "If your policy asks for it, the CSV export of the query: [[do:add-file|attach it]]",
+      "If the inventory entered here is enough, [[do:waive-evidence|record that no evidence is needed]]"
     ],
     sources: [src('multiws', 'One primary and any number of secondary workspaces per tenant'), src('argtypes', 'Resource Graph resource types'), src('roles', 'The SecurityInsights solution resource exists on Sentinel workspaces'), src('quickstart', 'Moving a workspace to another resource group or subscription after Sentinel deployment is not supported')],
     caveats: ['The makers of the assistant composed the Resource Graph query, and it was not run against a live tenant. Cross-check the result.'],
   }),
   k({
+    tool: 'primary',
     id: 'PREP-TOP-02', stage: 'prepare', workstream: 'topology', order: 20, kind: 'decision', criticality: 'critical', applicability: q('multi_workspace'), testable: true,
     title: 'Decide which workspace will be primary',
     objective: 'Choose the primary workspace deliberately and record why.',
@@ -265,27 +249,29 @@ export const PREPARE_1 = [
     ],
     where: [at(ORG, 'Architecture decision'), at(DP, 'System > Settings > Microsoft Sentinel > Workspaces (to set or change the primary later)')],
     steps: [
-      'List the candidate workspaces from [[PREP-TOP-01|your workspace inventory]].',
+      "Your workspaces from [[PREP-TOP-01|the inventory]] are listed in **Do it here**.",
       {
-        text: 'Assess each candidate against the primary-only behaviours under **Why it matters**.',
-        tip: 'Microsoft recommends considering the primary workspace for your global security operations centre.',
+        "text": "Assess each candidate against the primary-only behaviours under **Why it matters**.",
+        "tip": "Microsoft recommends considering the primary workspace for your global security operations centre."
       },
       {
-        text: 'Identify which workspaces currently use the Defender XDR connector. This matters because:',
-        bullets: [
-          'Workspaces previously connected to it are disconnected and become secondary.',
-          'Their rules and automation based on Defender XDR data stop working until table ingestion is configured.',
-        ],
+        "text": "Identify which workspaces currently use the Defender XDR connector. This matters because:",
+        "bullets": [
+          "Workspaces previously connected to it are disconnected and become secondary.",
+          "Their rules and automation based on Defender XDR data stop working until table ingestion is configured."
+        ]
       },
+      "Choose the primary workspace in **Do it here**.",
       {
-        text: '[[do:add-decision|Add the decision to the register]], with the rationale and the approver.',
-        tip: 'You can change the primary later: Workspaces > select the workspace > Set as primary > Confirm and proceed. The Defender XDR connector then moves to the new primary automatically.',
-      },
+        "text": "[[do:add-decision|Add the decision to the register]], with the rationale and the approver.",
+        "tip": "You can change the primary later: Workspaces > select the workspace > Set as primary > Confirm and proceed. The Defender XDR connector then moves to the new primary automatically."
+      }
     ],
     expected: 'Each tenant has one approved primary workspace, and the secondary workspaces and their impacts are listed.',
     record: [
-      'The chosen primary workspace (alias), the rationale and the approver: [[do:add-decision|add the decision]]',
-      'Secondary workspaces and impact notes, in [[do:write-notes|this step\'s notes]]',
+      "The planned primary workspace: in **Do it here**",
+      "The rationale and the approver: [[do:add-decision|add the decision]]",
+      "Secondary workspaces and their impact, in [[do:write-notes|this step's notes]]"
     ],
     evidence: ['The decision record: [[do:add-decision|add it to the register]]'],
     sources: [src('multiws', 'Primary/secondary behaviours, connector moves, recommendation for global SOC'), src('onboard', 'Set as primary steps'), src('lakeonboard', 'Data lake must be in the same region as the primary workspace')],
@@ -315,6 +301,10 @@ export const PREPARE_1 = [
       },
       'Also list any other standalone Microsoft connectors with alerts. Microsoft says to disconnect them before connecting.',
     ],
+    portalWay: [
+      "Open **Microsoft Sentinel > Configuration > Data connectors** in each secondary workspace in the Azure portal. Select each Microsoft connector, then **Open connector page**: a connected connector shows the **Data received** graph and the status of its data types. This shows which connectors send data, not how many alerts each product sends. Standalone Defender connectors can still look connected after the Defender XDR connector is turned on in the same workspace, though no data flows through them.",
+      "Export the analytics rules from **Microsoft Sentinel > Configuration > Analytics**: select the rules, then **Export**. The file includes each scheduled rule's query, so you can search it for SecurityAlert and the product names. Export works one page of rules at a time.",
+    ],
     snippets: ['K_ALERTS_BY_PRODUCT', 'PS_ANALYTICS_SCAN'],
     expected: 'You have a list of dependent content for each secondary workspace, with a decision for each item.',
     record: [
@@ -325,7 +315,7 @@ export const PREPARE_1 = [
       'Query results as CSV: [[do:add-file|attach the file]]',
       'The decision list: [[do:add-file|attach it]]',
     ],
-    sources: [src('move', 'Standalone connectors disconnected automatically in secondary workspaces'), src('multiws', 'Disconnect other standalone Microsoft connectors with alerts before onboarding; table ingestion options'), src('schemadiff', 'Rules and workbooks relying on those alerts in secondary workspaces no longer function as expected')],
+    sources: [src('move', 'Standalone connectors disconnected automatically in secondary workspaces'), src('multiws', 'Disconnect other standalone Microsoft connectors with alerts before onboarding; table ingestion options'), src('schemadiff', 'Rules and workbooks relying on those alerts in secondary workspaces no longer function as expected'), src('configconnector', 'Connector page shows the Data received graph and the connectivity status of its data types'), src('xdrconnector', 'Component connectors can still appear connected after the Defender XDR connector is enabled, with no data flowing through them'), src('exportrules', 'Export from the Analytics page; the file includes the query of scheduled rules; one page of rules at a time')],
   }),
   k({
     id: 'PREP-TOP-04', stage: 'prepare', workstream: 'topology', order: 40, kind: 'task', criticality: 'high', applicability: all(q('multi_workspace'), q('automation_rules')), testable: true,
@@ -341,11 +331,15 @@ export const PREPARE_1 = [
       },
       '[[do:add-action|Add each move to the register as an action]], with an owner.',
     ],
+    portalWay: [
+      "Open **Microsoft Sentinel > Configuration > Automation** in each secondary workspace and select the **Automation rules** tab. It lists every rule on the workspace, with its status and the analytics rules it applies to.",
+      "Open each rule to read its trigger and conditions. An **Incident provider** condition set to **Microsoft 365 Defender** limits the rule to Defender XDR incidents.",
+    ],
     snippets: ['PS_AUTOMATION_SCAN'],
     expected: 'You have a list of automation rules to move, each with an owner.',
     record: ['The rules to move and their target workspace: [[do:add-action|add an action]] for each one'],
     evidence: ['A list or export of the rules: [[do:add-file|attach it]]'],
-    sources: [src('automation', 'Transfer automation rules to the relevant workspace'), src('multiws', 'Defender XDR alerts and incidents sync to the primary only'), src('exportauto', 'Automation rule export/import')],
+    sources: [src('automation', 'Transfer automation rules to the relevant workspace; portal: Incident provider condition values Microsoft Sentinel and Microsoft 365 Defender'), src('multiws', 'Defender XDR alerts and incidents sync to the primary only'), src('exportauto', 'Automation rule export/import'), src('autorules', 'The Automation rules tab lists all rules on the workspace with their status and the analytics rules they apply to; rules can be opened and edited there')],
   }),
   k({
     id: 'PREP-TOP-05', stage: 'prepare', workstream: 'topology', order: 50, kind: 'decision', criticality: 'high', applicability: q('multi_tenant'), validation: 'needs-review', confidence: 'medium',

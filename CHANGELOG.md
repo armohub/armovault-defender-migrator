@@ -12,10 +12,22 @@ The first public version, released as one final version. There are no release ca
 - Project packages are named `armo-dma-<project>-<date>.zip`. Exports and the preferences file use the same `armo-dma` prefix.
 - Internal schema identifiers (`armohub.dma.project`, `armohub.dma.settings`) are unchanged on purpose, for compatibility.
 
+### Do it here: work inside the steps
+
+- Steps carry the form they need, under **Do it here**: a stakeholder briefing with a ready-to-send email (copy formatted into Outlook, or open in the email app), owners and approvers per workstream, a window planner with typical durations (practical guidance, labelled as such), the workspace inventory, the connection state of each workspace, and the primary workspace choice. The same forms appear in Project setup, so information is entered once and reused in steps and reports.
+- Gate steps lead with the decision form, and can save a report snapshot right on the step.
+- Every step has **Leave for now** and **Next step** at the top. Parked steps never block the next suggestion and are listed on the overview under **Parked for later**.
+- **Not needed for us**: a team can record, with a reason, that a step needs no evidence. The step can then pass, and reports show "Passed, evidence not needed" with the reason, name and date.
+- Steps that use queries or scripts show **No query access? Use the portal** where Microsoft Learn documents a portal way (41 steps, with 14 new sources).
+- Step pages show the essentials first and fold the background (why it matters, prerequisites, watch-outs, sources) with a one-line preview. Script cards show their purpose first; details and long code open on request.
+- The record panel says who set the status and when, so record lists no longer ask for it.
+- Owners set per workstream appear on every step of that workstream, and known names are suggested in owner and decision fields.
+- The questionnaire's test environment answer switches the optional Test stage on or off. Questions that the inventory script can answer say so, and your workspace list hints at answers. A soft "Answer recorded" notice replaces the flash after each answer.
+
 ### New look
 
 - A graphite "console" design. Dark by default, with a light theme in Settings. Reports always print on white.
-- The route: one line from "Azure portal" to "Defender portal", with a stop for each of the four stages and a "You are here" marker.
+- The route: one line from "Sentinel in the Azure portal" to "Sentinel in the Defender portal", with a first **Plan** stop (project setup and questions), a stop for each of the four stages and a "You are here" marker. Progress is weighted by stage, so finishing the questions already shows progress.
 - The Mona Sans typeface (SIL Open Font License 1.1, by The Mona Sans Project Authors), embedded as `data:` URLs. The Content-Security-Policy now allows `font-src data:` and still blocks every network request (`default-src 'none'`, `connect-src 'none'`). The licence text ships in `dist/licenses/`.
 - Loading overlays while a project opens, a package is packed or the demo is prepared.
 - Motion respects the system's reduced-motion setting, and a new **Reduce motion** setting turns it down inside the assistant.

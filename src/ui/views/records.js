@@ -96,7 +96,7 @@ route('register', () => {
         h('td', null, (REGISTER_TYPES.find((t) => t.id === r.type) || {}).label),
         h('td', null, h('span', { class: ['badge', `badge-${r.severity}`] }, r.severity)),
         h('td', null, h('button', { type: 'button', class: 'linklike', onclick: () => editRegisterItem(r) }, r.title), r.status === 'accepted' ? h('div', { class: 'small muted' }, `Accepted by ${r.acceptedBy}${r.acceptedRole ? ` (${r.acceptedRole})` : ''}`) : null),
-        h('td', null, r.owner || h('span', { class: 'muted' }, 'Not set')), h('td', { class: 'tnum' }, r.due || h('span', { class: 'muted' }, 'None')), h('td', null, r.status.replace('_', ' ')),
+        h('td', null, r.owner || h('span', { class: 'muted' }, 'Not set')), h('td', { class: 'tnum' }, r.due || h('span', { class: 'muted' }, 'None')), h('td', null, r.status[0].toUpperCase() + r.status.slice(1).replace('_', ' ')),
         h('td', null, r.checkId ? h('a', { href: `#/item/${r.checkId}`, class: 'small' }, (state.kb.checks.find((c) => c.id === r.checkId) || { title: 'Open the step' }).title) : h('span', { class: 'muted' }, 'Not linked')))))))
       : emptyState('Nothing here yet.', 'Add decisions, actions and risks from any step page, or create one here.'));
 });

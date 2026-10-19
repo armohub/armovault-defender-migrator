@@ -1,20 +1,31 @@
 // The tailoring questionnaire: one question per screen, with section progress, keyboard answers and an
 // optional auto-advance. "Your answers" shows every question on one page for review.
-import { h, icon, modal, confirmDialog, toast, showSequence } from '../dom.js';
+import { h, icon, modal, confirmDialog, toast, showSequence, savedPulse } from '../dom.js';
 import { state, mutate, updateSettings } from '../../app/store.js';
-import { go, route, render } from '../shell.js';
-import { setAnswer, ANSWERS, addAudit, addRegisterItem } from '../../core/model.js';
+import { go, route, render, freshRoute } from '../shell.js';
+import { setAnswer, ANSWERS, addAudit, addRegisterItem, setTestAvailability } from '../../core/model.js';
 import { applicabilityMap, diffApplicability, evaluateApplicability, questionIndex } from '../../core/applicability.js';
 import { btn, linkBtn, callout } from '../components.js';
 import { formatDate } from '../../core/util.js';
 import { rich } from '../rich.js';
 import { questionStrip } from '../route.js';
 
+// Questions the read-only inventory script can suggest answers for (see src/core/inventory.js).
+const INVENTORY_QS = new Set(['fusion', 'ms_incident_rules', 'alert_only_rules', 'mdc', 'standalone_connectors', 'automation_rules', 'playbooks', 'watchlists', 'ti']);
+
+// What the project already knows that hints at an answer.
+function knownHint(q, p) {
+  const envs = (p.meta.environments || []).filter((e) => e.alias);
+  if (q.id === 'multi_workspace' && envs.length) return envs.length > 1 ? `Your workspace list has ${envs.length} workspaces, which suggests Yes.` : `Your workspace list has 1 workspace. If it is the only one in scope in this tenant, the answer is No.`;
+  if (q.id === 'onboarded_any') { const c = envs.filter((e) => e.defender === 'primary' || e.defender === 'secondary').length; if (c) return `Your workspace list shows ${c} connected workspace${c === 1 ? '' : 's'}, which suggests Yes.`; }
+  return '';
+}
+
 const ANSWER_TEXT = {
   yes: ['Yes', ''],
   no: ['No', ''],
   unknown: ['I don\'t know yet', 'The related steps stay in your plan'],
-  na: ['Not applicable', 'Tell us why, if you can'],
+  na: ['Not applicable', 'Doesn\'t fit us. Counts as No'],
 };
 
 function visibleQuestions(kb, p) {
@@ -25,6 +36,10 @@ function visibleQuestions(kb, p) {
 
 let direction = 'forward';
 let advanceTimer = null;
+// Whether the question already had an answer when its screen opened (so we only show "Answered by" then,
+// and the screen does not change shape the moment you answer).
+let openedQ = '';
+let openedWithAnswer = false;
 
 // ───────────────────────────── One question per screen ─────────────────────────────
 route('questionnaire', ({ params }) => {
@@ -59,6 +74,8 @@ route('questionnaire', ({ params }) => {
   const sIdx = sections.findIndex((s) => s.id === q.section);
   const section = sections[sIdx];
   const a = p.answers[q.id];
+  const firstPaint = freshRoute || openedQ !== q.id;
+  if (firstPaint) { openedQ = q.id; openedWithAnswer = !!a; }
   const left = qs.filter((x) => !p.answers[x.id]).length;
   const goNext = () => { direction = 'forward'; go(next ? `#/questionnaire/q/${next.id}` : '#/questionnaire/done'); };
   const goPrev = () => { direction = 'back'; if (prev) go(`#/questionnaire/q/${prev.id}`); };
@@ -67,8 +84,9 @@ route('questionnaire', ({ params }) => {
     clearTimeout(advanceTimer);
     const changed = await changeAnswer(q, value);
     if (changed === false) return;
+    savedPulse('Answer recorded');
     if (state.settings.autoAdvance && (value === 'yes' || value === 'no')) {
-      advanceTimer = setTimeout(() => { if (location.hash === `#/questionnaire/q/${q.id}`) goNext(); }, 350);
+      advanceTimer = setTimeout(() => { if (location.hash === `#/questionnaire/q/${q.id}`) goNext(); }, 650);
     }
   };
 
@@ -115,13 +133,15 @@ route('questionnaire', ({ params }) => {
     h('div', { class: 'q-meta' },
       h('span', null, h('strong', null, section ? section.title : ''), ` · section ${sIdx + 1} of ${sections.length}`),
       left ? h('span', { class: 'tnum' }, `${left} question${left === 1 ? '' : 's'} left`) : h('span', null, 'All answered')),
-    h('div', { class: ['q-card', direction === 'back' ? 'q-back' : 'q-forward'] },
+    h('div', { class: ['q-card', firstPaint && (direction === 'back' ? 'q-back' : 'q-forward')] },
       h('h1', { id: 'page-title', tabindex: '-1' }, q.text),
       q.detail ? h('p', { class: 'q-detail' }, q.detail) : null,
       tiles,
       followUp,
-      a ? h('p', { class: 'small muted answer-meta' }, `Answered by ${a.by} on ${formatDate(a.at)}. `, h('button', { type: 'button', class: 'linklike', onclick: () => changeAnswer(q, null) }, 'Clear answer')) : null,
+      a && openedWithAnswer ? h('p', { class: 'small muted answer-meta' }, `Answered by ${a.by} on ${formatDate(a.at)}. `, h('button', { type: 'button', class: 'linklike', onclick: () => changeAnswer(q, null) }, 'Clear answer')) : null,
       h('div', { class: 'q-aside' },
+        knownHint(q, p) ? h('div', { class: 'q-note q-hint' }, icon('check', 'icon-sm'), h('div', null, h('b', null, 'From what you entered'), knownHint(q, p))) : null,
+        INVENTORY_QS.has(q.id) ? h('div', { class: 'q-note q-hint' }, icon('upload', 'icon-sm'), h('div', null, h('b', null, 'The inventory script can answer this'), 'Run the read-only ', h('a', { href: '#/item/PREP-DET-01' }, 'inventory script'), ' and import its results: the assistant suggests answers for this and eight other questions, and you confirm them.')) : null,
         q.why ? h('div', { class: 'q-note' }, icon('sparkle', 'icon-sm'), h('div', null, h('b', null, 'Why we ask'), rich(q.why, { kb }))) : null,
         q.help ? h('div', { class: 'q-note' }, icon('search', 'icon-sm'), h('div', null, h('b', null, 'Where to find the answer'), rich(q.help, { kb }))) : null)),
     h('div', { class: 'q-foot' },
@@ -143,6 +163,7 @@ function introScreen(qs) {
       h('p', { class: 'q-detail' }, `About ${qs.length} questions, one per screen, in ${kb.questionSections.length} short sections. Answer what you know: "I don't know yet" is a good answer, and it keeps the related steps in your plan.`),
       h('ol', { class: 'steps', style: { marginTop: '26px' } }, kb.questionSections.map((s) => h('li', null, h('div', { class: 'step-text' }, h('strong', null, s.title)), h('div', { class: 'small muted' }, s.intro)))),
       callout('info', 'Nothing is hidden for good.', ' Steps that do not apply are set aside with the reason, and you can change any answer later in "Your answers".'),
+      h('p', { class: 'q-keys', style: { marginTop: '12px' } }, icon('upload', 'icon-sm'), 'Want fewer questions to answer by hand? Run the read-only ', h('a', { href: '#/item/PREP-DET-01' }, 'inventory script'), ' first: it suggests answers for nine questions.'),
       h('div', { class: 'hero-actions' },
         h('button', { type: 'button', class: 'btn btn-primary btn-lg', 'data-focus-key': 'q-start', onclick: () => { direction = 'forward'; go(`#/questionnaire/q/${qs[0].id}`); } }, 'Start the questions', icon('arrow', 'icon-sm')),
         linkBtn('Skip, show the full plan', '#/overview', { kind: 'ghost' })),
@@ -219,6 +240,13 @@ export async function changeAnswer(q, value) {
   if (prevValue === value) return false;
   const before = applicabilityMap(kb, p);
   mutate((pr) => setAnswer(pr, q.id, value), { silent: true });
+  if (q.id === 'test_env' && (value === 'yes' || value === 'no')) {
+    const want = value === 'yes' ? 'available' : 'unavailable';
+    if (p.stages.test.availability !== want) {
+      mutate((pr) => setTestAvailability(pr, want, value === 'no' ? 'No non-production Sentinel environment to test with (answer in the questions).' : ''), { silent: true });
+      toast(value === 'yes' ? 'The optional test stage is now on.' : 'The optional test stage is skipped. The change gets compensating controls instead.', 'info', 4500);
+    }
+  }
   const after = applicabilityMap(kb, p);
   const diff = diffApplicability(before, after);
   const hadDecisions = Object.keys(p.gates).length > 0 || p.snapshots.length > 0;

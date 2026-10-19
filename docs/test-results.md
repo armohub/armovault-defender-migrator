@@ -8,17 +8,17 @@ Only results that were recorded in files are reported as results here. Where no 
 
 | Suite | Command | Recorded result |
 |---|---|---|
-| End-to-end, Edge | `npm run test:e2e` | ✔ **31 of 31 steps passed** on 2026-10-19 at 16:44 UTC, against the final 1.0.0 build of `ArMo-MS-Defender-Migration-Assistant.html` (`test-results/e2e-results-msedge.json`) |
-| Network requests and console errors during those runs | recorded by the end-to-end runner (step 31) | ✔ **none**, in Edge and in Chrome |
-| End-to-end, Chrome | `npm run test:e2e:chrome` | ✔ **31 of 31 steps passed** on 2026-10-19 at 16:45 UTC, against the same build (`test-results/e2e-results-chrome.json`) |
-| Unit tests | `npm run test:unit` | ✔ **66 of 66 passed** on 2026-10-19 against the final 1.0.0 source |
+| End-to-end, Edge | `npm run test:e2e` | ✔ **33 of 33 steps passed** on 2026-10-19 at 18:17 UTC, against the final 1.0.0 build of `ArMo-MS-Defender-Migration-Assistant.html` (`test-results/e2e-results-msedge.json`) |
+| Network requests and console errors during those runs | recorded by the end-to-end runner (step 33) | ✔ **none**, in Edge and in Chrome |
+| End-to-end, Chrome | `npm run test:e2e:chrome` | ✔ **33 of 33 steps passed** on 2026-10-19 at 18:18 UTC, against the same build (`test-results/e2e-results-chrome.json`) |
+| Unit tests | `npm run test:unit` | ✔ **76 of 76 passed** on 2026-10-19 against the final 1.0.0 source |
 | Knowledge base integrity and writing rules | `npm run validate-kb` (also runs in every build) | No stored result. Every build runs it and stops on any error. The 1.0 knowledge base has 109 steps, 35 questions, 101 sources and 32 snippets. |
 | Inventory script parse and mock run | `powershell -File tests/tools/mock-inventory-run.ps1` (plus `-Fail automationRules`) | No stored result for 1.0. Run it before release (release checklist, B10). |
 | Platform prototypes P1 to P3 | `node prototypes/run-p1-platform.mjs` and the others | Stored results in `prototypes/*.json`. See [prototypes/README.md](../prototypes/README.md). |
 
 The Edge run also generated `test-results/report-prepare-msedge.pdf` and `test-results/report-final-demo-msedge.pdf`. The `test-results/` folder is git-ignored and is rewritten on each run.
 
-## End-to-end journey (31 steps, Edge and Chrome runs of 2026-10-19)
+## End-to-end journey (33 steps, Edge and Chrome runs of 2026-10-19)
 
 1. First launch plays the introduction with its six promises, and it can be skipped.
 2. The welcome page has a strict CSP, and the introduction does not return on the next start.
@@ -27,30 +27,32 @@ The Edge run also generated `test-results/report-prepare-msedge.pdf` and `test-r
 5. The demo is clearly labelled, and "Exit demo" returns to the start page, ready for your own project.
 6. Create a tailored project with browser autosave.
 7. Questionnaire: one question per screen, keys 1 to 4, and auto-advance after Yes or No only.
-8. Building the plan shows real counts, then the guided overview says where to start.
+8. Building the plan shows real counts and progress on the route, then the guided overview says where to start.
 9. Applicability: "I don't know yet" keeps steps in scope, and "No" sets steps aside with a reason.
-10. Step page: references to other steps are links, and the "do it here" buttons act on the step.
-11. "Passed" requires evidence; your word alone is recorded as "Not verified".
-12. Add an observation note (containing an injection string) and a screenshot, then mark Passed, verified. No script runs.
-13. Unsafe and oversized evidence files are rejected.
-14. A failed status requires a reason, and an exception with a named acceptance is recorded.
-15. Changing an answer explains the plan change and keeps records.
-16. A gate decision needs a typed decision maker.
-17. The optional test stage can be skipped with a reason, and the route shows it as skipped.
-18. Import read-only inventory results as labelled evidence and confirmed suggestions.
-19. Every main view renders without errors, passes basic accessibility checks and hides item codes.
-20. The readiness report renders and produces a multi-page A4 PDF offline.
-21. A snapshot is saved, listed and verified by its fingerprint.
-22. Save the project package (.zip) with evidence.
-23. Exports: JSON data, checklist CSV, register CSV and evidence index CSV.
-24. Browser autosave survives a full browser restart (project and screenshot restored).
-25. Malformed, foreign and tampered files are refused without changing anything.
-26. Delete browser data, then reopen from the package: statuses, evidence, snapshot and audit log are intact.
-27. About replays the introduction on request.
-28. A full-checklist project without autosave warns about unsaved work.
-29. The demo opens by link with fictional data, and the final report renders.
-30. Reduced motion: the introduction shows everything at once, and the assistant stays usable.
-31. No network request was made during the whole run, and no console errors occurred.
+10. Step page: references are links, "do it here" buttons act on the step, and the window planner saves to Project setup.
+11. Do it here: owners flow into other steps, workspaces into Project setup, the briefing email is ready to copy, and "Leave for now" moves on.
+12. "Not needed for us" lets a step pass, and the report says why.
+13. "Passed" requires evidence; your word alone is recorded as "Not verified".
+14. Add an observation note (containing an injection string) and a screenshot, then mark Passed, verified. No script runs.
+15. Unsafe and oversized evidence files are rejected.
+16. A failed status requires a reason, and an exception with a named acceptance is recorded.
+17. Changing an answer explains the plan change and keeps records.
+18. A gate decision needs a typed decision maker.
+19. The optional test stage can be skipped with a reason, and the route shows it as skipped.
+20. Import read-only inventory results as labelled evidence and confirmed suggestions.
+21. Every main view renders without errors, passes basic accessibility checks and hides item codes.
+22. The readiness report renders and produces a multi-page A4 PDF offline.
+23. A snapshot is saved, listed and verified by its fingerprint.
+24. Save the project package (.zip) with evidence.
+25. Exports: JSON data, checklist CSV, register CSV and evidence index CSV.
+26. Browser autosave survives a full browser restart (project and screenshot restored).
+27. Malformed, foreign and tampered files are refused without changing anything.
+28. Delete browser data, then reopen from the package: statuses, evidence, snapshot and audit log are intact.
+29. About replays the introduction on request.
+30. A full-checklist project without autosave warns about unsaved work.
+31. The demo opens by link with fictional data, and the final report renders.
+32. Reduced motion: the introduction shows everything at once, and the assistant stays usable.
+33. No network request was made during the whole run, and no console errors occurred.
 
 ## What the unit tests cover
 

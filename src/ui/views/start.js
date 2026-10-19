@@ -40,12 +40,13 @@ route('welcome', () => {
   }
   const sample = {
     stages: [
-      { name: 'Prepare', meta: 'know and fix', href: '#/welcome', state: 'current' },
+      { name: 'Plan', meta: 'setup and questions', href: '#/welcome', state: 'current' },
+      { name: 'Prepare', meta: 'know and fix', href: '#/welcome', state: 'todo' },
       { name: 'Test', meta: 'optional', href: '#/welcome', state: 'todo' },
       { name: 'Transition', meta: 'the change', href: '#/welcome', state: 'todo' },
       { name: 'Validate', meta: 'prove it works', href: '#/welcome', state: 'todo' },
     ],
-    marker: { index: 0, fraction: 0.55 },
+    marker: { index: 0, fraction: 0.6 },
   };
   const promises = [
     ['wifioff', 'Works offline', 'The browser blocks every network request from this file.'],

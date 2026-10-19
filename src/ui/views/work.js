@@ -4,7 +4,7 @@ import { state, mutate } from '../../app/store.js';
 import { route, render, freshRoute, savePackageFlow } from '../shell.js';
 import { applicabilityMap, evaluateApplicability, questionIndex } from '../../core/applicability.js';
 import { assessStage, summariseStage, dependencyStatus, CONCLUSION_CRITERIA, effectiveStatus } from '../../core/readiness.js';
-import { setTestAvailability } from '../../core/model.js';
+import { setTestAvailability, effectiveOwner } from '../../core/model.js';
 import { statusPill, critBadge, kindChip, applicabilityChip, progressBar, conclusionBadge, callout, emptyState, btn, linkBtn, daysUntil } from '../components.js';
 import { formatDate } from '../../core/util.js';
 import { importInventoryFlow } from '../inventory.js';
@@ -28,17 +28,50 @@ export function orderedStageItems(kb, stageId) {
 
 const testActive = (p) => p.stages.test.availability === 'available';
 
-// The guided next step: the first open in-scope step, in reading order, of the first unfinished stage.
-export function guidedNext(kb, p, appMap) {
-  for (const s of kb.stages) {
-    if (s.id === 'test' && !testActive(p)) continue;
-    for (const c of orderedStageItems(kb, s.id)) {
-      const app = appMap.get(c.id);
-      if (app.value === 'not_applicable') continue;
-      if (OPEN_STATUSES.has(effectiveStatus(p, c.id))) return { stage: s, check: c, app };
+// The guided next step: the first untouched in-scope step, in reading order, of the first unfinished stage.
+// Steps never block each other: a step parked as "in progress" (for example waiting for a meeting) is
+// skipped in favour of the next untouched one, and suggested again once nothing else is left.
+export function guidedNext(kb, p, appMap, { skip = null } = {}) {
+  const pass = (wanted) => {
+    for (const s of kb.stages) {
+      if (s.id === 'test' && !testActive(p)) continue;
+      for (const c of orderedStageItems(kb, s.id)) {
+        if (c.id === skip) continue;
+        const app = appMap.get(c.id);
+        if (app.value === 'not_applicable') continue;
+        if (wanted.has(effectiveStatus(p, c.id))) return { stage: s, check: c, app };
+      }
     }
+    return null;
+  };
+  return pass(new Set(['not_started'])) || pass(OPEN_STATUSES);
+}
+
+// Questions shown in this project (follow-ups appear only when their parent answer asks for them).
+export function visibleQuestions(kb, p) {
+  const qIdx = questionIndex(kb);
+  return kb.questions.filter((q) => !q.showIf || evaluateApplicability({ id: '_', applicability: q.showIf }, { ...p, mode: 'tailored', checks: {} }, kb, qIdx).value !== 'not_applicable');
+}
+
+// The first stop of the route: setting up the project and answering the questions.
+function planFact(kb, p) {
+  const setupDone = !!(p.meta.name && p.meta.operatorName);
+  const qs = p.mode === 'tailored' ? visibleQuestions(kb, p) : [];
+  const answered = qs.filter((q) => p.answers[q.id]).length;
+  const done = setupDone && answered >= qs.length;
+  return { id: 'plan', name: 'Plan', assessed: (setupDone ? 1 : 0) + answered, inScope: 1 + qs.length, skipped: false, gateDone: true, href: p.mode === 'tailored' ? '#/answers' : '#/project', meta: done ? 'done' : (qs.length ? `${answered} of ${qs.length} questions` : 'project setup') };
+}
+
+// How far along the route you are. Each part weighs what it usually takes; the optional test stage counts only when used.
+const ROUTE_WEIGHT = { plan: 10, prepare: 40, test: 10, transition: 20, validate: 20 };
+function routePercent(parts) {
+  let w = 0; let got = 0;
+  for (const f of parts) {
+    const weight = ROUTE_WEIGHT[f.id] || 0;
+    w += weight;
+    got += weight * (f.inScope ? Math.min(1, f.assessed / f.inScope) : 1);
   }
-  return null;
+  return w ? Math.round((got / w) * 100) : 0;
 }
 
 function stageFacts(kb, p, appMap) {
@@ -60,11 +93,13 @@ route('overview', () => {
   const p = state.project;
   const appMap = applicabilityMap(kb, p);
   const facts = stageFacts(kb, p, appMap);
-  const model = routeModel(kb, facts);
+  const plan = planFact(kb, p);
+  const model = routeModel(kb, [plan, ...facts]);
   const counted = facts.filter((f) => !f.skipped && (f.id !== 'test' || testActive(p)));
   const inScope = counted.reduce((a, f) => a + f.inScope, 0);
   const assessed = counted.reduce((a, f) => a + f.assessed, 0);
-  const pct = inScope ? Math.round((assessed / inScope) * 100) : 0;
+  const pct = routePercent([plan, ...counted]);
+  const planDone = plan.meta === 'done';
   const next = guidedNext(kb, p, appMap);
   if (freshRoute) whyOpen = false;
 
@@ -91,14 +126,14 @@ route('overview', () => {
         h('div', { class: 'next-actions' },
           h('a', { href: `#/item/${c.id}`, class: 'btn btn-primary btn-lg', 'data-focus-key': 'start-step' }, 'Start this step', icon('arrow', 'icon-sm')),
           h('button', { type: 'button', class: 'btn btn-lg btn-quiet', 'aria-expanded': whyOpen ? 'true' : 'false', 'aria-controls': 'why-next', 'data-focus-key': 'why-next', onclick: () => { whyOpen = !whyOpen; render(); } }, whyOpen ? 'Hide the reason' : 'Why this one?'))),
-      h('div', { class: 'journey-figure' }, h('div', { class: 'big', 'aria-label': `${pct} percent of your route checked` }, String(pct), h('small', null, '%')), h('div', { class: 'cap' }, `of your route checked`), h('div', { class: 'cap tnum' }, `${assessed} of ${inScope} steps`)));
+      h('div', { class: 'journey-figure' }, h('div', { class: 'big', 'aria-label': `${pct} percent of your route done` }, String(pct), h('small', null, '%')), h('div', { class: 'cap' }, 'of your route done'), h('div', { class: 'cap' }, planDone ? 'Plan done' : 'Plan in progress', ', ', h('span', { class: 'tnum' }, `${assessed} of ${inScope} steps`))));
   } else {
     hero = h('div', { class: 'next-head' },
       h('div', null,
         h('h1', { id: 'page-title', tabindex: '-1' }, 'Every step on your route has an outcome'),
         h('p', { class: 'objective-lead' }, 'Review the conclusions, record the last decisions, and share the final report.'),
         h('div', { class: 'next-actions' }, linkBtn('Open the final report', '#/report/final', { kind: 'primary', iconName: 'reports' }), linkBtn('Review decisions and risks', '#/register'))),
-      h('div', { class: 'journey-figure' }, h('div', { class: 'big' }, '100', h('small', null, '%')), h('div', { class: 'cap' }, 'of your route checked')));
+      h('div', { class: 'journey-figure' }, h('div', { class: 'big' }, '100', h('small', null, '%')), h('div', { class: 'cap' }, 'of your route done')));
   }
 
   return h('div', { class: 'page' },
@@ -109,14 +144,14 @@ route('overview', () => {
       h('section', { class: 'card' }, h('h2', { class: 'card-title' }, 'Start here'), guideList(kb, p, appMap, facts, next)),
       h('div', { class: 'stack' },
         h('section', { class: 'card' }, h('h2', { class: 'card-title' }, 'Needs your attention'), attentionList(kb, p, appMap)),
+        parkedList(kb, p, appMap),
         h('section', { class: 'card' }, h('h2', { class: 'card-title' }, 'Good to know'), keyFacts(p)))),
     h('details', { class: 'card disclose' }, h('summary', null, icon('chevron', 'icon-sm'), `Recent activity (${Math.min(12, p.audit.length)})`),
       h('ul', { class: 'activity', style: { marginTop: '10px' } }, p.audit.slice(-12).reverse().map((a) => h('li', null, h('time', null, formatDate(a.at, true)), h('span', null, a.detail, h('span', { class: 'muted' }, `, ${a.by}`)))))));
 });
 
 function guideList(kb, p, appMap, facts, next) {
-  const qIdx = questionIndex(kb);
-  const qs = kb.questions.filter((q) => !q.showIf || evaluateApplicability({ id: '_', applicability: q.showIf }, { ...p, mode: 'tailored', checks: {} }, kb, qIdx).value !== 'not_applicable');
+  const qs = visibleQuestions(kb, p);
   const answered = qs.filter((q) => p.answers[q.id]).length;
   const f = Object.fromEntries(facts.map((x) => [x.id, x]));
   const stageDone = (id) => f[id].inScope > 0 && f[id].assessed >= f[id].inScope;
@@ -124,7 +159,7 @@ function guideList(kb, p, appMap, facts, next) {
   const prepGate = gateOf('prepare');
   const finalGate = gateOf('validate');
   const gateRecorded = (g) => g && p.gates[g.id] && ['go', 'go_with_exceptions'].includes(p.gates[g.id].decision);
-  const firstOpenIn = (stageId) => { const c = orderedStageItems(kb, stageId).find((x) => appMap.get(x.id).value !== 'not_applicable' && OPEN_STATUSES.has(effectiveStatus(p, x.id))); return c ? `#/item/${c.id}` : `#/stage/${stageId}`; };
+  const firstOpenIn = (stageId) => { const list = orderedStageItems(kb, stageId).filter((x) => appMap.get(x.id).value !== 'not_applicable'); const c = list.find((x) => effectiveStatus(p, x.id) === 'not_started') || list.find((x) => OPEN_STATUSES.has(effectiveStatus(p, x.id))); return c ? `#/item/${c.id}` : `#/stage/${stageId}`; };
   const rows = [
     { t: 'Set up your project', d: p.meta.windowStart ? `Planned window ${p.meta.windowStart}${p.meta.windowEnd ? ` to ${p.meta.windowEnd}` : ''}` : 'Add your planned transition window', done: !!(p.meta.name && p.meta.operatorName && p.meta.windowStart), href: p.meta.windowStart ? '#/project' : '#/project/window', go: p.meta.windowStart ? 'Edit' : 'Add it' },
     p.mode === 'tailored'
@@ -165,6 +200,18 @@ function attentionList(kb, p, appMap) {
   return h('div', null,
     rows.slice(0, 7).map((r) => h('div', { class: 'attention-row' }, h('a', { href: r.href }, r.t), h('span', { class: ['state-pill', `tone-${r.tone}`] }, r.pill))),
     rows.length > 7 ? h('p', { class: 'small muted', style: { marginTop: '10px' } }, `And ${rows.length - 7} more. Use the "Needs attention" filter on each stage.`) : null);
+}
+
+// Steps left for later with "Leave for now" (or set to in progress): nothing blocks, but nothing is forgotten either.
+function parkedList(kb, p, appMap) {
+  const rows = [];
+  for (const s of kb.stages) for (const c of orderedStageItems(kb, s.id)) {
+    if (appMap.get(c.id).value === 'not_applicable' || effectiveStatus(p, c.id) !== 'in_progress') continue;
+    const owner = effectiveOwner(p, c).name;
+    rows.push(h('div', { class: 'attention-row' }, h('a', { href: `#/item/${c.id}` }, c.title), h('span', { class: 'small muted' }, owner || s.short)));
+  }
+  if (!rows.length) return null;
+  return h('section', { class: 'card' }, h('h2', { class: 'card-title' }, `Parked for later (${rows.length})`), h('p', { class: 'small muted', style: { marginTop: '-4px' } }, 'In progress, waiting on someone or something. Pick them up any time.'), ...rows.slice(0, 8), rows.length > 8 ? h('p', { class: 'small muted' }, `And ${rows.length - 8} more.`) : null);
 }
 
 function keyFacts(p) {

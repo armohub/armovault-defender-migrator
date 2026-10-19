@@ -3,7 +3,7 @@
 
 import { applicabilityMap } from './applicability.js';
 import { assessStage, summariseStage, CONCLUSION_CRITERIA, exceptionsByCheck, overallAssessment } from './readiness.js';
-import { statusById, answerLabel, actor } from './model.js';
+import { statusById, answerLabel, actor, effectiveOwner } from './model.js';
 import { sha256Hex } from './files.js';
 import { nowIso } from './util.js';
 
@@ -55,9 +55,10 @@ function itemRow(kb, project, item, excMap) {
     applicabilityReasons: item.app.reasons,
     status: item.status,
     statusLabel: statusById(item.status).label,
-    verification: VERIFICATION[item.status],
+    verification: item.status === 'passed' && st.evidenceWaiver && !(st.evidenceIds || []).some((id) => project.evidence[id]) ? 'Passed, evidence not needed' : VERIFICATION[item.status],
+    evidenceWaiver: st.evidenceWaiver ? { reason: st.evidenceWaiver.reason, by: st.evidenceWaiver.by, at: st.evidenceWaiver.at } : null,
     statusReason: st.statusReason || '',
-    owner: st.owner || '',
+    owner: effectiveOwner(project, c).name,
     due: st.due || '',
     notes: st.notes || '',
     updatedAt: st.updatedAt || '',
@@ -141,7 +142,11 @@ export function buildReportModel(kind, kb, project, { appVersion }) {
     kbReviewed: kb.meta.lastReviewed,
     project: {
       id: project.id, name: project.meta.name, organisation: project.meta.organisation, operatorName: project.meta.operatorName, operatorRole: project.meta.operatorRole,
-      startDate: project.meta.startDate, windowStart: project.meta.windowStart, windowEnd: project.meta.windowEnd, environments: project.meta.environments, mode: project.mode, isDemo: !!project.isDemo,
+      startDate: project.meta.startDate, windowStart: project.meta.windowStart, windowEnd: project.meta.windowEnd, environments: project.meta.environments, plannedPrimary: project.meta.plannedPrimary || '', mode: project.mode, isDemo: !!project.isDemo,
+      owners: [
+        ...kb.workstreams.map((w) => ({ area: `${(kb.stages.find((s) => s.id === w.stage) || {}).short}: ${w.title}`, name: (project.meta.workstreamOwners || {})[`${w.stage}:${w.id}`] || '' })).filter((o) => o.name),
+        ...(project.meta.approvers || []).map((a) => ({ area: `Approver: ${a.role}`, name: a.name })),
+      ],
     },
     scope: kb.meta.scope,
     method: kb.meta.method,
@@ -192,7 +197,7 @@ export function itemsCsvRows(kb, project) {
     return {
       stage: c.stage, workstream: c.workstream, id: c.id, title: c.title, kind: c.kind, criticality: c.criticality,
       applicability: app.value, applicability_reason: app.reasons.join(' | '), status: st.status || 'not_started', status_reason: st.statusReason || '',
-      owner: st.owner || '', due: st.due || '', evidence_count: (st.evidenceIds || []).filter((id) => project.evidence[id]).length, notes: st.notes || '',
+      owner: effectiveOwner(project, c).name, due: st.due || '', evidence_count: (st.evidenceIds || []).filter((id) => project.evidence[id]).length, evidence_not_needed: st.evidenceWaiver ? st.evidenceWaiver.reason : '', notes: st.notes || '',
       updated_at: st.updatedAt || '', updated_by: st.updatedBy || '', provenance: c.provenance, validation: c.validation,
     };
   });

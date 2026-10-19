@@ -564,6 +564,20 @@ The step page reads like a well-made runbook.
 - **Questionnaire strip:** the same language on a straight line (viewBox 1000 by 28): one 7px ring per section, done sections in Passed Green joined by a 4px Route Blue line, the current section's ring in Route Blue, and a 6px Route Blue marker at the current question. It is hidden from assistive technology; the text line under it ("Your environment, section 1 of 6", "3 questions left") carries the same information.
 - **Intro route:** the same climb (viewBox 1200 by 300) with six stations: 52px rings with a 3px Route Blue border and 26px icons, labels alternating above and below.
 
+### Do it here (step tools)
+- A step can carry the form it needs (`tool` in the knowledge base: briefing, owners, window, workspaces, connection, primary). It renders first on the step page as a raised panel (`.do-here`, a seam at 40% Route Blue) under the heading "Do it here: ...". Gate steps render their decision form there.
+- The same tools appear in Project setup, so a value is entered once and reused in steps and reports. Each tool keeps its own draft and a quiet save bar (`.tool-bar`): "Changes not saved yet" with Discard and one primary Save.
+- Workspace rows are cards on the raised tone (`.ws-card`) with a three-column field grid that collapses to one column below 900px. Owner fields share one suggestion list of known people.
+- The briefing pairs two summary columns (what changes, what stays the same) with an email preview in a bordered well and three actions: Copy email (formatted), Copy subject, Open in email app.
+
+### Folded background and parked steps
+- Step pages show the essentials open (Do it here, Where, Steps, You're done when, What to record). Background folds into rows under a top seam (`.g-fold`): the title, then a one-line muted preview that hides once the row is open.
+- Script cards lead with their purpose and buttons. Code of 12 lines or fewer shows inline; longer code and the run details sit in one disclosure.
+- "Leave for now" (a quiet button, top right of every step) parks a step as in progress. The overview lists parked steps under "Parked for later", with their owner.
+
+### Feedback
+- A single "saved" notice (`.saved-pulse`) confirms quiet saves: a Passed Green tint at 16% over the panel, a 45% green seam, fading in and out over 260ms, held for about 1.3s, bottom right. It replaces toasts for routine confirmations, so only one notice shows at a time.
+
 ### Questionnaire
 - One question per screen at 820px: the strip, the meta line, the question title, a 60ch detail, then answer tiles.
 - **Answer tiles:** two columns (one below 900px), 10px corners, a Strong Seam border, 18px padding, 1.02rem 600 labels with an optional 0.82rem hint, a 22px mark circle and a key cap (1 to 4). Hover moves the border 60% toward Route Blue.

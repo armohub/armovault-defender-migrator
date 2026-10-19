@@ -214,6 +214,9 @@ await step('Building the plan shows real counts, then the guided overview says w
   await page.locator('.next-panel').waitFor({ timeout: 6000 });
   await page.getByText('Your plan is ready.').waitFor();
   await page.getByRole('heading', { name: 'Start here' }).waitFor();
+  const pct = Number((await page.locator('.journey-figure .big').textContent()).replace(/\D/g, ''));
+  assert.ok(pct >= 1, `answering questions shows progress (got ${pct}%)`);
+  await page.locator('.route-stop', { hasText: 'Plan' }).waitFor();
   await page.locator('.guide li.now').first().waitFor();
   await page.getByRole('link', { name: 'Start this step' }).waitFor();
   await btn(page, 'Why this one?').click();
@@ -241,25 +244,67 @@ await step('Step page: cross-references are links, and "do it here" buttons act 
   await dlg(page).getByLabel('Title').fill('Window approved for November');
   await clickDlg(page, 'Add');
   await page.locator('.register-actions').getByText('Decision: Window approved for November').waitFor();
-  await page.locator('.steps').getByRole('link', { name: /Project setup > Planned transition window/ }).click();
+  // The window is planned right in the step, and the planner reacts to it.
+  await page.locator('#do-it-here').getByLabel('Window from').fill('2026-11-17');
+  await page.locator('#do-it-here').getByLabel('Window to').fill('2026-11-19');
+  await page.locator('#do-it-here').getByRole('button', { name: 'Save', exact: true }).click();
+  await page.locator('#do-it-here').getByText('start Prepare by', { exact: false }).waitFor();
+  // The record list links to the same fields in Project setup.
+  await page.locator('.g-section').getByRole('link', { name: 'Project setup' }).first().click();
   await page.waitForURL(/#\/project\/window$/);
   await page.waitForTimeout(400);
   assert.equal(await page.evaluate(() => !!document.activeElement.closest('#sec-window')), true, 'focus lands in the window section');
-  await page.getByLabel('Window from').fill('2026-11-17');
-  await btn(page, 'Save changes').click();
-  await page.getByText('Everything here is saved.').waitFor();
+  assert.equal(await page.locator('#sec-window').getByLabel('Window from').inputValue(), '2026-11-17');
   await go(page, '#/item/PREP-SCOPE-03');
-  await page.locator('.record').getByRole('button', { name: 'this step\'s notes' }).count(); // present in the guidance when written so
   const owner = page.locator('[data-focus-key="owner-PREP-SCOPE-03"]');
   await owner.fill('Change manager');
   await page.locator('.nav-card.next').waitFor();
+  await page.locator('[data-focus-key="next-step-top"]').waitFor();
+});
+
+await step('Do it here: owners flow into steps, workspaces into reports, briefing email copies, "Leave for now" moves on', async () => {
+  await go(page, '#/item/PREP-SCOPE-02');
+  await page.locator('input[id="own-prepare:access"]').fill('IAM team');
+  await page.locator('#do-it-here').getByRole('button', { name: 'Save', exact: true }).click();
+  await page.waitForTimeout(200);
+  await go(page, '#/item/PREP-ACC-01');
+  assert.equal(await page.locator('[data-focus-key="owner-PREP-ACC-01"]').getAttribute('placeholder'), 'IAM team');
+  await go(page, '#/item/PREP-TOP-01');
+  await page.locator('#do-it-here').getByRole('button', { name: 'Add a workspace' }).click();
+  await page.locator('[data-focus-key="env-alias-1"]').fill('E2E-PROD-NEU');
+  await page.locator('#do-it-here').getByRole('button', { name: 'Save', exact: true }).click();
+  await page.waitForTimeout(200);
+  await go(page, '#/project/environments');
+  await page.locator('#sec-environments').getByText('E2E-PROD-NEU').first().waitFor();
+  await go(page, '#/item/PREP-SCOPE-01');
+  await page.locator('#do-it-here').getByRole('heading', { name: 'What stays the same' }).waitFor();
+  await page.locator('#do-it-here').getByRole('button', { name: 'Copy email' }).waitFor();
+  assert.match(await page.locator('#do-it-here a', { hasText: 'Open in email app' }).getAttribute('href'), /^mailto:\?subject=/);
+  await btn(page, 'Leave for now').click();
+  await page.waitForURL(/#\/item\/PREP-SCOPE-02$/);
+  await go(page, '#/item/PREP-SCOPE-01');
+  await page.locator('button[role="radio"][aria-checked="true"][title^="In progress"]').waitFor();
+});
+
+await step('"Not needed for us" lets a step pass and the report says why', async () => {
+  await go(page, '#/item/PREP-TOP-01');
+  await btn(page, 'Not needed for us').click();
+  await dlg(page).getByLabel('Reason').fill('The inventory entered here is the record.');
+  await clickDlg(page, 'Record the decision');
+  await page.locator('.waiver').getByText('No evidence needed for us').waitFor();
+  await page.locator('button[role="radio"][title^="Passed"]').click();
+  await page.locator('button[role="radio"][aria-checked="true"][title^="Passed"]').waitFor();
+  await go(page, '#/report/prepare');
+  await page.locator('.report').getByText('Passed, evidence not needed').first().waitFor();
+  await page.locator('.report').getByText('The inventory entered here is the record.', { exact: false }).first().waitFor();
+  await page.locator('.report').getByText('E2E-PROD-NEU').first().waitFor();
 });
 
 await step('"Passed" requires evidence; your word only is recorded as "Not verified"', async () => {
   await go(page, '#/item/PREP-SCOPE-01');
   await page.locator('button[role="radio"][title^="Passed"]').click();
   await dlg(page).getByText('Passed needs evidence').waitFor();
-  await clickDlg(page, 'Record as not verified');
+  await clickDlg(page, 'Done, not verified');
   await page.locator('button[role="radio"][aria-checked="true"][title^="Done, not verified"]').waitFor();
 });
 

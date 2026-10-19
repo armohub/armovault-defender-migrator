@@ -44,7 +44,7 @@ export function rich(text, ctx = {}) {
 }
 
 function actionIcon(action) {
-  const map = { 'add-decision': 'gate', 'add-risk': 'flag', 'add-issue': 'alert', 'add-action': 'plus', 'add-exception': 'shield', 'add-note': 'note', 'add-screenshot': 'image', 'add-file': 'file', 'add-link': 'link', 'set-owner': 'user', 'set-due': 'calendar', 'write-notes': 'edit', 'record-gate': 'gate', 'import-inventory': 'upload', 'download-inventory-script': 'download' };
+  const map = { 'add-decision': 'gate', 'add-risk': 'flag', 'add-issue': 'alert', 'add-action': 'plus', 'add-exception': 'shield', 'add-note': 'note', 'add-screenshot': 'image', 'add-file': 'file', 'add-link': 'link', 'set-owner': 'user', 'set-due': 'calendar', 'write-notes': 'edit', 'record-gate': 'gate', 'open-tool': 'edit', 'waive-evidence': 'minus', 'save-snapshot': 'history', 'import-inventory': 'upload', 'download-inventory-script': 'download' };
   return icon(map[action] || 'plus', 'icon-xs');
 }
 

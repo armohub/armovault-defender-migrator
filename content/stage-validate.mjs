@@ -63,6 +63,10 @@ export const VALIDATE = [
       'Compare the results with the Stage 1 baseline, using [[PREP-PLN-02|your acceptance criteria]].',
       'Explain every material difference: an expected change, or a gap to fix.',
     ],
+    portalWay: [
+      "Open the workspace in **Log Analytics workspaces**, then **Monitoring > Insights** and the **Usage** tab. Set the same time range as your baseline to compare ingestion per table. You need read access to the workspace, for example **Log Analytics Reader**.",
+      "Use the **Data collection health monitoring** workbook: its **Overview** tab shows the time the last log was received, and its **Data collection anomalies** tab flags anomalies by table and data source. Workbooks show only data you have permission to read.",
+    ],
     snippets: ['K_USAGE_LASTSEEN', 'K_USAGE_BY_TABLE', 'K_CONNECTOR_FAILURES'],
     expected: 'Critical tables are fresh within your agreed criteria, and differences are explained.',
     interpret: [
@@ -74,7 +78,7 @@ export const VALIDATE = [
       `The explained differences, in ${NOTES}`,
     ],
     evidence: ['The CSV exports: [[do:add-file|attach them as files]]'],
-    sources: [src('usage', 'Usage analysis'), src('move', 'Non-Microsoft connectors continue operating'), src('connectorhealth', 'Connector health')],
+    sources: [src('usage', 'Usage analysis; portal: Workspace Insights Usage tab'), src('move', 'Non-Microsoft connectors continue operating'), src('connectorhealth', 'Connector health; portal: Data collection health monitoring workbook Overview and Data collection anomalies tabs'), src('wsinsights', 'Workspace menu Monitoring > Insights; Usage tab per table; read permissions needed'), src('azworkbooks', 'Workbook permissions are based on the permissions you have for the resources the workbook uses')],
   }),
   k({
     id: 'VAL-04', stage: 'validate', workstream: 'detections', order: 40, kind: 'check', criticality: 'critical', dependsOn: ['PREP-CON-05'],
@@ -90,6 +94,10 @@ export const VALIDATE = [
       'Run the incidents-by-rule query and compare it with [[PREP-CON-05|the baseline]] for representative rules.',
       'Confirm analytics rules appear in the Defender custom detection rules list.',
     ],
+    portalWay: [
+      "Open the **Analytics Health & Audit** workbook under **Microsoft Sentinel > Threat management > Workbooks**. The **Health** tab shows successful and failed rule runs and their reasons, to compare with your baseline.",
+      "Select a representative rule on **Microsoft Sentinel > Configuration > Analytics** and open the **Insights** tab. **Alert graph** shows its alerts over the time frame you choose, and **Failed executions** lists its failed runs.",
+    ],
     snippets: ['K_RULE_HEALTH', 'K_INCIDENTS_BY_RULE'],
     expected: 'There are no new rule failures, and representative rules create incidents.',
     record: [
@@ -97,7 +105,7 @@ export const VALIDATE = [
       `The representative rules you confirmed, in ${NOTES}`,
     ],
     evidence: ['The CSV exports: [[do:add-file|attach them as files]]'],
-    sources: [src('rulehealth', 'Rule health'), src('customdetmanage', 'Custom detection list includes analytics rules')],
+    sources: [src('rulehealth', 'Rule health; portal: Analytics Health & Audit workbook Health tab'), src('customdetmanage', 'Custom detection list includes analytics rules'), src('workbooks', 'Workbooks are under Threat management > Workbooks'), src('ruleinsights', 'Insights tab with alert graph and failed executions per rule')],
   }),
   k({
     id: 'VAL-05', stage: 'validate', workstream: 'detections', order: 50, kind: 'check', criticality: 'high', dependsOn: ['PREP-DET-05'],
@@ -133,6 +141,10 @@ export const VALIDATE = [
       'Sample incidents and confirm the right rules acted, and the wrong rules did not.',
       'Check that rules using "Updated by" now behave correctly with the "Other" value.',
     ],
+    portalWay: [
+      "Use the **Automation health** workbook (under **Microsoft Sentinel > Threat management > Workbooks**). It shows automation rule health and details, and automation details per incident. Workbooks show only data you have permission to read.",
+      "Open a sampled incident in the Azure portal and select **Activity log** to see the actions already taken on it, for example by automation rules.",
+    ],
     snippets: ['K_AUTOMATION_FAILURES'],
     expected: 'There are no unexplained failures, and the scoping is correct.',
     record: [
@@ -140,7 +152,7 @@ export const VALIDATE = [
       `The sample results, in ${NOTES}`,
     ],
     evidence: ['The query output: [[do:add-file|attach it as a file]]'],
-    sources: [src('automation', 'Automation changes'), src('autohealth', 'Automation health')],
+    sources: [src('automation', 'Automation changes'), src('autohealth', 'Automation health; portal: Automation health workbook displays'), src('workbooks', 'Workbooks are under Threat management > Workbooks'), src('azworkbooks', 'Workbook permissions are based on the permissions you have for the resources the workbook uses'), src('investigateincidents', 'Incident Activity log shows actions taken on the incident, for example by automation rules')],
   }),
   k({
     id: 'VAL-07', stage: 'validate', workstream: 'automation', order: 70, kind: 'check', criticality: 'high', applicability: q('playbooks'), dependsOn: ['PREP-AUT-03'],
@@ -153,6 +165,11 @@ export const VALIDATE = [
       'Run the automation-to-playbook correlation query.',
       'Investigate failed runs.',
     ],
+    portalWay: [
+      "Select the **Runs** tab on the **Run playbook on incident** panel after running the playbook. Selecting a run opens its full run log in Logic Apps.",
+      "Open the playbook's logic app in the Azure portal and select **Overview > Runs history** (Consumption), or **Tools > Run history** on the workflow (Standard). Select a run, then a step, to see its inputs, outputs and errors.",
+      "Use the **Playbooks run by Automation Rules** tab of the **Automation health** workbook to see playbook activity and drill into each run. Playbook run details need Logic Apps diagnostics turned on.",
+    ],
     snippets: ['K_AUTOMATION_PLAYBOOK_JOIN', 'K_PLAYBOOK_TRIGGERED'],
     expected: 'Playbook runs succeed.',
     record: [`The results, in ${NOTES}`],
@@ -160,7 +177,7 @@ export const VALIDATE = [
       'Run history screenshots: [[do:add-screenshot|attach a screenshot]]',
       'The query output: [[do:add-file|attach it as a file]]',
     ],
-    sources: [src('runplaybooks', 'Running playbooks on incidents'), src('autohealth', 'Correlation query')],
+    sources: [src('runplaybooks', 'Running playbooks on incidents; portal: Runs tab on the Run playbook on incident panel opens the run log in Logic Apps'), src('autohealth', 'Correlation query; portal: Playbooks run by Automation Rules tab of the Automation health workbook'), src('larunhistory', 'Runs history for Consumption and Run history for Standard workflows; step inputs, outputs and errors')],
   }),
   k({
     id: 'VAL-08', stage: 'validate', workstream: 'integrations', order: 80, kind: 'check', criticality: 'high', applicability: q('itsm'), dependsOn: ['PREP-INT-01'],
@@ -218,6 +235,10 @@ export const VALIDATE = [
       'Check for Defender for Cloud incidents with empty alerts.',
       'Compare alert volumes by product with [[PREP-CON-05|the baseline]].',
     ],
+    portalWay: [
+      "Open **Investigation & response > Incidents & alerts > Incidents** in the Defender portal and add the **Service/detection sources** filter for **Microsoft Defender for Cloud**. Review these incidents for duplicates, and open them to check that their alerts are filled in.",
+      "Open **Investigation & response > Incidents & alerts > Alerts** and filter by **Service/detection sources** or **Product name**, using the same time range as your baseline. The total number of alerts shows beside the search bar. Viewing alerts with Sentinel data needs Azure permissions on the Sentinel workspace.",
+    ],
     snippets: ['K_ALERTS_BY_PRODUCT', 'K_MDC_ALERTS'],
     expected: 'There are no unexplained duplicates or empty incidents.',
     record: [`Your findings, in ${NOTES}`],
@@ -225,7 +246,7 @@ export const VALIDATE = [
       'The query output: [[do:add-file|attach it as a file]]',
       'Screenshots: [[do:add-screenshot|attach a screenshot]]',
     ],
-    sources: [src('mdcincidents', 'Empty alerts risk'), src('mdcxdr', 'Prevent duplicates'), src('move', 'Review rules for duplicates')],
+    sources: [src('mdcincidents', 'Empty alerts risk'), src('mdcxdr', 'Prevent duplicates'), src('move', 'Review rules for duplicates'), src('incidentqueue', 'Incident queue Service/detection sources filter including Microsoft Defender for Cloud'), src('investigatealerts', 'Alerts queue, its filters, total count and custom range; Sentinel data needs workspace permissions')],
   }),
   k({
     id: 'VAL-11', stage: 'validate', workstream: 'content', order: 110, kind: 'check', criticality: 'medium', applicability: q('workbooks'),
@@ -281,6 +302,10 @@ export const VALIDATE = [
       'Run a watchlist query.',
       'Open an entity page and check the Sentinel events tab.',
     ],
+    portalWay: [
+      "Open **Threat intelligence > Intel explorer** in the Defender portal to search and filter indicators without a query. Changes can take a few minutes to appear.",
+      "Open **Microsoft Sentinel > Configuration > Watchlist**, select a watchlist and choose **Update watchlist > Edit watchlist items** to read its items. Close the editor without saving.",
+    ],
     snippets: ['K_TI_CURRENT', 'K_WATCHLISTS'],
     expected: 'The content works.',
     record: [`The results, in ${NOTES}`],
@@ -288,7 +313,7 @@ export const VALIDATE = [
       'Screenshots: [[do:add-screenshot|attach a screenshot]]',
       'The query output: [[do:add-file|attach it as a file]]',
     ],
-    sources: [src('ti', 'TI tables'), src('watchlists', 'Watchlists'), src('entitypages', 'Sentinel events tab')],
+    sources: [src('ti', 'TI tables'), src('watchlists', 'Watchlists'), src('entitypages', 'Sentinel events tab'), src('workti', 'Intel explorer search and filter without a query; changes can take a few minutes to appear'), src('watchlistedit', 'Watchlist path; Update watchlist > Edit watchlist items')],
   }),
   k({
     id: 'VAL-14', stage: 'validate', workstream: 'platform', order: 140, kind: 'check', criticality: 'high', applicability: q('multi_workspace'),
@@ -323,6 +348,10 @@ export const VALIDATE = [
       'Confirm Microsoft Sentinel Contributor is assigned to the "Microsoft Threat Protection" and "WindowsDefenderATP" apps.',
       'Run the health verification query.',
     ],
+    portalWay: [
+      "Open **System > Settings > Microsoft Sentinel** in the Defender portal and select **Auditing and health monitoring**. It shows **Enabled** when it's on; select **Configure diagnostic settings** to see the diagnostic settings.",
+      "Open the **Analytics Health & Audit** workbook, or a scheduled rule's **Insights** tab on the **Analytics** page, to see that health events are still arriving.",
+    ],
     snippets: ['K_HEALTH_TAKE'],
     expected: 'The assignments are present and health data is current.',
     record: [`The results, in ${NOTES}`],
@@ -330,7 +359,7 @@ export const VALIDATE = [
       'A screenshot: [[do:add-screenshot|attach a screenshot]]',
       'The query output: [[do:add-file|attach it as a file]]',
     ],
-    sources: [src('move', 'App role assignments'), src('enablehealth', 'Health monitoring')],
+    sources: [src('move', 'App role assignments'), src('enablehealth', 'Health monitoring; portal: Defender portal settings path; Enabled state; Configure diagnostic settings link'), src('rulehealth', 'Analytics Health & Audit workbook'), src('ruleinsights', 'Rule insights are based on the health data')],
   }),
   k({
     id: 'VAL-16', stage: 'validate', workstream: 'operations', order: 160, kind: 'check', criticality: 'high', dependsOn: ['PREP-OPS-01', 'PREP-OPS-03'],
@@ -393,7 +422,7 @@ export const VALIDATE = [
       },
       'Assign owners and due dates to the remaining actions in [[go:register|the register]].',
       '[[do:record-gate|Record the sign-off decision]] with the decision maker\'s name and role.',
-      'Save a snapshot of the [[go:report:validate|final validation report]] on [[go:reports|the Reports page]].',
+      '[[do:save-snapshot|Save a snapshot]] of the [[go:report:validate|final validation report]].',
       'Export the project package for retention, with **Save package** on [[go:reports|the Reports page]].',
     ],
     expected: 'The final report is signed off, and every residual risk has a named owner.',
@@ -401,7 +430,7 @@ export const VALIDATE = [
       'The sign-off decision, in [[do:record-gate|the gate decision form]]',
       'The residual risk owners, on each risk in [[go:register|the register]]',
     ],
-    evidence: ['The final report snapshot, saved on [[go:reports|the Reports page]]'],
+    evidence: ['The final report snapshot: [[do:save-snapshot|save it now]]'],
     sources: [src('move', 'Transition guidance')],
   }),
   k({

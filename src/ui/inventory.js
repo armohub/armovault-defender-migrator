@@ -2,7 +2,7 @@
 import { h, pickFile, modal, toast, readBlobBytes } from './dom.js';
 import { state, mutate, putEvidenceBlob } from '../app/store.js';
 import { parseInventory, analyseInventory, MAX_INVENTORY_BYTES } from '../core/inventory.js';
-import { addEvidence, setAnswer, answerLabel, addAudit } from '../core/model.js';
+import { addEvidence, setAnswer, answerLabel, addAudit, setEnvironments } from '../core/model.js';
 import { sha256Hex } from '../core/files.js';
 import { callout } from './components.js';
 
@@ -25,6 +25,8 @@ export async function importInventoryFlow() {
   const fSel = res.findings.map(() => true);
   const sSel = res.suggestions.map(() => false);
   let attachFile = true;
+  const newAlias = res.label && inv.alias && !(p.meta.environments || []).some((e) => e.alias === inv.alias) ? inv.alias : '';
+  let addAlias = !!newAlias;
   const qText = (id) => (kb.questions.find((q) => q.id === id) || { text: id }).text;
   const cTitle = (id) => (kb.checks.find((c) => c.id === id) || { title: id }).title;
   const body = h('div', { class: 'stack' },
@@ -34,6 +36,7 @@ export async function importInventoryFlow() {
     h('p', { class: 'small muted' }, 'Each finding you keep becomes an evidence note labelled "imported" on its step. Statuses are not changed: you decide them.'),
     h('ul', { class: 'list' }, res.findings.map((f, i) => h('li', { class: 'list-row' }, h('label', { class: 'check-line' }, h('input', { type: 'checkbox', checked: true, onchange: (e) => { fSel[i] = e.target.checked; } }), h('span', null, h('strong', null, cTitle(f.checkId)), `: ${f.title.replace('Imported inventory: ', '')}`))))),
     h('label', { class: 'check-line' }, h('input', { type: 'checkbox', checked: true, onchange: (e) => { attachFile = e.target.checked; } }), ` Also attach the original inventory file to "${cTitle('PREP-DET-01')}" (kept in project packages)`),
+    newAlias ? h('label', { class: 'check-line' }, h('input', { type: 'checkbox', checked: true, onchange: (e) => { addAlias = e.target.checked; } }), ` Add "${newAlias}" to your workspace list (Project setup)`) : null,
     res.suggestions.length ? h('div', null, h('h3', null, 'Suggested questionnaire answers'),
       h('p', { class: 'small muted' }, 'Only "Yes" answers are suggested, based on what was found in this one workspace. Tick the ones you confirm.'),
       h('ul', { class: 'list' }, res.suggestions.map((s, i) => {
@@ -61,6 +64,7 @@ export async function importInventoryFlow() {
       setAnswer(pr, s.questionId, s.value, `From imported inventory (${s.reason}); confirmed by ${pr.meta.operatorName || 'operator'}`);
       nAns += 1;
     });
+    if (addAlias) setEnvironments(pr, [...(pr.meta.environments || []), { alias: newAlias, kind: 'production', defender: 'unknown' }]);
     addAudit(pr, 'inventory.imported', `Inventory imported for ${res.label}: ${nEv} evidence note(s), ${nAns} answer(s) applied`);
   });
   toast(`Imported ${nEv} evidence note(s)${attachFile ? ' and the inventory file' : ''}; ${nAns} answer(s) applied.`, 'good', 7000);

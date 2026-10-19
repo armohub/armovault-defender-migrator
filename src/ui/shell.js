@@ -118,12 +118,12 @@ function sidebar(routeName, params) {
     h('a', { href: p ? '#/overview' : '#/welcome', class: 'brand', 'aria-label': `${BRAND.productName}, home` },
       brandMark(),
       h('span', { class: 'brand-text' }, h('span', { class: 'brand-name' }, BRAND.brandName), h('span', { class: 'brand-product' }, `MS ${BRAND.shortName}`))),
+    h('div', { class: 'brand-meta' }, h('span', { class: 'mono' }, `v${APP_VERSION}`), h('span', { 'aria-hidden': 'true' }, '·'), h('a', { href: '#/about' }, `Made by ${BRAND.makers.map((m) => m.name).join(' & ')}`)),
     p ? h('a', { href: '#/project', class: 'project-chip', title: 'Open project setup' }, h('span', { class: 'project-chip-label' }, p.isDemo ? 'Demo project (fictional)' : 'Your project'), h('span', { class: 'project-chip-name' }, p.meta.name || 'Untitled project')) : null,
     nav,
     h('div', { class: 'sidebar-foot' },
       h('nav', { class: 'help-row', 'aria-label': 'Help' }, helpLink('#/knowledge', 'Knowledge', 'knowledge', routeName === 'knowledge'), helpLink('#/settings', 'Settings', 'settings', routeName === 'settings'), helpLink('#/about', 'About', 'info', routeName === 'about')),
-      h('div', { class: 'offline-note', title: 'This file blocks all network requests (Content-Security-Policy connect-src none). Links to Microsoft Learn open only when you click them.' }, h('span', { class: 'live-dot', 'aria-hidden': 'true' }), 'Offline. Nothing leaves this device.'),
-      h('div', { class: 'sidebar-meta' }, h('span', null, `v${APP_VERSION}`), h('a', { href: '#/about' }, `Made by ${BRAND.makers.map((m) => m.name).join(' & ')}`))));
+      h('div', { class: 'offline-note', title: 'This file blocks all network requests (Content-Security-Policy connect-src none). Links to Microsoft Learn open only when you click them.' }, h('span', { class: 'live-dot', 'aria-hidden': 'true' }), 'Offline. Nothing leaves this device.')));
 }
 
 function saveStatus() {

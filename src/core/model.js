@@ -77,6 +77,9 @@ export function createProject({ meta = {}, mode = 'tailored', appVersion, kbVers
       windowStart: '',
       windowEnd: '',
       environments: [],
+      workstreamOwners: {},
+      approvers: [],
+      plannedPrimary: '',
       notes: '',
       ...meta,
     },
@@ -128,9 +131,11 @@ export function ensureCheckState(project, checkId, kbVersion) {
       updatedBy: '',
       kbVersion: kbVersion || '',
       override: null, // { value: 'applies'|'not_applicable', reason, by, at }
+      evidenceWaiver: null, // { reason, by, at }: the team decided no evidence is needed for this step
       history: [],
     };
   }
+  if (project.checks[checkId].evidenceWaiver === undefined) project.checks[checkId].evidenceWaiver = null;
   return project.checks[checkId];
 }
 
@@ -148,8 +153,8 @@ export function setCheckStatus(project, check, status, { reason = '', kbVersion 
   if (!STATUS_IDS.includes(status)) return { ok: false, error: 'Unknown status.' };
   const st = ensureCheckState(project, check.id, kbVersion);
   const evidenceCount = st.evidenceIds.filter((id) => project.evidence[id]).length;
-  if (status === 'passed' && evidenceCount === 0) {
-    return { ok: false, error: 'A check can only be marked "Passed, verified" when at least one evidence item (screenshot, observation note, link or file) is attached. Attach evidence first, or record it as "Done, not verified".' };
+  if (status === 'passed' && evidenceCount === 0 && !st.evidenceWaiver) {
+    return { ok: false, error: 'A step can only be marked "Passed" when evidence is attached (screenshot, observation note, link or file), or when you have recorded that no evidence is needed for it. Otherwise record it as "Done, not verified".' };
   }
   const needsReason = status === 'not_applicable' || status === 'blocked' || status === 'failed';
   const from = st.status;
@@ -237,8 +242,8 @@ export function removeEvidence(project, evidenceId) {
   if (st) {
     st.evidenceIds = st.evidenceIds.filter((x) => x !== evidenceId);
     pushHistory(st, project, 'evidence', `${ev.kind}: ${ev.title || ev.fileName}`, 'removed');
-    // A verified pass without evidence is no longer verified.
-    if (st.status === 'passed' && st.evidenceIds.length === 0) {
+    // A verified pass without evidence is no longer verified (unless the team recorded that none is needed).
+    if (st.status === 'passed' && st.evidenceIds.length === 0 && !st.evidenceWaiver) {
       st.status = 'not_verified';
       pushHistory(st, project, 'status', 'passed', 'not_verified');
       addAudit(project, 'check.status', `${ev.checkId}: Passed → Not verified (last evidence item removed)`, { ref: ev.checkId });
@@ -362,4 +367,100 @@ export function setTestAvailability(project, availability, reason) {
   t.decidedAt = nowIso();
   addAudit(project, 'stage.test', `Test stage: ${prev} → ${availability}${reason ? ` (${String(reason).slice(0, 200)})` : ''}`);
   return { ok: true };
+}
+
+// ───────── Evidence not needed ─────────
+// A team may decide that a step needs no evidence. That decision is recorded with a reason, who and when,
+// and reports show it as "evidence not needed", never as missing evidence.
+export function setEvidenceWaiver(project, checkId, reason, kbVersion) {
+  const r = String(reason || '').trim();
+  if (!r) return { ok: false, error: 'Say briefly why no evidence is needed for this step.' };
+  const st = ensureCheckState(project, checkId, kbVersion);
+  st.evidenceWaiver = { reason: r.slice(0, 2000), by: actor(project), at: nowIso() };
+  pushHistory(st, project, 'evidence', '', `not needed: ${r.slice(0, 200)}`);
+  addAudit(project, 'check.evidence_waived', `${checkId}: evidence not needed (${r.slice(0, 200)})`, { ref: checkId });
+  return { ok: true };
+}
+
+export function clearEvidenceWaiver(project, checkId) {
+  const st = project.checks[checkId];
+  if (!st || !st.evidenceWaiver) return { ok: true };
+  st.evidenceWaiver = null;
+  pushHistory(st, project, 'evidence', 'not needed', 'needed again');
+  addAudit(project, 'check.evidence_waiver_removed', `${checkId}: evidence needed again`, { ref: checkId });
+  if (st.status === 'passed' && st.evidenceIds.filter((id) => project.evidence[id]).length === 0) {
+    st.status = 'not_verified';
+    pushHistory(st, project, 'status', 'passed', 'not_verified');
+    addAudit(project, 'check.status', `${checkId}: Passed → Not verified (evidence needed again, none attached)`, { ref: checkId });
+  }
+  return { ok: true };
+}
+
+// ───────── Workspaces, owners and approvers ─────────
+export const DEFENDER_STATES = [
+  { id: 'unknown', label: 'Not checked yet' },
+  { id: 'not_connected', label: 'Not connected' },
+  { id: 'primary', label: 'Connected, primary' },
+  { id: 'secondary', label: 'Connected, secondary' },
+];
+export const ENV_KINDS = ['production', 'test', 'other'];
+
+export function cleanEnvironment(e) {
+  const s = (v, n) => String(v == null ? '' : v).trim().slice(0, n);
+  return {
+    alias: s(e.alias, 120), kind: ENV_KINDS.includes(e.kind) ? e.kind : 'other', tenant: s(e.tenant, 120),
+    subscription: s(e.subscription, 200), resourceGroup: s(e.resourceGroup, 200), region: s(e.region, 80),
+    owner: s(e.owner, 200), defender: DEFENDER_STATES.some((d) => d.id === e.defender) ? e.defender : 'unknown', notes: s(e.notes, 2000),
+  };
+}
+
+export function setEnvironments(project, list) {
+  const next = (Array.isArray(list) ? list : []).map(cleanEnvironment).filter((e) => e.alias).slice(0, 50);
+  const primaries = new Map();
+  for (const e of next.filter((x) => x.defender === 'primary')) primaries.set(e.tenant, (primaries.get(e.tenant) || 0) + 1);
+  if ([...primaries.values()].some((n) => n > 1)) return { ok: false, error: 'Only one workspace per tenant can be the primary workspace. Mark the others as secondary, or set the tenant of each workspace.' };
+  project.meta.environments = next;
+  addAudit(project, 'project.environments', `Workspace inventory updated (${next.length} workspace${next.length === 1 ? '' : 's'})`);
+  return { ok: true };
+}
+
+export const workstreamKey = (stage, workstream) => `${stage}:${workstream}`;
+
+export function setWorkstreamOwners(project, map) {
+  const out = {};
+  for (const [k, v] of Object.entries(map || {})) {
+    if (!/^[a-z-]+:[a-z-]+$/.test(k)) continue;
+    const name = String(v == null ? '' : v).trim().slice(0, 200);
+    if (name) out[k] = name;
+  }
+  project.meta.workstreamOwners = out;
+  addAudit(project, 'project.owners', `Workstream owners updated (${Object.keys(out).length} assigned)`);
+  return { ok: true };
+}
+
+export function setApprovers(project, list) {
+  const out = (Array.isArray(list) ? list : []).map((a) => ({ role: String(a.role || '').trim().slice(0, 200), name: String(a.name || '').trim().slice(0, 200) })).filter((a) => a.role && a.name).slice(0, 30);
+  project.meta.approvers = out;
+  addAudit(project, 'project.approvers', `Approvers updated (${out.length})`);
+  return { ok: true };
+}
+
+// The owner of a step: its own Owner field, else the owner of its workstream.
+export function effectiveOwner(project, check) {
+  const st = project.checks[check.id];
+  if (st && st.owner) return { name: st.owner, source: 'step' };
+  const ws = (project.meta.workstreamOwners || {})[workstreamKey(check.stage, check.workstream)];
+  return ws ? { name: ws, source: 'workstream' } : { name: '', source: '' };
+}
+
+// Every person the project already knows, for name suggestions in forms.
+export function knownPeople(project) {
+  const names = new Set();
+  const add = (n) => { const v = String(n || '').trim(); if (v) names.add(v); };
+  add(project.meta.operatorName);
+  Object.values(project.meta.workstreamOwners || {}).forEach(add);
+  (project.meta.approvers || []).forEach((a) => add(a.name));
+  (project.meta.environments || []).forEach((e) => add(e.owner));
+  Object.values(project.checks).forEach((c) => add(c.owner));
+  return [...names].sort((a, b) => a.localeCompare(b));
 }
