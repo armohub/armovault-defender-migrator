@@ -2,113 +2,162 @@
 
 ## Purpose
 
-Help SOC teams, security architects, project leads and consultants move their Microsoft Sentinel experience from the Azure portal to the Microsoft Defender portal, before Microsoft ends Azure portal support (after 31 March 2027). The product guides people from readiness to post-transition sign-off, and keeps an evidence-based record of what was done.
+Help SOC teams, security architects, project leads and consultants move their Microsoft Sentinel experience from the Azure portal to the Microsoft Defender portal, before Microsoft ends Azure portal support (after 31 March 2027). The ArMo MS Defender Migration Assistant guides people from readiness to post-transition sign-off, and keeps an evidence-based record of what was done.
 
 **Terminology.**
-- Microsoft Sentinel is *not* being discontinued; its Azure portal experience is.
-- "Connecting" (onboarding) a workspace to the Defender portal keeps log data in Log Analytics, but changes several behaviours. The tool helps teams find and handle those changes.
+- Microsoft Sentinel is *not* being discontinued. Its Azure portal experience is.
+- "Connecting" (onboarding) a workspace to the Defender portal keeps log data in Log Analytics, but changes several behaviours. The assistant helps teams find and handle those changes.
 - Microsoft Defender XDR is optional for Sentinel in the Defender portal.
 
-## Release 1 scope (0.9.0-rc.1)
+## Scope of version 1.0.0
+
+Version 1.0.0 is the first public version, released as one final version (no release candidates or pilot stages).
 
 **In scope**
-- Welcome screen, first-run set-up, and the choice between the tailored questionnaire (35 questions) and the full checklist.
-- Four stages with 109 guided knowledge objects:
-  - Stage 1 Prepare: 62
-  - Stage 1.5 Test (optional): 11
-  - Stage 2 Transition runbook: 17
-  - Stage 3 Validate: 19
-- For each item:
-  - objective, why it matters, applicability with reasons, roles, location, steps;
+- A first-run introduction (about four seconds, skippable), a short splash on later starts, a welcome page and a four-step new-project wizard.
+- The choice between the tailored questionnaire (35 questions in six sections) and the full checklist.
+- Four stages with 109 guided steps:
+  - Prepare: 62
+  - Test (optional): 11
+  - Transition runbook: 17
+  - Validate: 19
+- For each step:
+  - what you do, why it matters, whether it applies (with reasons), roles, location and structured steps with bullets and tips;
   - read-only snippets with permissions, cost and caveats;
-  - expected results and interpretation, what to record, evidence;
-  - remediation and rollback;
-  - sources with dates, provenance, confidence, and the uncertainty where sources conflict.
+  - expected results and how to read them, what to record, and the evidence that proves it;
+  - what to do if it fails, and rollback;
+  - sources with dates, provenance, confidence, and the uncertainty where sources conflict;
+  - links to related steps and pages, and inline buttons that act on the step.
 - Statuses that keep "done" separate from "verified":
   - "Passed" requires evidence;
   - failed, blocked and not applicable require a rationale;
   - removing the last evidence downgrades a pass.
-- Applicability overrides with a reason, an audit log, and per-item history.
-- Evidence: screenshots, observation notes, links and files. Types are checked from file content; size limits apply; a redaction prompt is shown; imported evidence is labelled.
-- Register: actions, issues, risks, exceptions and decisions. An exception counts as accepted only with a named person, role and rationale.
+- Applicability overrides with a reason, an audit log, and history per step.
+- Evidence: screenshots, observation notes, links and files. Types are checked from file content, size limits apply, a redaction prompt is shown, and imported evidence is labelled.
+- The register (shown as **Decisions and risks**): actions, issues, risks, exceptions and decisions. An exception counts as accepted only with a named person, role and rationale.
 - Gate decisions with a typed decision maker (never pre-filled).
 - Readiness conclusions computed from explicit criteria, with "why" lists.
-- Reports: preparation, test, execution, validation and final. Printable to PDF offline; snapshots carry SHA-256 fingerprints and an integrity check.
+- Reports: preparation, test, execution, validation and final. Printable to PDF offline, always on white. Snapshots carry SHA-256 fingerprints and an integrity check.
 - Data:
-  - project package (.zip with manifest, hashes and evidence);
+  - project package (`armo-dma-<project>-<date>.zip`, with manifest, hashes and evidence);
   - JSON data export;
   - CSV exports of the checklist, register and evidence index;
   - preferences file export and import.
-- Persistence: opt-in browser autosave (IndexedDB), manual packages, unsaved-work warning, and "delete all app data".
+- Persistence: opt-in browser autosave (IndexedDB), manual packages, an unsaved-work warning, and "Delete all data in this browser".
 - Import-based assistance: a read-only inventory script whose output becomes imported evidence and suggested answers that the user confirms.
-- Knowledge views: feature changes, portal map, key dates, terminology, catalogue, coverage and sources.
-- A synthetic demo project.
+- Knowledge views: feature changes, portal map, key dates, terminology, all steps, coverage and sources.
+- A synthetic demo project with a banner and an **Exit demo** button.
+- A graphite design, dark by default with a light theme, the embedded Mona Sans typeface, and motion that respects reduced motion (plus an in-app **Reduce motion** setting).
+- A thanks note with links to the makers' LinkedIn profiles on the welcome page, on About, and when the final report is complete.
 
-**Out of scope for release 1** (roadmap)
-- Connected mode: live read-only checks through Microsoft Graph or ARM (see the ADR for why).
-- Localisation: English only. Content and UI strings are separated so translation is possible later.
-- macOS/Linux packaging, Firefox and Safari support.
+**Out of scope for 1.0** (roadmap)
+- Connected mode: live read-only checks through Microsoft Graph or ARM. See the [ADR](architecture-decision-record.md) for why. A separate spike ([prototypes/p4-connected](../prototypes/p4-connected/README.md)) explores it, and it is not shipped.
+- Localisation: English only. Content and UI strings are kept apart, so translation is possible later.
+- macOS and Linux packaging, Firefox and Safari support.
 - Encryption of local data or packages (not claimed).
-- Multi-user collaboration, or merging projects.
-- SIEM migration from other products to Sentinel; Sentinel greenfield deployment.
+- Several people working on one project at once, or merging projects.
+- SIEM migration from other products to Sentinel, and Sentinel greenfield deployment.
 
 ## Primary flows
 
 ```
-Welcome ──► New project (4 steps) ──► Tailored? ──yes──► Questionnaire ──► Overview
-   │            project, environments,      │no
-   │            saving choice, approach     └────────────────────────────► Overview
-   ├──► Open project package (.zip/.json) ──► integrity summary ──► Overview
-   └──► Explore demo (fictional) ──────────────────────────────────────► Overview
+First start   -> Introduction (about 4 s, skippable) -> Welcome
+Later starts  -> Short splash -> Welcome, or the open project's overview
 
-Overview ─► Stage page (filter: in scope / needs attention / not applicable / all)
-             └─► Item page: guidance + record (status, rationale, owner, due, notes, evidence, gate, history)
-Overview ─► Register ─► Evidence ─► Reports (preview / print to PDF / snapshot / exports)
+Welcome -> Start my project -> New project (4 steps) -> Tailored? -> yes -> Questions, one per screen
+        |                     about the project,                          -> End screen with counts
+        |                     timing and scope,                           -> "Building your plan" -> Overview
+        |                     where to keep your work,     no -> Overview
+        |                     how to start
+        |-> Open a saved project (.zip or .json) -> integrity check -> Overview
+        |-> Try the demo (fictional) -> Overview with a demo banner -> Exit demo -> Welcome
+
+Overview -> "Start this step" -> Step page -> "Next step" card -> Step page ...
+Overview -> Stage page (filters: in scope / needs attention / not applicable / all) -> Step page
+Step page: guidance + your record (status, reason, owner, due date, notes, evidence,
+           follow-ups for the register, gate form on gate steps, history)
+Sidebar: Overview, the four stages, Decisions and risks, Evidence, Reports, Project setup,
+         Your answers, Knowledge and sources, Settings and data, About
 ```
 
 ### Flow details
 
-1. **First run.** Project label and operator name are required; no secrets are asked for. Environments use aliases only. Saving choice: autosave **off by default**, with an explained "autosave in this browser" option. Approach: tailored or full. The responsibility statement must be acknowledged.
-2. **Tailoring.**
-   - Each answer is Yes, No, "I don't know" or Not applicable. "I don't know" keeps dependent items in scope as **applicability uncertain**.
-   - Not-applicable items are greyed out and listed under the "Not applicable" filter, with the reason derived from the answer. A reviewer can reconsider them, with a reason.
-   - Changing an answer that brings back hidden items, or affects items with records, shows a dialog listing the effects. Records are preserved. If earlier gate decisions or snapshots exist, the dialog warns that conclusions may be outdated.
-3. **Stage 1 Prepare.**
-   - Work through workstreams; attach evidence; record failures with rationale; record exceptions in the register.
+1. **First start.**
+   - The introduction plays once, for about four seconds. It shows six promises: no internet needed, processed on this device, your data stays with you, grounded in Microsoft Learn (101 pages), built by practitioners, and open for review. It ends with "Your data is yours." and the makers' quote, "Built to make your migration journey easy."
+   - Focus starts on **Skip intro**. Escape also closes it. With reduced motion, everything is shown at once.
+   - You can replay it from **About** or **Settings and data**. Later starts show a short splash instead.
+2. **Welcome and new project.**
+   - The welcome page offers **Start my project**, **Open a saved project** and **Try the demo**, explains how it works and what happens to your data, and shows the thanks note.
+   - The wizard has four steps: about the project, timing and scope, where to keep your work, and how to start.
+   - A project label and your name are required. No secrets are asked for, and workspaces use aliases only.
+   - Saving: autosave is **off by default**, and the "Autosave in this browser" option explains its limits.
+   - The responsibility statement must be acknowledged before the project is created.
+3. **Tailoring.**
+   - One question per screen, in six sections, with progress for each section.
+   - Answer by clicking or with keys 1 to 4. Enter goes to the next question. Arrow keys move between answers without choosing one.
+   - After Yes or No, the assistant can move on by itself. This is a setting ("Move on after Yes or No") that you can turn off.
+   - Every question shows "Why we ask" and "Where to find the answer".
+   - Each answer is Yes, No, "I don't know yet" or Not applicable. "I don't know yet" keeps the related steps in scope as **applicability uncertain**, and it can add a "find out" action to the register.
+   - The end screen shows real counts: steps that apply, steps to look into, and steps set aside. "Build my plan" plays a short "Building your plan" sequence, then opens the overview.
+   - **Your answers** shows every answer on one page, to review or change.
+   - Steps that do not apply are greyed out and listed under the "Not applicable" filter, with the reason taken from the answer. A reviewer can reconsider them, with a reason.
+   - Changing an answer that brings back set-aside steps, or affects steps with records, shows a dialog listing the effects. Records are kept. If earlier gate decisions or snapshots exist, the dialog warns that conclusions may be out of date.
+4. **Overview.**
+   - Your next step is the headline, with **Start this step** and **Why this one?** (the reasons it comes next).
+   - The route shows the four stages from "Azure portal" to "Defender portal", with a **You are here** marker.
+   - **Start here** lists the path from setup to the final report and marks what to do now.
+   - **Needs your attention** lists failed or blocked critical and high steps, steps needing review, and open critical or high register items. **Good to know** shows key dates and the saving state.
+5. **Step pages.**
+   - Item codes stay out of the reading text. A small reference line at the bottom names the step's code, version and verification date.
+   - References to other steps and pages are links. Inline buttons add a decision, risk, issue, action or exception to the register (linked to the step), add evidence, move focus to the owner, due date, notes or gate form, import inventory results or download the inventory script.
+   - **Previous step** and **Next step** cards lead through the stage and on to the next one.
+6. **Project setup.** A page of its own (`#/project`). Links in the guidance open it at the planned transition window or the workspaces section.
+7. **Prepare.**
+   - Work through the workstreams, attach evidence, record failures with a rationale, and record exceptions in the register.
    - Optionally import the inventory script output.
-   - Review the computed conclusion: Not ready / Unable to determine / Ready with exceptions / Ready to proceed.
-   - Record the PREP-PLN-05 gate decision, then save a readiness report snapshot.
-4. **Stage 1.5 Test (optional).**
-   - Mark availability. If unavailable, record a reason: the report states it and lists compensating controls.
-   - If available, scope tests from the list of testable Stage 1 items, then run them.
-5. **Stage 2 Transition.** A sequenced runbook in phases (pre-change, change, post-change), with step numbers.
-   - Dependency chips show Stage 1 prerequisites that failed or are still open.
-   - Configuration-changing steps are flagged.
-   - The go/no-go gate (TRN-01) and the outcome gate (TRN-17) need typed decision makers.
-6. **Stage 3 Validate.** Compare against the Stage 1 baselines and acceptance criteria. Document known limitations, with durable workarounds that do not depend on the Azure portal. Final sign-off gate, final report snapshot, and a package export for retention.
+   - Review the computed conclusion: Not ready, Unable to determine, Ready with exceptions, or Ready to proceed.
+   - Record the readiness gate decision (the last step of Prepare), then save a readiness report snapshot.
+8. **Test (optional).**
+   - Say whether a test environment is available. If it is not, record a reason: the report states it and lists the compensating controls.
+   - If it is, scope the tests from the list of testable Prepare steps, then run them.
+9. **Transition.** A runbook in order, in phases (before, during and after the change).
+   - Dependency chips show Prepare steps that failed or are still open.
+   - Steps that change configuration are flagged.
+   - The go or no-go gate (the first step) and the outcome gate (the last step) need typed decision makers.
+10. **Validate.** Compare against the Prepare baselines and acceptance criteria. Document known limitations, with lasting workarounds that do not depend on the Azure portal. Then record the final sign-off, save a final report snapshot and save a package for retention. When the final report is complete, it shows a thanks note.
+11. **Demo.** The demo opens with fictional data and a banner. **Exit demo** asks once, then returns to the start page, ready for your own project. Nothing in the demo is saved.
 
 ## Acceptance criteria status
 
-Each criterion links to evidence in [test-results.md](test-results.md). ✔ = verified by an automated test or a recorded check; ◐ = partially verified, with a manual step listed in the release checklist.
+Each criterion links to evidence in [test-results.md](test-results.md).
+
+- ✔ = covered by an end-to-end step that passed in the recorded Edge run for 1.0 (step numbers refer to that run).
+- Unit = covered by a unit test or build check. No stored result exists for the unit tests; run `npm run test:unit`.
+- ◐ = partly verified, with a manual step listed in the release checklist.
 
 | Criterion | Status |
 |---|---|
-| First-time user understands the product on the welcome screen | ✔ Welcome content reviewed; a11y checks pass. Usability with real users still to be done (release checklist). |
-| Create a project and attribute to a named operator | ✔ E2E "Create a tailored project…" |
-| Choose tailored or full checklist | ✔ E2E tailored and full flows |
-| Tailoring explainable and reversible; unknown never creates false confidence | ✔ Unit test across all 109 items; E2E answer-change flow |
-| Four stages visible and connected; Stage 2 consumes Stage 1 and test results | ✔ Dependency chips, test-stage gate; unit test `dependencyStatus` |
-| Remaining work, blockers, exceptions and actions visible | ✔ Overview "Needs attention", stage conclusions, register |
-| Every item has practical instructions and source/provenance metadata | ✔ `validate-kb` fails the build otherwise |
-| Works with network disabled; makes no external requests | ✔ CSP `connect-src 'none'`; E2E records zero http(s) requests in Edge and Chrome |
-| No account, backend, telemetry or third-party runtime asset | ✔ Single file; no dependencies at runtime |
-| Autosave opt-in, disclosed, configurable | ✔ E2E; Settings page |
-| Package export/import preserves metadata, statuses, notes, evidence, sources and history | ✔ E2E round trip after deleting browser data; unit round-trip test |
-| Settings persistence behaves exactly as documented | ✔ localStorage + export/import; no silent-file claim |
-| Readiness, test, execution and final reports generate offline as PDF | ✔ E2E PDF generation (preparation, final demo) |
-| Reports distinguish verified, assertion, failed, blocked, N/A; never invent approvals | ✔ Unit test on the report model; gates blank unless recorded |
-| Reports show KB version, date, scope, sources and limitations | ✔ Report sections |
-| No unsanitised content executed | ✔ E2E injection attempts; unit tests for prototype pollution and `javascript:` links; CSP blocks injected scripts |
-| Snippets labelled for permissions and side effects | ✔ Every snippet declares read-only, permissions and cost (build check) |
-| Critical recommendations sourced or marked for review | ✔ Unit test |
-| Demo uses fictional data only | ✔ Demo generator; watermark on reports |
+| First-time users understand the product on the welcome page | ◐ Welcome content reviewed; accessibility checks pass (✔ step 4). Usability sessions with real users are still to be done (release checklist). |
+| The introduction is short, skippable and respects reduced motion | ✔ Steps 1, 2, 27 and 30 |
+| Create a project and attribute it to a named operator | ✔ Step 6 |
+| Choose the tailored plan or the full checklist | ✔ Steps 6 and 28 |
+| One question per screen, keyboard answers, auto-advance only after Yes or No | ✔ Step 7 |
+| Tailoring is explainable and reversible; "I don't know yet" never creates false confidence | ✔ Steps 9 and 15; Unit (every step stays in scope when every answer is unknown) |
+| The overview says where to start | ✔ Step 8 |
+| Step pages: links to other steps, inline actions, item codes hidden from reading text | ✔ Steps 10 and 19 |
+| Four stages visible and connected; Transition uses Prepare and Test results | ✔ Step 17 (a skipped test stage shows on the route); Unit (dependency status, test-stage prerequisites) |
+| Remaining work, blockers, exceptions and actions are visible | ✔ Overview "Needs your attention", stage conclusions, register (steps 14 and 19) |
+| Every step has practical instructions and source and provenance metadata | Unit; `validate-kb` fails the build otherwise |
+| Guidance follows the writing rules (no long dashes, no bare item codes, valid links and actions) | Unit (`copy-and-ux.test.mjs`); `validate-kb` fails the build otherwise |
+| Works with the network disabled and makes no external requests | ✔ Steps 3 and 31; CSP `connect-src 'none'` |
+| No account, backend, telemetry or third-party runtime asset other than the embedded typeface | ✔ Single file; Unit (the typeface is the only font source) |
+| Autosave is opt-in, disclosed and configurable | ✔ Step 6; Settings page |
+| Package export and import keep metadata, statuses, notes, evidence, sources and history | ✔ Steps 22 and 26 |
+| Settings persistence behaves exactly as documented | Unit (settings validation); local storage plus export and import, with no claim of a silent settings file |
+| Readiness, test, execution and final reports generate offline as PDF | ✔ Steps 20 and 29 (preparation and final demo reports) |
+| Reports separate verified, assertion only, failed, blocked and N/A, and never invent approvals | ✔ Step 11; Unit (report model); gates stay blank unless recorded |
+| Reports show the knowledge base version, date, scope, sources and limitations | Report sections |
+| No unsanitised content is executed | ✔ Steps 6 and 12 (injection strings render as text); Unit (prototype pollution, `javascript:` links); the CSP blocks injected scripts |
+| Snippets are labelled for permissions and side effects | Unit; every snippet declares read-only, permissions and cost (build check) |
+| Critical recommendations are sourced or marked for review | Unit |
+| The demo uses fictional data only and can be left cleanly | ✔ Steps 5 and 29; demo watermark on reports |

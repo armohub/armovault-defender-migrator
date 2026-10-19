@@ -1,5 +1,5 @@
 // Project data model: statuses, answers, creation and audited mutations.
-// All mutation helpers write an audit entry; nothing here fabricates dates, evidence or approvals —
+// All mutation helpers write an audit entry; nothing here fabricates dates, evidence or approvals:
 // timestamps are always "now" at the moment the user acts, and people are whoever the user typed.
 
 import { uid, nowIso } from './util.js';
@@ -11,8 +11,8 @@ export const PROJECT_SCHEMA_VERSION = 1;
 export const STATUSES = [
   { id: 'not_started', label: 'Not started', short: 'Not started', tone: 'neutral', open: true },
   { id: 'in_progress', label: 'In progress', short: 'In progress', tone: 'info', open: true },
-  { id: 'passed', label: 'Passed — verified with evidence', short: 'Passed', tone: 'good', open: false },
-  { id: 'not_verified', label: 'Done — not verified (user assertion only)', short: 'Not verified', tone: 'caution', open: false },
+  { id: 'passed', label: 'Passed, verified with evidence', short: 'Passed', tone: 'good', open: false },
+  { id: 'not_verified', label: 'Done, not verified (your word only)', short: 'Not verified', tone: 'caution', open: false },
   { id: 'failed', label: 'Failed', short: 'Failed', tone: 'bad', open: false },
   { id: 'blocked', label: 'Blocked', short: 'Blocked', tone: 'bad', open: true },
   { id: 'needs_review', label: 'Needs review', short: 'Needs review', tone: 'caution', open: true },
@@ -24,7 +24,7 @@ export const statusById = (id) => STATUSES.find((s) => s.id === id) || STATUSES[
 export const ANSWERS = [
   { id: 'yes', label: 'Yes' },
   { id: 'no', label: 'No' },
-  { id: 'unknown', label: "I don't know — needs investigation" },
+  { id: 'unknown', label: "I don't know yet" },
   { id: 'na', label: 'Not applicable' },
 ];
 export const ANSWER_IDS = ANSWERS.map((a) => a.id);
@@ -42,9 +42,9 @@ export const REGISTER_STATUS_IDS = ['open', 'in_progress', 'done', 'accepted', '
 export const SEVERITY_IDS = ['critical', 'high', 'medium', 'low'];
 
 export const GATE_DECISIONS = [
-  { id: 'go', label: 'Go — proceed' },
+  { id: 'go', label: 'Go: proceed' },
   { id: 'go_with_exceptions', label: 'Go with documented exceptions' },
-  { id: 'no_go', label: 'No-go — do not proceed' },
+  { id: 'no_go', label: 'No-go: do not proceed' },
   { id: 'deferred', label: 'Decision deferred' },
 ];
 export const GATE_DECISION_IDS = GATE_DECISIONS.map((g) => g.id);
@@ -143,13 +143,13 @@ function pushHistory(state, project, field, from, to) {
   state.updatedBy = by;
 }
 
-// Returns { ok, error } — enforces the rules that keep the record honest.
+// Returns { ok, error } and enforces the rules that keep the record honest.
 export function setCheckStatus(project, check, status, { reason = '', kbVersion } = {}) {
   if (!STATUS_IDS.includes(status)) return { ok: false, error: 'Unknown status.' };
   const st = ensureCheckState(project, check.id, kbVersion);
   const evidenceCount = st.evidenceIds.filter((id) => project.evidence[id]).length;
   if (status === 'passed' && evidenceCount === 0) {
-    return { ok: false, error: 'A check can only be marked "Passed — verified" when at least one evidence item (screenshot, observation note, link or file) is attached. Attach evidence first, or record it as "Done — not verified".' };
+    return { ok: false, error: 'A check can only be marked "Passed, verified" when at least one evidence item (screenshot, observation note, link or file) is attached. Attach evidence first, or record it as "Done, not verified".' };
   }
   const needsReason = status === 'not_applicable' || status === 'blocked' || status === 'failed';
   const from = st.status;
@@ -189,7 +189,7 @@ export function setApplicabilityOverride(project, checkId, value, reason, kbVers
   if (!String(reason || '').trim()) return { ok: false, error: 'An applicability override needs a reason so reviewers can understand the decision.' };
   st.override = { value, reason: String(reason).slice(0, 2000), by: actor(project), at: nowIso() };
   pushHistory(st, project, 'applicability override', '', value);
-  addAudit(project, 'check.applicability', `${checkId}: reviewer set applicability to "${value === 'applies' ? 'applies' : 'not applicable'}" — ${String(reason).slice(0, 200)}`, { ref: checkId });
+  addAudit(project, 'check.applicability', `${checkId}: reviewer set applicability to "${value === 'applies' ? 'applies' : 'not applicable'}": ${String(reason).slice(0, 200)}`, { ref: checkId });
   return { ok: true };
 }
 
@@ -304,7 +304,7 @@ export function updateRegisterItem(project, id, patch) {
   return { ok: true };
 }
 
-// A risk acceptance needs a named person, a role and a rationale — typed by the user, never defaulted.
+// A risk acceptance needs a named person, a role and a rationale, typed by the user, never defaulted.
 export function acceptException(project, id, { acceptedBy, acceptedRole, rationale }) {
   const entry = project.register.find((r) => r.id === id);
   if (!entry) return { ok: false, error: 'Not found.' };

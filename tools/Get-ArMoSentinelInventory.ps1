@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-  Read-only inventory of a Microsoft Sentinel workspace for the ArMoHub Defender Migration Assistant.
+  Read-only inventory of a Microsoft Sentinel workspace for the ArMo MS Defender Migration Assistant.
 
 .DESCRIPTION
   Collects the names and transition-relevant flags of analytics rules, automation rules, data connectors and

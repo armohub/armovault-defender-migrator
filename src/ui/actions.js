@@ -1,7 +1,7 @@
 // Cross-view user actions: opening project files, starting the demo, attaching evidence.
-import { h, pickFile, modal, toast, confirmDialog, readBlobBytes } from './dom.js';
-import { state, importProjectBytes, setProject, putEvidenceBlob, mutate, dropEvidenceBlob, prepareToLeaveProject, notify } from '../app/store.js';
-import { go } from './shell.js';
+import { h, pickFile, modal, toast, confirmDialog, readBlobBytes, withLoader, showSequence } from './dom.js';
+import { state, importProjectBytes, setProject, putEvidenceBlob, mutate, dropEvidenceBlob, prepareToLeaveProject, notify, closeProject } from '../app/store.js';
+import { go, setExitDemo } from './shell.js';
 import { addEvidence, removeEvidence, ALLOWED_IMAGE_TYPES, ALLOWED_FILE_TYPES, MAX_EVIDENCE_BYTES, MAX_EVIDENCE_ITEMS } from '../core/model.js';
 import { sniffMime, sha256Hex } from '../core/files.js';
 import { bytesLabel, formatDate } from '../core/util.js';
@@ -32,7 +32,7 @@ export async function openProjectFileFlow() {
   let res;
   try {
     const bytes = await readBlobBytes(file);
-    res = await importProjectBytes(bytes);
+    res = await withLoader('Opening your project', () => importProjectBytes(bytes));
   } catch (e) {
     await modal({ title: 'This file could not be opened', body: h('div', null, h('p', null, e.message), h('p', { class: 'muted small' }, 'Nothing was changed. Project packages are .zip files created by this app; JSON data exports can also be opened (without attachments).')), actions: [{ label: 'OK', kind: 'primary', value: true }] });
     return;
@@ -42,8 +42,8 @@ export async function openProjectFileFlow() {
   const body = h('div', null,
     h('dl', { class: 'kv' },
       h('dt', null, 'Project'), h('dd', null, p.meta.name || '(unnamed)'),
-      h('dt', null, 'Organisation'), h('dd', null, p.meta.organisation || '—'),
-      h('dt', null, 'Last updated'), h('dd', null, formatDate(p.updatedAt, true) || '—'),
+      h('dt', null, 'Organisation'), h('dd', null, p.meta.organisation || 'Not set'),
+      h('dt', null, 'Last updated'), h('dd', null, formatDate(p.updatedAt, true) || 'Unknown'),
       h('dt', null, 'Checks with a recorded status'), h('dd', null, String(Object.values(p.checks).filter((c) => c.status !== 'not_started').length)),
       h('dt', null, 'Evidence records'), h('dd', null, `${Object.keys(p.evidence).length} (${res.evidence.size} attachment file(s) imported)`),
       h('dt', null, 'Source'), h('dd', null, res.source === 'package' ? 'Project package (.zip)' : 'JSON data export (no attachments)')),
@@ -60,10 +60,21 @@ export async function openProjectFileFlow() {
 
 export async function startDemo() {
   if (!(await confirmLeaveProject())) return;
-  const { project, evidence } = buildDemoProject(state.kb);
+  const { project, evidence } = await withLoader('Preparing the demo project', async () => buildDemoProject(state.kb), { delayMs: 0, minMs: 500 });
   setProject(project, evidence, { fromFile: true });
   go('#/overview');
 }
+
+// Leaving the demo: it is fictional and never saved, so one confirmation is enough.
+export async function exitDemo() {
+  if (!state.project || !state.project.isDemo) { go('#/welcome'); return; }
+  const ok = await confirmDialog({ title: 'Leave the demo?', message: ['The demo project is fictional and nothing in it is saved.', 'You will be back on the start page, ready to start your own project.'], confirmLabel: 'Leave the demo', cancelLabel: 'Stay in the demo' });
+  if (!ok) return;
+  closeProject();
+  go('#/welcome');
+  setTimeout(() => { const b = document.querySelector('[data-focus-key="start-own"]'); if (b) b.focus(); }, 60);
+}
+setExitDemo(exitDemo);
 
 // Evidence attachment ---------------------------------------------------------
 
@@ -101,7 +112,7 @@ function askEvidenceDetails({ fileName, isImage, size }) {
       h('p', { class: 'small muted' }, `${fileName} · ${bytesLabel(size)}`),
       field('Title', title, { required: true }),
       field('Description (optional)', text),
-      h('div', { class: 'callout callout-info' }, h('div', null, h('strong', null, 'Sensitive data check. '), 'Screenshots and exports can contain tenant IDs, user names, IP addresses and incident details. Crop or redact what is not needed, and follow your organisation\'s data-handling policy. Files stay in this app and in packages you save — nothing is uploaded.')),
+      h('div', { class: 'callout callout-info' }, h('div', null, h('strong', null, 'Sensitive data check. '), 'Screenshots and exports can contain tenant IDs, user names, IP addresses and incident details. Crop or redact what is not needed, and follow your organisation\'s data-handling policy. Files stay in this assistant and in the packages you save. Nothing is uploaded.')),
       h('label', { class: 'check-line' }, red, ' I have checked this attachment for data that should be redacted')),
     actions: [{ label: 'Cancel', value: null }, { label: 'Add evidence', kind: 'primary', value: () => (title.value.trim() ? { title: title.value.trim(), text: text.value, redaction: red.checked } : (toast('Please enter a title.', 'bad'), null)) }],
   }).then((v) => v || null);
@@ -141,7 +152,7 @@ export async function addLinkEvidence(check) {
 }
 
 export async function removeEvidenceFlow(ev) {
-  const ok = await confirmDialog({ title: 'Remove evidence?', message: [`"${ev.title || ev.fileName}" will be removed from this project. If it is the last evidence on a check marked "Passed — verified", the check becomes "Done — not verified".`, 'This is recorded in the audit log. Copies in project packages you saved earlier are not affected.'], confirmLabel: 'Remove', danger: true });
+  const ok = await confirmDialog({ title: 'Remove evidence?', message: [`"${ev.title || ev.fileName}" will be removed from this project. If it is the last evidence on a check marked "Passed, verified", the step becomes "Done, not verified".`, 'This is recorded in the audit log. Copies in project packages you saved earlier are not affected.'], confirmLabel: 'Remove', danger: true });
   if (!ok) return;
   mutate((p) => removeEvidence(p, ev.id));
   await dropEvidenceBlob(ev.id);

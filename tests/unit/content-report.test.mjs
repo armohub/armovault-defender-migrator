@@ -84,7 +84,7 @@ test('report model reflects records faithfully and never invents approvals', asy
   acceptException(p, r.id, { acceptedBy: 'CISO Example', acceptedRole: 'CISO', rationale: 'Temporary' });
   const m = buildReportModel('prepare', KB, p, { appVersion: 'test' });
   const items = m.stages[0].groups.flatMap((g) => g.items);
-  assert.equal(items.find((i) => i.id === 'PREP-SCOPE-01').verification, 'Verified — evidence attached');
+  assert.equal(items.find((i) => i.id === 'PREP-SCOPE-01').verification, 'Verified, evidence attached');
   const aut = items.find((i) => i.id === 'PREP-AUT-01');
   assert.equal(aut.status, 'failed');
   assert.equal(aut.exceptions[0].acceptedBy, 'CISO Example');

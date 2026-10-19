@@ -30,12 +30,12 @@ export function applicabilityChip(app) {
 
 export function provenanceChip(c) {
   return c.provenance === 'official'
-    ? h('span', { class: 'chip chip-accent', title: 'Derived from current Microsoft Learn documentation (see sources).' }, icon('shield', 'icon-xs'), 'Microsoft documentation')
-    : h('span', { class: 'chip chip-info', title: 'Practical guidance from the makers of this tool — not a Microsoft requirement.' }, icon('user', 'icon-xs'), 'Practical guidance');
+    ? h('span', { class: 'chip chip-accent', title: 'Based on current Microsoft Learn documentation (see the sources).' }, icon('shield', 'icon-xs'), 'Microsoft documentation')
+    : h('span', { class: 'chip chip-info', title: 'Practical guidance from the makers of this assistant, not a Microsoft requirement.' }, icon('user', 'icon-xs'), 'Practical guidance');
 }
 
 export function validationChip(c) {
-  if (c.validation === 'needs-review') return h('span', { class: 'chip chip-caution', title: 'Microsoft sources conflict or are ambiguous for part of this item. See "Uncertainty".' }, icon('alert', 'icon-xs'), 'Needs review');
+  if (c.validation === 'needs-review') return h('span', { class: 'chip chip-caution', title: 'Microsoft sources conflict or are unclear for part of this step. See "Watch out".' }, icon('alert', 'icon-xs'), 'Sources differ');
   return null;
 }
 
@@ -93,7 +93,7 @@ export function linkBtn(label, href, { kind, iconName, small } = {}) {
 }
 
 export function kv(pairs) {
-  return h('dl', { class: 'kv' }, ...pairs.filter(Boolean).flatMap(([k, v]) => [h('dt', null, k), h('dd', null, v == null || v === '' ? '—' : v)]));
+  return h('dl', { class: 'kv' }, ...pairs.filter(Boolean).flatMap(([k, v]) => [h('dt', null, k), h('dd', null, v == null || v === '' ? h('span', { class: 'muted' }, 'Not set') : v)]));
 }
 
 export function daysUntil(dateIso) {

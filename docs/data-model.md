@@ -1,25 +1,30 @@
 # Data model
 
+This is a technical reference, so it names item codes and internal identifiers where they matter.
+
 Three kinds of data, kept strictly apart:
 
 | Data | Where it lives | Format | Versioning |
 |---|---|---|---|
-| **Knowledge base** (guidance) | Bundled into the app at build time; also published as `dist/kb.json` | `content/*.mjs` → JS objects | `KB_META.version` (for example `2026.10.19-rc1`); each item has `version` and `lastVerified` |
+| **Knowledge base** (guidance) | Bundled into the assistant at build time; also published as `dist/kb.json` | `content/*.mjs` to JS objects | `KB_META.version` (1.0 ships `2026.10.19`); each item has `version` and `lastVerified` |
 | **Project** (your records) | In memory; in IndexedDB only with browser autosave; in project packages you save | JSON (`armohub.dma.project`) | `schemaVersion` (currently 1) with a migration hook |
 | **Settings** (preferences) | `localStorage` key `armohub.dma.settings.v1`; optional export file | JSON (`armohub.dma.settings`) | `schemaVersion` 1 |
+
+**Why the identifiers still say `armohub`.** The product is now called ArMo MS Defender Migration Assistant, but the internal identifiers (`armohub.dma.project`, `armohub.dma.settings`, `armohub.dma.package`, `armohub.dma.inventory`, `armohub.dma.kb`, the IndexedDB database `armohub-dma` and the settings key above) are unchanged on purpose. Changing them would stop the assistant from reading packages, preferences and browser data saved by the earlier internal build. File names use the new `armo-dma` prefix (see below).
 
 ## Knowledge object (`content/stage-*.mjs`)
 
 ```js
 {
   id: 'PREP-AUT-01', version: 1, stage: 'prepare', workstream: 'automation', order: 10,
+  phase: 'pre' | 'change' | 'post',               // transition steps only
   kind: 'check' | 'task' | 'decision' | 'gate',
-  title, objective, why,                          // plain language
+  title, objective, why,                          // plain language; why is a string or a list of strings
   criticality: 'critical' | 'high' | 'medium' | 'low',
   applicability: null | { q } | { all: [...] } | { any: [...] } | { not: rule },   // declarative, never evaluated as code
-  applicabilityNote, dependsOn: ['PREP-…'],
+  applicabilityNote, dependsOn: ['PREP-...'],
   roles: [], prerequisites: [], where: [{ portal, path }], when,
-  steps: [],                                       // numbered instructions
+  steps: [],                                       // each a string or { text, bullets?: [], tip? }
   snippets: ['SNIPPET_ID'],                        // see content/snippets.mjs
   expected, interpret: [{ outcome, meaning }],
   record: [], evidence: [], remediation: [], rollback: [],
@@ -30,23 +35,27 @@ Three kinds of data, kept strictly apart:
 }
 ```
 
-Snippets (`content/snippets.mjs`): `title, language, status ('verbatim'|'composed'), runIn, permissions, readOnly, cost, purpose, notDo, code, expected, caveats, sources`.
+**Markup in reading text.** Text fields (not `title` and not `where` paths) may contain `**bold**`, links to other steps (`[[ITEM-ID]]` or `[[ITEM-ID|label]]`), links to pages of the assistant (`[[go:TARGET|label]]`) and buttons that act on the step (`[[do:ACTION|label]]`). The vocabulary lives in `content/markup.mjs`, the renderer in `src/ui/rich.js`, and the writing rules in [content-style-guide.md](content-style-guide.md). The renderer builds DOM nodes; it never parses HTML.
 
-Questions (`content/questions.mjs`): `id, section, text, help, sources, showIf?`. `showIf` only controls whether a follow-up question is shown; it never hides items.
+**Snippets** (`content/snippets.mjs`): `title, language, status ('verbatim'|'composed'), runIn, permissions, readOnly, cost, purpose, notDo, code, expected, caveats, sources`.
 
-`scripts/validate-kb.mjs` checks referential integrity and minimum guidance quality. The build fails on any error.
+**Questions** (`content/questions.mjs`): `id, section, text, detail?, why, help, sources, showIf?`. `why` is shown as "Why we ask" and `help` as "Where to find the answer". `showIf` only controls whether a follow-up question is shown; it never hides items.
+
+**Question sections**: `{ id, title, intro }`. 1.0 has six: your environment, data and connectors, detections and incidents, automation and integrations, access and permissions, and content and analyst workflows.
+
+`scripts/validate-kb.mjs` checks referential integrity, minimum guidance quality and the writing rules: no long dashes, no bare item codes, no words from the plain-words list, known link targets and actions, labels on every page link and action, actions only in step content, `do:record-gate` only on gate steps, and valid step shapes. The build fails on any error.
 
 ## Applicability (three-valued logic)
 
-`yes` → true; `no` or `na` → false; unanswered or `unknown` → **unknown**. `all`, `any` and `not` follow Kleene logic.
+`yes` gives true; `no` or `na` give false; unanswered or `unknown` give **unknown**. `all`, `any` and `not` follow Kleene logic.
 
 | Result | Meaning |
 |---|---|
-| `applies` | Item in scope |
+| `applies` | Step in scope |
 | `not_applicable` | Shown greyed out, with the derived reason |
 | `unknown` | In scope, labelled "applicability uncertain" |
 
-In full-checklist mode every item is `applies`. A reviewer override (`applies` or `not_applicable`) requires a reason and wins over answers.
+In full-checklist mode every step is `applies`. A reviewer override (`applies` or `not_applicable`) requires a reason and wins over answers.
 
 ## Project (`armohub.dma.project`, schemaVersion 1)
 
@@ -66,18 +75,20 @@ In full-checklist mode every item is `applies`. A reviewer override (`applies` o
 }
 ```
 
+A "find out" action added from the questionnaire is an ordinary register item of type `action`, titled "Find out: " followed by the question.
+
 **Statuses:**
 
-| Status | Meaning | Rule |
+| Status | Shown as | Rule |
 |---|---|---|
-| `not_started` | | |
-| `in_progress` | | |
-| `passed` | Verified | **Requires at least one evidence item** |
-| `not_verified` | Done, user assertion only | |
-| `failed` | | Rationale required |
-| `blocked` | | Rationale required |
-| `needs_review` | | |
-| `not_applicable` | | Rationale required |
+| `not_started` | Not started | |
+| `in_progress` | In progress | |
+| `passed` | Passed, verified with evidence | **Requires at least one evidence item** |
+| `not_verified` | Done, not verified (your word only) | |
+| `failed` | Failed | Rationale required |
+| `blocked` | Blocked | Rationale required |
+| `needs_review` | Needs review | |
+| `not_applicable` | Not applicable (with rationale) | Rationale required |
 
 **Integrity rules** enforced in `src/core/model.js` and again on import (`src/core/schema.js`):
 - A pass without evidence becomes `not_verified`.
@@ -85,31 +96,61 @@ In full-checklist mode every item is `applies`. A reviewer override (`applies` o
 - Gate decisions need a decision maker; `go_with_exceptions` and `no_go` also need a rationale.
 - Timestamps are always "now" at the moment of the user's action. Nothing is back-dated or pre-filled.
 
+## Settings (`armohub.dma.settings`, schemaVersion 1)
+
+```js
+{
+  schema, schemaVersion,
+  storageMode: 'none' | 'browser',          // default 'none': you save packages yourself
+  theme: 'dark' | 'light' | 'system',       // default 'dark'
+  density: 'comfortable' | 'compact',
+  operatorName, operatorRole,
+  welcomeSeen, introSeen,                   // introSeen becomes true once the introduction has been shown or skipped
+  autoAdvance: bool,                        // default true: move on after Yes or No
+  motion: 'system' | 'reduced',             // default 'system': follow the operating system
+  disclaimerAcknowledgedAt, lastProjectId,
+}
+```
+
+Unknown values fall back to the defaults. Importing a preferences file cannot switch on browser storage or acknowledge the disclaimer.
+
 ## Conclusion algorithm (`src/core/readiness.js`)
 
-Computed per stage over in-scope items:
-1. **Not ready:** any in-scope critical or high item failed or blocked without an accepted exception, or an open critical issue or risk.
-2. **Unable to determine:** otherwise, any critical or high item not yet assessed, applicability still uncertain, or a critical item recorded only as an assertion.
-3. **Ready with exceptions:** otherwise, if there are exceptions, high items with assertion only, or open medium/low items.
-4. **Ready:** everything is passed with evidence or not applicable with a rationale.
+Computed for each stage over in-scope steps:
+1. **Not ready:** any in-scope critical or high step failed or blocked without an accepted exception, or an open critical issue or risk.
+2. **Unable to determine:** otherwise, any critical or high step not yet assessed, applicability still uncertain, or a critical step recorded only as an assertion.
+3. **Ready with exceptions:** otherwise, if there are exceptions, high steps with an assertion only, or open medium or low steps.
+4. **Ready:** everything is passed with evidence, or not applicable with a rationale.
 
-The test stage reports **Not available** when it is marked unavailable. Gate decisions are always human.
+The test stage reports **Not available** when it is marked unavailable. Gate decisions are always made by people.
 
 ## Project package (`.zip`, `armohub.dma.package` v1)
 
+Saved as `armo-dma-<project>-<date>.zip`.
+
 ```
-manifest.json      format, versions, createdAt/By, projectSha256, evidenceFiles[{ path, evidenceId, sha256, size, mime }], evidenceMissing[]
-project.json       the project object above
-evidence/<id>.<ext> screenshot and file bytes
-README.txt         contents + sensitivity notice (the package is NOT encrypted)
+manifest.json        format, versions, createdAt/By, projectSha256, evidenceFiles[{ path, evidenceId, sha256, size, mime }], evidenceMissing[]
+project.json         the project object above
+evidence/<id>.<ext>  screenshot and file bytes
+README.txt           contents and a sensitivity notice (the package is NOT encrypted)
 ```
 
 Import is defensive (`src/core/package.js`, `src/core/zip.js`):
-- ZIP safety: entry count, size and compression-ratio limits; unsafe paths, encrypted entries and CRC mismatches are refused.
+- ZIP safety: limits on entry count, size and compression ratio. Unsafe paths, encrypted entries and CRC mismatches are refused.
 - The manifest hash must match `project.json`.
 - Each evidence file must match its recorded SHA-256, and its type is sniffed from content. SVG, HTML and scripts are refused.
-- `project.json` is rebuilt field by field from known keys. Forbidden keys (`__proto__`, `constructor`, `prototype`) are refused; strings are capped; enums are validated.
+- `project.json` is rebuilt field by field from known keys. Forbidden keys (`__proto__`, `constructor`, `prototype`) are refused, strings are capped and enums are validated.
 - Projects created by a newer schema version are refused, with a clear message.
+
+## Other files the assistant writes
+
+| File | Content |
+|---|---|
+| `armo-dma-<project>.json` | Project data export (attachments referenced, not included) |
+| `armo-dma-<project>-checklist.csv` | One row per step |
+| `armo-dma-<project>-register.csv` | The register |
+| `armo-dma-<project>-evidence-index.csv` | The evidence index |
+| `armo-dma-preferences.json` | Preferences (`armohub.dma.settings`), no project data |
 
 ## Inventory file (`armohub.dma.inventory` v1)
 
@@ -118,10 +159,10 @@ Produced by `tools/Get-ArMoSentinelInventory.ps1`, which sends GET requests only
 - `automationRules[]`: name, enabled, triggersOn, triggersWhen, riskyConditions, playbookActions, taskActions
 - `dataConnectors[]`, `watchlists[]`, `errors[]`
 
-The app maps the file to imported evidence notes on specific items, and to "Yes" answer suggestions. Absence of a finding in one workspace is never turned into "No".
+The assistant maps the file to imported evidence notes on specific steps, and to "Yes" answer suggestions. A finding that is absent in one workspace never becomes "No".
 
 ## Schema evolution
 
-- `migrateProject()` in `src/core/schema.js` is where version upgrades go: for example, add `if (raw.schemaVersion === 1) raw = upgrade1to2(raw)`, then bump `PROJECT_SCHEMA_VERSION`.
-- Older projects stay readable. Newer projects are refused by older apps with an explicit message.
-- Items that disappear from a later knowledge base are kept in the project as historical data, and the import reports them.
+- `migrateProject()` in `src/core/schema.js` is where version upgrades go. For example, add `if (raw.schemaVersion === 1) raw = upgrade1to2(raw)`, then bump `PROJECT_SCHEMA_VERSION`.
+- Older projects stay readable. Older versions of the assistant refuse newer projects with a clear message.
+- Steps that disappear from a later knowledge base stay in the project as historical data, and the import reports them.

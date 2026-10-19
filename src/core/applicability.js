@@ -8,7 +8,7 @@
 //   { any: [rule, ...] }    → OR
 //
 // Outcome: 'applies' | 'not_applicable' | 'unknown'. Unknown answers never hide a check: an unknown outcome
-// is shown as "applicability uncertain — needs investigation" and stays in scope.
+// is shown as "applicability uncertain: needs investigation" and stays in scope.
 
 import { answerLabel } from './model.js';
 
@@ -93,7 +93,7 @@ export function evaluateApplicability(check, project, kb, qIndex = questionIndex
   const reasons = [];
   const relevant = trace.filter((t) => (value === 'unknown' ? t.result === U : value === 'applies' ? t.result === T : t.result === F));
   for (const t of (relevant.length ? relevant : trace)) {
-    reasons.push(`"${t.text}" — ${t.label}`);
+    reasons.push(`"${t.text}": ${t.label}`);
   }
   if (value === 'unknown') reasons.unshift('Applicability is uncertain because at least one relevant answer is unknown or not answered. The check stays in scope until it is investigated.');
   if (check.applicabilityNote) reasons.push(check.applicabilityNote);

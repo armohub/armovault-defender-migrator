@@ -122,7 +122,7 @@ Context: Sentinel in the Azure portal is supported until 2027-03-31. After that 
 - **S2 (2026-09-10):** "the Defender XDR correlation engine fully controls alert grouping and incident merging when necessary in the Defender portal."
 - **S42:** "the alert grouping settings take effect only at the moment that the incident is created." Defender "might make decisions about alert correlation that don't take these settings into account."
 - **S15 (newer, 2026-10-04):** "By default, all analytics rules are excluded at the tenant level when you first onboard to Microsoft Defender." Also: "The Incident correlation default setting is turned off by default."
-  - An excluded rule's alerts "group into incidents exactly as they did in Microsoft Sentinel—based only on the grouping configuration of the analytics rule."
+  - An excluded rule's alerts "group into incidents exactly as they did in Microsoft Sentinel, based only on the grouping configuration of the analytics rule."
 - **Tenant default UI path (S15):** **System > Settings > Microsoft Defender XDR > Rules > Incident correlation**, toggle **Incident correlation default setting**.
 - **Per-rule override (S15):**
   - Analytics rule wizard, **Incident settings** tab, **Incident correlation** dropdown: **Tenant default** / **Enabled** / **Disabled**.
@@ -294,7 +294,7 @@ Related call to action (S45, April 2026 and November 2025). The account entity *
 | Playbooks called directly from analytics rules (classic alert automation) | Deprecated as of March 2026. Migrate to alert-trigger automation rules. | S12, S42 | High |
 | Logic Apps Sentinel connector triggers | **Microsoft Sentinel incident**, **Microsoft Sentinel alert (Preview)** (can't be used for alerts from *Microsoft security* rules), **Microsoft Sentinel entity**. S44 has no Defender-portal notes. | S44 | High (no Defender-specific changes documented) |
 | Logic Apps actions | **Alert - Get Incident**, **Get Incident**, **Update Incident** (status, owner, tags, severity, title, description), **Add comments to incident**, **Entities - Get &lt;type&gt;**. Create incident (preview) exists (S36), but the resulting incidents are not synced to Defender (S2). | S44, S36 | High |
-| Field changes reaching playbooks | No Logic Apps field changes are documented. The incident-level changes (provider = Microsoft XDR, missing Description, possible title change, correlated multi-source alerts) apply to the incident object (S2, S8). | — | Medium (inferred) |
+| Field changes reaching playbooks | No Logic Apps field changes are documented. The incident-level changes (provider = Microsoft XDR, missing Description, possible title change, correlated multi-source alerts) apply to the incident object (S2, S8). |, | Medium (inferred) |
 | Required roles | Microsoft Sentinel Contributor (attach), Responder (access incident), Playbook Operator (manual run), Automation Contributor (granted to the Sentinel service account on the playbook's resource group), Logic App Contributor (to run). In a multitenant Lighthouse setup, the Automation Contributor role GUID is `f4c81013-99ee-4d62-a7ee-b3f1f648599a`. | S11, S12 | High |
 | Health logging | `SentinelHealth` logs "Playbook was triggered" for manual runs on incidents. Alert-trigger playbooks appear only under automation rule events (`TriggeredPlaybooks`). | S29, S32 | High |
 | AI-generated (Python) playbooks | Defender portal only. Up to 100 per tenant, 10-minute runtime, alerts as the only input. Run through the Enhanced Alert Trigger. | S38 | High |

@@ -1,18 +1,20 @@
-// Branding lives in one place so the working names can change after feedback.
-// Contact details, portraits and repository links stay null until the makers supply approved values.
+// Branding lives in one place. Profile links are the makers' own public LinkedIn pages, supplied by them.
+// Contact details beyond those stay null until the makers supply approved values.
 export const BRAND = Object.freeze({
-  brandName: 'ArMoHub',
-  productName: 'ArMoHub Defender Migration Assistant',
+  brandName: 'ArMo',
+  productName: 'ArMo MS Defender Migration Assistant',
   shortName: 'Defender Migration Assistant',
-  tagline: 'Guided, evidence-based transition of Microsoft Sentinel to the Microsoft Defender portal',
+  tagline: 'Your guided, evidence-based move of Microsoft Sentinel from the Azure portal to the Microsoft Defender portal',
+  quote: 'Built to make your migration journey easy.',
   website: 'https://armohub.ch',
   repositoryUrl: null, // set when the repository is public
   makers: [
-    { name: 'Arno', initials: 'A', profileUrl: null, photoDataUrl: null },
-    { name: 'Moise', initials: 'M', profileUrl: null, photoDataUrl: null },
+    { name: 'Arno', initials: 'A', profileUrl: 'https://www.linkedin.com/in/arnoyan', photoDataUrl: null },
+    { name: 'Moise', initials: 'M', profileUrl: 'https://www.linkedin.com/in/m-aub/', photoDataUrl: null },
   ],
-  contactUrl: null, // "Get in touch with the makers" stays a placeholder until an approved link exists
-  fileStem: 'armohub-dma',
+  contactUrl: null,
+  fileStem: 'armo-dma',
+  distFile: 'ArMo-MS-Defender-Migration-Assistant.html',
 });
 
-export const APP_VERSION = '0.9.0-rc.1';
+export const APP_VERSION = '1.0.0';

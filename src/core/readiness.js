@@ -121,7 +121,7 @@ export function assessStage(kb, project, stageId, appMap = applicabilityMap(kb, 
     const c = i.check;
     const crit = c.criticality;
     const accepted = exc.get(c.id) || [];
-    const label = `${c.id} — ${c.title}`;
+    const label = c.title;
     const majorItem = crit === 'critical' || crit === 'high';
     if (i.status === 'failed' || i.status === 'blocked') {
       if (accepted.length) exceptions.push({ id: c.id, text: `${label}: ${i.status === 'failed' ? 'failed' : 'blocked'}, accepted by ${accepted.map((a) => a.acceptedBy).join(', ')}` });
@@ -137,10 +137,10 @@ export function assessStage(kb, project, stageId, appMap = applicabilityMap(kb, 
       continue;
     }
     if (i.status === 'not_verified') {
-      if (accepted.length) exceptions.push({ id: c.id, text: `${label}: user assertion only, accepted by ${accepted.map((a) => a.acceptedBy).join(', ')}` });
+      if (accepted.length) exceptions.push({ id: c.id, text: `${label}: your word only, accepted by ${accepted.map((a) => a.acceptedBy).join(', ')}` });
       else if (crit === 'critical') undetermined.push({ id: c.id, text: `${label}: recorded as done but not verified with evidence (critical)` });
-      else if (crit === 'high') exceptions.push({ id: c.id, text: `${label}: user assertion only — no evidence (high)` });
-      else open.push({ id: c.id, text: `${label}: user assertion only (${crit})` });
+      else if (crit === 'high') exceptions.push({ id: c.id, text: `${label}: your word only, no evidence (high)` });
+      else open.push({ id: c.id, text: `${label}: your word only (${crit})` });
     }
   }
 
@@ -213,7 +213,7 @@ export function nextAction(kb, project, appMap = applicabilityMap(kb, project)) 
 export const OVERALL_LABELS = {
   ready: 'All stages complete and verified',
   ready_with_exceptions: 'Complete with exceptions',
-  undetermined: 'Incomplete — unable to determine',
+  undetermined: 'Incomplete, not yet possible to decide',
   not_ready: 'Blocking issues remain',
 };
 export function overallAssessment(kb, project, stageIds = STAGES_ORDER, appMap = applicabilityMap(kb, project)) {

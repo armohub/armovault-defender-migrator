@@ -1,4 +1,4 @@
-// DOM helpers. All user and imported content is inserted as text nodes (textContent) — never via innerHTML.
+// DOM helpers. All user and imported content is inserted as text nodes (textContent), never via innerHTML.
 // The CSP additionally blocks inline event handlers, injected scripts and eval.
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -15,7 +15,7 @@ function applyProps(el, props) {
   for (const [k, v] of Object.entries(props)) {
     if (v == null || v === false) continue;
     if (k === 'class') el.className = Array.isArray(v) ? v.filter(Boolean).join(' ') : v;
-    else if (k === 'style' && typeof v === 'object') Object.assign(el.style, v);
+    else if (k === 'style') setStyle(el, v);
     else if (k === 'dataset') Object.assign(el.dataset, v);
     else if (k.startsWith('on') && typeof v === 'function') el.addEventListener(k.slice(2).toLowerCase(), v);
     else if (k === 'value') el.value = v;
@@ -25,6 +25,19 @@ function applyProps(el, props) {
     else if (k === 'href') el.setAttribute('href', safeHref(v));
     else if (v === true) el.setAttribute(k, '');
     else el.setAttribute(k, String(v));
+  }
+}
+
+// Styles are applied through the CSSOM. The Content-Security-Policy blocks style attributes,
+// but allows setting properties from script, including custom properties.
+export function setStyle(el, v) {
+  const pairs = typeof v === 'string'
+    ? v.split(';').map((x) => x.split(':')).filter((x) => x.length >= 2).map(([p, ...rest]) => [p.trim(), rest.join(':').trim()])
+    : Object.entries(v);
+  for (const [p, val] of pairs) {
+    if (val == null) continue;
+    const prop = p.startsWith('--') ? p : p.replace(/[A-Z]/g, (m) => `-${m.toLowerCase()}`);
+    el.style.setProperty(prop, String(val));
   }
 }
 
@@ -44,7 +57,7 @@ export function safeHref(v) {
 }
 
 export function externalLink(url, text, props = {}) {
-  return h('a', { href: url, target: '_blank', rel: 'noopener noreferrer', class: 'ext', title: `${url} (opens in a new tab — requires internet)`, ...props }, text || url, icon('external', 'icon-xs'));
+  return h('a', { href: url, target: '_blank', rel: 'noopener noreferrer', class: 'ext', title: `${url} (opens in a new tab, needs internet)`, ...props }, text || url, icon('external', 'icon-xs'));
 }
 
 export function clear(el) { while (el.firstChild) el.removeChild(el.firstChild); }
@@ -97,6 +110,19 @@ const ICONS = {
   gate: 'M4 21V5l8-3 8 3v16M9 21v-6h6v6',
   menu: 'M4 6h16M4 12h16M4 18h16',
   eye: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12zM12 15a3 3 0 100-6 3 3 0 000 6z',
+  arrow: 'M5 12h14M13 6l6 6-6 6',
+  exit: 'M10 4H5v16h5M14 8l4 4-4 4M18 12H9',
+  cpu: 'M7 7h10v10H7zM10 10h4v4h-4zM4 9h3M4 15h3M17 9h3M17 15h3M9 4v3M15 4v3M9 17v3M15 17v3',
+  code: 'M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16',
+  users: 'M9 11a3.5 3.5 0 100-7 3.5 3.5 0 000 7zM2.5 20a6.5 6.5 0 0113 0M16 4.3a3.5 3.5 0 010 6.4M18 14a6.5 6.5 0 013.5 6',
+  calendar: 'M4 6h16v15H4zM4 10h16M8 3v4M16 3v4',
+  heart: 'M12 20s-7-4.4-7-10a4 4 0 017-2.6A4 4 0 0119 10c0 5.6-7 10-7 10z',
+  linkedin: 'M4 4h16v16H4zM8 11v5M8 8v.01M12 16v-5M12 13.5a2.5 2.5 0 015 0V16',
+  play: 'M8 5l11 7-11 7z',
+  route: 'M5 19a2 2 0 100-4 2 2 0 000 4zM19 9a2 2 0 100-4 2 2 0 000 4zM7 17c5 0 3-6 6-6s3-4 4-4',
+  mark: 'M3 18l5-11 4 8 4-8 5 11',
+  keyboard: 'M3 6h18v12H3zM7 10h.01M11 10h.01M15 10h.01M7 14h10',
+  refresh: 'M20 11a8 8 0 10-2.3 5.7M20 4v7h-7',
 };
 
 export function icon(name, cls = 'icon') {
@@ -224,4 +250,75 @@ export function field(label, control, { hint, id, required } = {}) {
 
 export function readBlobBytes(blob) {
   return blob.arrayBuffer().then((b) => new Uint8Array(b));
+}
+
+// ───────── Motion and loading ─────────
+// Motion follows the operating system unless the user chose "Reduce motion" in Settings.
+export function reducedMotion() {
+  const pref = document.body && document.body.dataset.motion === 'reduced';
+  return pref || (typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches);
+}
+
+const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+function loaderEl(title, steps) {
+  const items = steps.map((s) => h('li', null, h('span', { class: 'mark' }, icon('check', 'icon-xs')), h('span', null, s)));
+  const skip = h('button', { type: 'button', class: 'btn btn-ghost btn-sm loader-skip' }, 'Skip');
+  const el = h('div', { class: 'loader', role: 'status', 'aria-live': 'polite' },
+    h('div', { class: 'loader-card' },
+      h('div', { class: 'loader-line', 'aria-hidden': 'true' }),
+      h('h2', null, title),
+      steps.length ? h('ul', { class: 'loader-steps' }, items) : null,
+      skip));
+  return { el, items, skip };
+}
+
+// Runs real work behind an overlay. The overlay appears only if the work takes longer than
+// `delayMs`, and once shown stays at least `minMs`, so it never flickers.
+export async function withLoader(title, task, { delayMs = 150, minMs = 400 } = {}) {
+  let shown = null;
+  let shownAt = 0;
+  const timer = setTimeout(() => {
+    shown = loaderEl(title, []);
+    shown.skip.remove();
+    document.body.appendChild(shown.el);
+    shownAt = performance.now();
+  }, delayMs);
+  try {
+    return await task();
+  } finally {
+    clearTimeout(timer);
+    if (shown) {
+      const left = minMs - (performance.now() - shownAt);
+      if (left > 0) await wait(left);
+      shown.el.remove();
+    }
+  }
+}
+
+// A short, honest sequence: each line names work that really happened. Skippable at any time
+// (button, Escape, Enter); with reduced motion it is not shown at all.
+export function showSequence(title, steps, { totalMs = 1600 } = {}) {
+  if (reducedMotion() || !steps.length) return Promise.resolve();
+  return new Promise((resolve) => {
+    const { el, items, skip } = loaderEl(title, steps);
+    let done = false;
+    const timers = [];
+    const finish = () => {
+      if (done) return;
+      done = true;
+      timers.forEach(clearTimeout);
+      document.removeEventListener('keydown', onKey, true);
+      el.remove();
+      resolve();
+    };
+    const onKey = (e) => { if (e.key === 'Escape' || e.key === 'Enter') { e.preventDefault(); finish(); } };
+    skip.addEventListener('click', finish);
+    document.addEventListener('keydown', onKey, true);
+    document.body.appendChild(el);
+    skip.focus({ preventScroll: true });
+    const per = Math.max(180, Math.floor((totalMs - 300) / steps.length));
+    items.forEach((li, i) => timers.push(setTimeout(() => li.classList.add('done'), 200 + per * i)));
+    timers.push(setTimeout(finish, 200 + per * steps.length + 260));
+  });
 }

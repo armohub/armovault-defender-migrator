@@ -13,6 +13,6 @@
   details { display: block; }
   details > summary { list-style: none; }
   details > summary::-webkit-details-marker { display: none; }
-  .report a { color: #0b5753; text-decoration: none; }
-  .report-demo::before { content: "DEMO — FICTIONAL DATA"; position: fixed; top: 45%; left: 10%; font-size: 64pt; color: rgba(180, 35, 35, .08); transform: rotate(-30deg); z-index: 0; }
+  .report a { color: #2450b8; text-decoration: none; }
+  .report-demo::before { content: "DEMO, FICTIONAL DATA"; position: fixed; top: 45%; left: 10%; font-size: 64pt; color: rgba(180, 35, 35, .08); transform: rotate(-30deg); z-index: 0; }
 }

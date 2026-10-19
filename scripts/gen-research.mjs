@@ -17,7 +17,7 @@ for (const c of KB.checks) for (const s of c.sources) citing.get(s.id).push({ id
 const snippetCiting = new Map(KB.sources.map((s) => [s.id, []]));
 for (const [id, sn] of Object.entries(KB.snippets)) for (const s of sn.sources) snippetCiting.get(s).push(id);
 
-let reg = `# Source register\n\nGenerated from the knowledge base by \`scripts/gen-research.mjs\` — do not edit by hand.\n\n`;
+let reg = `# Source register\n\nGenerated from the knowledge base by \`scripts/gen-research.mjs\`. Do not edit by hand.\n\n`;
 reg += `Knowledge base **${KB.meta.version}**, reviewed **${KB.meta.lastReviewed}**. ${KB.sources.length} sources, all Microsoft Learn. "Page date" is the ms.date shown in the page metadata; "Updated" is the page's last-publish timestamp; "Verified" is when this project last fetched and read the page.\n\n`;
 reg += `Detailed research notes with verbatim quotes, confidence levels and gaps: [notes/](notes/).\n\n`;
 reg += `| ID | Title | Page date | Updated | Verified | Cited by items | Cited by snippets |\n|---|---|---|---|---|---|---|\n`;
@@ -29,15 +29,15 @@ for (const s of KB.sources) {
   const list = citing.get(s.id);
   if (!list.length) continue;
   reg += `### ${s.title}\n\n${s.url}\n\n`;
-  for (const x of list) reg += `- **${x.id}** — ${x.supports}\n`;
+  for (const x of list) reg += `- **${x.id}**: ${x.supports}\n`;
   reg += '\n';
 }
 fs.writeFileSync(path.join(root, 'research/source-register.md'), reg);
 
 // Coverage matrix
-let cov = `# Coverage matrix\n\nGenerated from the knowledge base by \`scripts/gen-research.mjs\` — do not edit by hand.\n\n`;
+let cov = `# Coverage matrix\n\nGenerated from the knowledge base by \`scripts/gen-research.mjs\`. Do not edit by hand.\n\n`;
 cov += `Maps each knowledge object to its stage, workstream, applicability questions, provenance, validation status, sources and open gaps. Knowledge base **${KB.meta.version}** (reviewed ${KB.meta.lastReviewed}).\n\n`;
-cov += `Legend — Provenance: **official** = derived from current Microsoft Learn documentation; **practice** = practical guidance from the makers, not a Microsoft requirement. Validation: **docs-verified** = consistent with the cited current pages; **needs-review** = Microsoft sources conflict or are ambiguous (the gap is shown in the app).\n\n`;
+cov += `Legend. Provenance: **official** = derived from current Microsoft Learn documentation; **practice** = practical guidance from the makers, not a Microsoft requirement. Validation: **docs-verified** = consistent with the cited current pages; **needs-review** = Microsoft sources conflict or are ambiguous (the gap is shown in the app).\n\n`;
 const totals = { items: KB.checks.length, official: 0, practice: 0, review: 0 };
 for (const c of KB.checks) { totals[c.provenance] += 1; if (c.validation === 'needs-review') totals.review += 1; }
 cov += `**Totals:** ${totals.items} items · ${totals.official} official · ${totals.practice} practice · ${totals.review} needs-review · ${Object.keys(KB.snippets).length} snippets · ${KB.questions.length} questions.\n\n`;
@@ -55,7 +55,7 @@ for (const c of KB.checks) {
 cov += `\n## Questions → items\n\n| Question | Items whose applicability depends on it |\n|---|---|\n`;
 for (const q of KB.questions) {
   const items = KB.checks.filter((c) => questionsUsed(c.applicability).has(q.id)).map((c) => c.id);
-  cov += `| \`${q.id}\` ${md(q.text)} | ${items.join(', ') || '— (context only)'} |\n`;
+  cov += `| \`${q.id}\` ${md(q.text)} | ${items.join(', ') || 'none (context only)'} |\n`;
 }
 fs.writeFileSync(path.join(root, 'research/coverage-matrix.md'), cov);
 console.log('Generated research/source-register.md and research/coverage-matrix.md');

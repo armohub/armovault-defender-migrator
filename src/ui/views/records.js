@@ -16,7 +16,8 @@ export async function editRegisterItem(existing, preset = {}) {
   if (!existing && state.project.register.length >= MAX_REGISTER_ITEMS) { toast(`The register already has ${MAX_REGISTER_ITEMS} items, the maximum a package can carry.`, 'bad', 9000); return; }
   const r = existing ? { ...existing } : { type: 'action', title: '', description: '', owner: '', due: '', severity: 'medium', status: 'open', checkId: '', ...preset };
   const typeSel = h('select', { onchange: (e) => { r.type = e.target.value; drawAccept(); } }, REGISTER_TYPES.map((t) => h('option', { value: t.id, selected: r.type === t.id }, t.label)));
-  const title = h('input', { type: 'text', value: r.title, maxlength: '300', oninput: (e) => { r.title = e.target.value; } });
+  const PLACEHOLDER = { decision: 'What was decided?', action: 'What needs doing?', issue: 'What is wrong?', risk: 'What could go wrong?', exception: 'What is accepted, and why?' };
+  const title = h('input', { type: 'text', value: r.title, maxlength: '300', placeholder: PLACEHOLDER[r.type] || '', oninput: (e) => { r.title = e.target.value; } });
   const desc = h('textarea', { rows: '4', maxlength: '20000', oninput: (e) => { r.description = e.target.value; } });
   desc.value = r.description || '';
   const owner = h('input', { type: 'text', value: r.owner, maxlength: '200', oninput: (e) => { r.owner = e.target.value; } });
@@ -26,7 +27,7 @@ export async function editRegisterItem(existing, preset = {}) {
   const stat = h('select', { onchange: (e) => { r.status = e.target.value; } },
     r.status === 'accepted' ? h('option', { value: 'accepted', selected: true }, 'accepted (risk acceptance recorded)') : null,
     REGISTER_STATUS_IDS.filter((s) => s !== 'accepted').map((s) => h('option', { value: s, selected: r.status === s }, s.replace('_', ' '))));
-  const checkSel = h('select', { onchange: (e) => { r.checkId = e.target.value; } }, h('option', { value: '' }, '— not linked —'), state.kb.checks.map((c) => h('option', { value: c.id, selected: r.checkId === c.id }, `${c.id} — ${c.title.slice(0, 70)}`)));
+  const checkSel = h('select', { onchange: (e) => { r.checkId = e.target.value; } }, h('option', { value: '' }, 'Not linked to a step'), state.kb.stages.map((st) => h('optgroup', { label: st.short }, state.kb.checks.filter((c) => c.stage === st.id).map((c) => h('option', { value: c.id, selected: r.checkId === c.id }, c.title.length > 80 ? `${c.title.slice(0, 78)}...` : c.title)))));
   const acc = { acceptedBy: '', acceptedRole: '', rationale: '' };
   const acceptBox = h('div');
   function drawAccept() {
@@ -43,11 +44,11 @@ export async function editRegisterItem(existing, preset = {}) {
   }
   drawAccept();
   const result = await modal({
-    title: existing ? 'Edit register item' : 'New register item', wide: true,
+    title: existing ? `Edit ${(REGISTER_TYPES.find((t) => t.id === r.type) || { label: 'item' }).label.toLowerCase()}` : `New ${(REGISTER_TYPES.find((t) => t.id === r.type) || { label: 'item' }).label.toLowerCase()}`, wide: true,
     body: h('div', { class: 'stack' },
       h('div', { class: 'grid-3' }, field('Type', typeSel), field('Severity', sev), field('Status', stat)),
       field('Title', title, { required: true }), field('Description', desc),
-      h('div', { class: 'grid-3' }, field('Owner', owner), field('Due date', due), field('Linked item', checkSel)),
+      h('div', { class: 'grid-3' }, field('Owner', owner), field('Due date', due), field('Linked step', checkSel)),
       acceptBox),
     actions: [
       ...(existing ? [{ label: 'Delete', kind: 'danger', value: 'delete' }] : []),
@@ -79,25 +80,25 @@ route('register', () => {
   const exportCsv = () => {
     const csv = toCsv([
       { key: 'type', label: 'Type' }, { key: 'severity', label: 'Severity' }, { key: 'status', label: 'Status' }, { key: 'title', label: 'Title' }, { key: 'description', label: 'Description' },
-      { key: 'owner', label: 'Owner' }, { key: 'due', label: 'Due' }, { key: 'checkId', label: 'Linked item' }, { key: 'acceptedBy', label: 'Accepted by' }, { key: 'acceptedRole', label: 'Accepted role' },
+      { key: 'owner', label: 'Owner' }, { key: 'due', label: 'Due' }, { key: 'checkId', label: 'Linked step reference' }, { key: 'checkTitle', label: 'Linked step' }, { key: 'acceptedBy', label: 'Accepted by' }, { key: 'acceptedRole', label: 'Accepted role' },
       { key: 'acceptedAt', label: 'Accepted at' }, { key: 'rationale', label: 'Rationale' }, { key: 'createdAt', label: 'Created' }, { key: 'createdBy', label: 'Created by' },
-    ], p.register);
+    ], p.register.map((r) => ({ ...r, checkTitle: (state.kb.checks.find((c) => c.id === r.checkId) || {}).title || '' })));
     saveBlob(new Blob([csv], { type: 'text/csv' }), `${BRAND.fileStem}-${slugify(p.meta.name)}-register.csv`, { description: 'CSV', accept: { 'text/csv': ['.csv'] } });
   };
   const sel = (key, options) => h('select', { onchange: (e) => { regFilter[key] = e.target.value; render(); }, 'aria-label': `Filter by ${key}` }, options.map(([v, l]) => h('option', { value: v, selected: regFilter[key] === v }, l)));
   return h('div', { class: 'page' },
-    pageHead('Actions, risks & decisions', 'One register for follow-up actions, issues, risks, accepted exceptions and decisions. Exceptions count as accepted only with a named person and rationale.',
-      btn('New item', () => editRegisterItem(null), { kind: 'primary', iconName: 'plus', small: true }), btn('Export CSV', exportCsv, { iconName: 'download', small: true })),
+    pageHead('Decisions and risks', 'One register for decisions, actions, issues, risks and accepted exceptions. An exception counts as accepted only with a named person and a reason.',
+      btn('New decision', () => editRegisterItem(null, { type: 'decision' }), { kind: 'primary', iconName: 'plus', small: true }), btn('New action, risk or issue', () => editRegisterItem(null), { iconName: 'plus', small: true }), btn('Export CSV', exportCsv, { iconName: 'download', small: true })),
     h('div', { class: 'toolbar' }, sel('type', [['all', 'All types'], ...REGISTER_TYPES.map((t) => [t.id, t.label])]), sel('status', [['open', 'Open'], ['all', 'All statuses'], ...REGISTER_STATUS_IDS.map((s) => [s, s.replace('_', ' ')])])),
     items.length ? h('div', { class: 'table-wrap' }, h('table', { class: 'table' },
-      h('thead', null, h('tr', null, ...['Type', 'Severity', 'Title', 'Owner', 'Due', 'Status', 'Linked item'].map((t) => h('th', { scope: 'col' }, t)))),
+      h('thead', null, h('tr', null, ...['Type', 'Severity', 'Title', 'Owner', 'Due', 'Status', 'Linked step'].map((t) => h('th', { scope: 'col' }, t)))),
       h('tbody', null, items.map((r) => h('tr', null,
         h('td', null, (REGISTER_TYPES.find((t) => t.id === r.type) || {}).label),
         h('td', null, h('span', { class: ['badge', `badge-${r.severity}`] }, r.severity)),
         h('td', null, h('button', { type: 'button', class: 'linklike', onclick: () => editRegisterItem(r) }, r.title), r.status === 'accepted' ? h('div', { class: 'small muted' }, `Accepted by ${r.acceptedBy}${r.acceptedRole ? ` (${r.acceptedRole})` : ''}`) : null),
-        h('td', null, r.owner || '—'), h('td', null, r.due || '—'), h('td', null, r.status.replace('_', ' ')),
-        h('td', null, r.checkId ? h('a', { href: `#/item/${r.checkId}`, class: 'mono small' }, r.checkId) : '—'))))))
-      : emptyState('Nothing here yet.', 'Add actions, risks and decisions from any item page, or create one here.'));
+        h('td', null, r.owner || h('span', { class: 'muted' }, 'Not set')), h('td', { class: 'tnum' }, r.due || h('span', { class: 'muted' }, 'None')), h('td', null, r.status.replace('_', ' ')),
+        h('td', null, r.checkId ? h('a', { href: `#/item/${r.checkId}`, class: 'small' }, (state.kb.checks.find((c) => c.id === r.checkId) || { title: 'Open the step' }).title) : h('span', { class: 'muted' }, 'Not linked')))))))
+      : emptyState('Nothing here yet.', 'Add decisions, actions and risks from any step page, or create one here.'));
 });
 
 const evFilter = { kind: 'all', stage: 'all' };
@@ -110,20 +111,20 @@ route('evidence', () => {
   const totalBytes = Object.values(p.evidence).reduce((n, e) => n + (e.size || 0), 0);
   const sel = (key, options) => h('select', { onchange: (e) => { evFilter[key] = e.target.value; render(); }, 'aria-label': `Filter by ${key}` }, options.map(([v, l]) => h('option', { value: v, selected: evFilter[key] === v }, l)));
   const exportIndex = () => {
-    const rows = Object.values(p.evidence).map((e) => ({ ...e, title_: e.title }));
-    const csv = toCsv([{ key: 'id', label: 'Evidence ID' }, { key: 'checkId', label: 'Item' }, { key: 'kind', label: 'Kind' }, { key: 'origin', label: 'Origin' }, { key: 'title', label: 'Title' }, { key: 'fileName', label: 'File name' }, { key: 'mime', label: 'Type' }, { key: 'size', label: 'Bytes' }, { key: 'sha256', label: 'SHA-256' }, { key: 'url', label: 'Link' }, { key: 'createdAt', label: 'Created' }, { key: 'createdBy', label: 'Created by' }, { key: 'redactionConfirmed', label: 'Redaction confirmed' }], rows);
+    const rows = Object.values(p.evidence).map((e) => ({ ...e, checkTitle: (kb.checks.find((c) => c.id === e.checkId) || {}).title || '' }));
+    const csv = toCsv([{ key: 'id', label: 'Evidence ID' }, { key: 'checkId', label: 'Step reference' }, { key: 'checkTitle', label: 'Step' }, { key: 'kind', label: 'Kind' }, { key: 'origin', label: 'Origin' }, { key: 'title', label: 'Title' }, { key: 'fileName', label: 'File name' }, { key: 'mime', label: 'Type' }, { key: 'size', label: 'Bytes' }, { key: 'sha256', label: 'SHA-256' }, { key: 'url', label: 'Link' }, { key: 'createdAt', label: 'Created' }, { key: 'createdBy', label: 'Created by' }, { key: 'redactionConfirmed', label: 'Redaction confirmed' }], rows);
     saveBlob(new Blob([csv], { type: 'text/csv' }), `${BRAND.fileStem}-${slugify(p.meta.name)}-evidence-index.csv`, { description: 'CSV', accept: { 'text/csv': ['.csv'] } });
   };
   return h('div', { class: 'page' },
-    pageHead('Evidence', `${Object.keys(p.evidence).length} evidence items · ${bytesLabel(totalBytes)} of attachments. Everything stays on this computer and in project packages you save.`, btn('Import inventory results', importInventoryFlow, { iconName: 'upload', small: true }), btn('Export evidence index (CSV)', exportIndex, { iconName: 'download', small: true })),
-    h('details', { class: 'card' }, h('summary', null, 'Handling and redaction guidance'),
+    pageHead('Evidence', `${Object.keys(p.evidence).length} evidence items, ${bytesLabel(totalBytes)} of attachments. Everything stays on this computer and in the project packages you save.`, btn('Import inventory results', importInventoryFlow, { iconName: 'upload', small: true }), btn('Export evidence index (CSV)', exportIndex, { iconName: 'download', small: true })),
+    h('details', { class: 'card disclose' }, h('summary', null, icon('chevron', 'icon-sm'), 'How to handle and redact evidence'),
       h('ul', null,
         h('li', null, 'Prefer a small, cropped screenshot or a short summary over raw log exports.'),
         h('li', null, 'Remove or blur what the check does not need: tenant and subscription IDs, user names, e-mail addresses, IP addresses, incident details.'),
-        h('li', null, 'Do not attach credentials, tokens, connection strings or keys — ever.'),
+        h('li', null, 'Never attach credentials, tokens, connection strings or keys.'),
         h('li', null, 'Project packages are not encrypted. Store and share them under your organisation\'s data-handling policy.'),
-        h('li', null, 'Evidence records the operator name and time automatically; imported evidence is labelled "imported".'))),
-    h('div', { class: 'toolbar' }, sel('kind', [['all', 'All kinds'], ['image', 'Screenshots'], ['note', 'Observations'], ['link', 'Links'], ['file', 'Files']]), sel('stage', [['all', 'All stages'], ...kb.stages.map((s) => [s.id, `Stage ${s.number} ${s.short}`])])),
+        h('li', null, 'Evidence records your name and the time automatically. Imported evidence is labelled "imported".'))),
+    h('div', { class: 'toolbar' }, sel('kind', [['all', 'All kinds'], ['image', 'Screenshots'], ['note', 'Observations'], ['link', 'Links'], ['file', 'Files']]), sel('stage', [['all', 'All stages'], ...kb.stages.map((s) => [s.id, s.short])])),
     list.length ? h('ul', { class: 'evidence-grid' }, list.map((e) => {
       const c = kb.checks.find((x) => x.id === e.checkId);
       let thumb = null;
@@ -135,7 +136,7 @@ route('evidence', () => {
       return h('li', { class: 'card evidence-card' },
         h('div', { class: 'evidence-head' }, icon({ image: 'image', note: 'note', link: 'link', file: 'file' }[e.kind], 'icon-sm'), h('strong', null, e.title || e.fileName)),
         thumb, e.kind === 'note' ? h('p', { class: 'evidence-text small' }, e.text.slice(0, 400)) : null,
-        h('div', { class: 'small muted' }, `${formatDate(e.createdAt, true)} · ${e.createdBy}${e.origin === 'import' ? ' · imported' : ''}`),
-        c ? h('a', { href: `#/item/${c.id}`, class: 'small' }, `${c.id} — ${c.title}`) : h('span', { class: 'small muted' }, e.checkId));
-    })) : emptyState('No evidence yet.', 'Add screenshots, observations, links and files from item pages.'));
+        h('div', { class: 'small muted' }, `${formatDate(e.createdAt, true)}, ${e.createdBy}${e.origin === 'import' ? ', imported' : ''}`),
+        c ? h('a', { href: `#/item/${c.id}`, class: 'small' }, c.title) : h('span', { class: 'small muted' }, 'Step no longer in the knowledge base'));
+    })) : emptyState('No evidence yet.', 'Add screenshots, observations, links and files on each step page.'));
 });

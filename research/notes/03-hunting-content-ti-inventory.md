@@ -150,7 +150,7 @@ Pages that couldn't be read:
 | 1.4.2 | **Only queries that run in Defender** (advanced hunting, custom detections) need review. Sentinel analytics rules and **workbooks** keep using the Log Analytics table. | S2 | High | "Microsoft Sentinel analytic rules, workbooks, and other Sentinel queries continue to use the IdentityInfo table in the Log Analytics workspace and aren't affected." |
 | 1.4.3 | Unified (advanced hunting) release: "As of May 2025", for Defender-portal Sentinel customers **with UEBA enabled**. Without UEBA you get the prior advanced hunting version, without UEBA fields. | S4, S16 | High | "As of May 2025, customers of Microsoft Sentinel in the Microsoft Defender portal with UEBA enabled begin using a new release". |
 | 1.4.4 | Renamed fields (Log Analytics → unified): AccountCloudSID→CloudSid; AccountCreationTime→CreatedDateTime; AccountSID→OnPremSid; AccountTenantId→TenantId; AccountUPN→AccountUpn; AdditionalMailAddresses→OtherMailAddresses; MailAddress→EmailAddress; OnPremisesAccountObjectId→OnPremObjectId; OnPremisesDistinguishedName→DistinguishedName; RiskState→RiskStatus; SAMAccountName→AccountName; SourceSystem→IdentityEnvironment; StreetAddress→Address; Type→IdentityType; UserType→TenantMembershipType. | S4 ("Compare to unified schema" tab) | High | Full table in S4. |
-| 1.4.5 | Removed in the unified version: `TenantID` (not the same as the new `TenantId`), `UserState`, `UserStateChangedOn`. Fields that exist but aren't used in either version: Applications, EntityRiskScore, ExtensionProperty, InvestigationPriority, InvestigationPriorityPercentile, IsMFARegistered, IsServiceAccount, LastSeenDate, OnPremisesExtensionAttributes, RelatedAccounts, ServicePrincipals, Tags, UACFlags. | S4 | High | — |
+| 1.4.5 | Removed in the unified version: `TenantID` (not the same as the new `TenantId`), `UserState`, `UserStateChangedOn`. Fields that exist but aren't used in either version: Applications, EntityRiskScore, ExtensionProperty, InvestigationPriority, InvestigationPriorityPercentile, IsMFARegistered, IsServiceAccount, LastSeenDate, OnPremisesExtensionAttributes, RelatedAccounts, ServicePrincipals, Tags, UACFlags. | S4 | High |, |
 | 1.4.6 | After the move, `IdentityInfo` is a native Defender table **without table-level RBAC**. | S2, S4 | High | "the IdentityInfo table becomes a native Defender table that doesn't support table-level role-based access control (RBAC)." |
 | 1.4.7 | In Defender **Table management**, `IdentityInfo` is an "XDR" table type: you can view it, but you can't manage it there. | S59 | High | "You can view these tables, but you can't manage them from the Defender portal." Example given: `IdentityInfo`. |
 | 1.4.8 | Log Analytics `IdentityInfo` defaults to 30 days retention, with a full resync every 14 days. | S4 | High | "Default retention time in the IdentityInfo table is 30 days." |
@@ -245,9 +245,9 @@ Source: S1 Quick reference (High confidence unless noted).
 |---|---|---|---|---|
 | 2.4.1 | Two tiers: Analytics, and Data Lake (up to 12 years). XDR default tier is 30 days. Supported XDR tables can be extended in the analytics tier to 90 days with no extra storage cost. | S59 | High | Tier comparison table in S59. |
 | 2.4.2 | Lake-tier limits: no restore, and limited analytics rules, hunting queries, parsers, watchlists, workbooks and playbooks. Search jobs and summary rules work on both tiers. | S59 | High | "Limitations on some features, including analytics rules, hunting queries, parsers, watchlists, workbooks, and playbooks." |
-| 2.4.3 | Search jobs and restore run from **Microsoft Sentinel > Search**. Results land in `_SRCH` and `_RST` tables. | S1, S62 | High | — |
+| 2.4.3 | Search jobs and restore run from **Microsoft Sentinel > Search**. Results land in `_SRCH` and `_RST` tables. | S1, S62 | High |, |
 | 2.4.4 | Existing customers who haven't onboarded to the lake move from archive-based to lake-based total retention when they onboard to Sentinel. | S16 | Medium | Wording from the September 2026 entry. |
-| 2.4.5 | Basic Logs tables can be viewed in Defender Table management, but managed only in Log Analytics. | S59 | High | — |
+| 2.4.5 | Basic Logs tables can be viewed in Defender Table management, but managed only in Log Analytics. | S59 | High |, |
 | 2.4.6 | Table insights (Defender portal) shows "Last data received" per table. It is a visualization surface, not a billing-grade or alerting source. | S59 | High | "Table insights is a visualization surface for investigation. It isn't a billing-grade or alerting surface." |
 
 ---
@@ -258,14 +258,14 @@ Source: S1 Quick reference (High confidence unless noted).
 |---|---|---|---|---|
 | 3.1 | Most UEBA features stay the same. Two exceptions: adding entities to TI (Azure portal only) and the `IdentityInfo` schema. | S2 | High | "Most functionalities of User and Entity Behavior Analytics (UEBA) remain the same in the Defender portal". |
 | 3.2 | User, device and IP entity pages are consolidated, with Sentinel and Defender XDR data in one view. Sentinel timeline and insights appear on the **Sentinel events** tab. | S2, S22, S1 | High | S22: "the timeline and insights panels appear in the Sentinel events tab of the Defender entity page." S1: "Entity pages combine Sentinel and Defender data". |
-| 3.3 | In multi-workspace setups, entity pages aggregate alerts, incidents and timeline events across workspaces, with a workspace filter. | S17 | High | — |
-| 3.4 | Entity insight links open **Advanced hunting** in the Defender portal, and **Logs** in the Azure portal. | S22 | High | — |
-| 3.5 | IoT device entity pages are still Azure-portal only. | S22 | High | "IoT device (Preview)—only in Microsoft Sentinel in the Azure portal for now." |
+| 3.3 | In multi-workspace setups, entity pages aggregate alerts, incidents and timeline events across workspaces, with a workspace filter. | S17 | High |, |
+| 3.4 | Entity insight links open **Advanced hunting** in the Defender portal, and **Logs** in the Azure portal. | S22 | High |, |
+| 3.5 | IoT device entity pages are still Azure-portal only. | S22 | High | "IoT device (Preview), only in Microsoft Sentinel in the Azure portal for now." |
 | 3.6 | UEBA settings: **System > Settings > Microsoft Sentinel > UEBA** tab. Anomalies: **Settings > Microsoft Sentinel > SIEM workspaces > {workspace} > Anomalies**. | S23 | High | S23 steps. |
 | 3.7 | Some UEBA data sources can be enabled **only from the Defender portal**: AAD managed identity and service principal sign-ins, AWS CloudTrail, GuardDuty, CommonSecurityLog (Check Point, Fortinet, Zscaler), Device Logon Events, Okta, GCP Audit Logs. | S23 | High | "You can enable these data sources from the Defender portal only". |
-| 3.8 | UEBA experiences in the Defender portal: home page widget, "Top UEBA anomalies" on user pages, "Go hunt" from incident graphs, and an advanced hunting prompt to join `Anomalies`. | S24, S16 | High | — |
+| 3.8 | UEBA experiences in the Defender portal: home page widget, "Top UEBA anomalies" on user pages, "Go hunt" from incident graphs, and an advanced hunting prompt to join `Anomalies`. | S24, S16 | High |, |
 | 3.9 | UEBA tables: `IdentityInfo`, `BehaviorAnalytics`, `UserPeerAnalytics`, `Anomalies`. The behaviors layer adds `SentinelBehaviorInfo` and `SentinelBehaviorEntities` when enabled. The advanced hunting schema also lists `BehaviorInfo` and `BehaviorEntities` (preview). | S24, S6, S16 | Medium | Two naming pairs exist (Sentinel* in Log Analytics, and the advanced hunting names). Confirm in the tenant. |
-| 3.10 | Enabling UEBA needs Entra Security Administrator plus an Azure role (Owner, Contributor, or Sentinel Contributor with Log Analytics Contributor), and no resource locks. UEBA has no license cost, but storage is charged. | S23, S24 | High | — |
+| 3.10 | Enabling UEBA needs Entra Security Administrator plus an Azure role (Owner, Contributor, or Sentinel Contributor with Log Analytics Contributor), and no resource locks. UEBA has no license cost, but storage is charged. | S23, S24 | High |, |
 
 ---
 
@@ -280,7 +280,7 @@ Source: S1 Quick reference (High confidence unless noted).
 | 4.1.3 | The legacy standalone MDTI portal and the legacy Intel Explorer were retired on **2026-08-01**. | S13 | High | "The legacy standalone Microsoft Threat Intelligence portal and legacy Intel Explorer experience were retired on August 1, 2026." |
 | 4.1.4 | Intel projects are deprecated. Link indicators to a case instead. | S2 | High | "Deprecated. To organize and investigate threat indicators, link indicators to a case." |
 | 4.1.5 | Adding an entity to TI from incidents is **Azure portal only**. In the Defender portal, analysts can still create indicators manually in Intel explorer. | S2, S13 | High | S2: "Adding entities to threat intelligence from incidents is supported only in the Azure portal." What happens after 2027-03-31 isn't documented (section 9, G6). |
-| 4.1.6 | Managing Sentinel TI in Intel explorer needs Microsoft Sentinel Contributor or higher. | S13 | High | — |
+| 4.1.6 | Managing Sentinel TI in Intel explorer needs Microsoft Sentinel Contributor or higher. | S13 | High |, |
 
 ### 4.2 TI tables
 
@@ -288,7 +288,7 @@ Source: S1 Quick reference (High confidence unless noted).
 |---|---|---|---|---|
 | 4.2.1 | `ThreatIntelIndicators` and `ThreatIntelObjects` (STIX) were previewed on 2025-04-03. Ingestion to the legacy `ThreatIntelligenceIndicator` **stopped after 2025-07-31**. | S11, S56, S16 | High | "After this date, Microsoft Sentinel will stop ingesting data to the legacy ThreatIntelligenceIndicator table." |
 | 4.2.2 | `ThreatIntelIndicators` can be queried from Logs (Azure portal) or Advanced hunting (Defender portal), under the Sentinel schema. | S11 | High | "the ThreatIntelIndicators table under the Microsoft Sentinel schema stores all your Microsoft Sentinel threat indicators." |
-| 4.2.3 | In the Defender portal, use `ThreatIntelObjects` and `ThreatIntelIndicators` for hunting, incident response, Copilot and reporting. | S2 | High | — |
+| 4.2.3 | In the Defender portal, use `ThreatIntelObjects` and `ThreatIntelIndicators` for hunting, incident response, Copilot and reporting. | S2 | High |, |
 | 4.2.4 | All TI is republished every 7-10 days (`LastUpdateMethod == "LogARepublisher"`). Deduplicate on `Id` with `arg_max(TimeGenerated, *)`. Republishing is billed as ingestion. | S56, S11 | High | "Now, all data is republished every 7-10 days." |
 | 4.2.5 | `ThreatIntelIndicators` key columns: Id, IsActive, IsDeleted, ObservableKey, ObservableValue, Pattern, Confidence, ValidFrom, ValidUntil, Data, Tags, LastUpdateMethod, Revoked. The table supports Basic plan; it doesn't support Auxiliary/Lake. | S55 | High | Table attributes in S55. |
 | 4.2.6 | Microsoft gives a legacy-to-new migration query (rebuilding legacy columns from ObservableKey/Value). | S56 | High | Use it for rewrites; it's referenced in section 8. |
@@ -312,7 +312,7 @@ Source: S1 Quick reference (High confidence unless noted).
 |---|---|---|---|---|
 | 5.1 | SOC optimization is in the Defender portal, with an API and a recommendation reference. | S1, S26 | High | S1 row "SOC optimization". |
 | 5.2 | Native Security Copilot in the Defender portal: incident summary, guided response, script and file analysis, incident reports, agents, and KQL generation in advanced hunting. | S1 | High | S1 row "AI-assisted SOC (Security Copilot)". Some Sentinel tables aren't yet supported by Copilot in advanced hunting (S3). |
-| 5.3 | In the Defender portal, Defender XDR policies govern data storage, processing, retention and sharing, even for Sentinel data. | S2 | High | — |
+| 5.3 | In the Defender portal, Defender XDR policies govern data storage, processing, retention and sharing, even for Sentinel data. | S2 | High |, |
 | 5.4 | Sentinel in the Azure portal is supported until 2027-03-31. | S1, S16 | High | Dates moved from "July 2026" (S16, July 2025 entry) to "March 31, 2027" (S16, January 2026 entry). |
 
 ---
@@ -331,16 +331,16 @@ Source: S1 Quick reference (High confidence unless noted).
 | Inventory object | Best source | Why |
 |---|---|---|
 | Tables and ingestion volume | `Usage` table (KQL), plus Defender **Table insights** (UI) | Hourly per-table usage. `union *` is expensive (S30, S31). |
-| Last data per table | `Usage` (cheap, hour granularity) or `union withsource` (expensive, exact) | — |
+| Last data per table | `Usage` (cheap, hour granularity) or `union withsource` (expensive, exact) |, |
 | Analytics rules | SecurityInsights REST `alertRules` (stable 2025-09-01; preview for full `kind` coverage) or the UI export (preview) | ARG doesn't list `microsoft.securityinsights` types (S53). |
-| Automation rules | REST `automationRules`, or the UI export | — |
+| Automation rules | REST `automationRules`, or the UI export |, |
 | Watchlists | REST `watchlists`, `_GetWatchlistAlias`, `Watchlist` table | **No `Get-AzSentinelWatchlist` cmdlet** exists in Az.SecurityInsights (S44). |
 | Data connectors | REST `dataConnectors` (incomplete; see caveats) plus `Usage` plus `SentinelHealth` | The stable API enumerates only 11 kinds (S43). |
 | Playbooks | ARG `microsoft.logic/workflows`, plus `microsoft.web/connections` | Both are listed in ARG `resources` (S53). |
-| Workbooks | ARG `microsoft.insights/workbooks`; REST Workbooks with `canFetchContent=true` to scan content | — |
+| Workbooks | ARG `microsoft.insights/workbooks`; REST Workbooks with `canFetchContent=true` to scan content |, |
 | Hunting queries, parsers, functions | Log Analytics REST `savedSearches` (2026-03-01) | Hunting queries and parsers are saved searches (S61, S67). |
-| Health and audit | `_SentinelHealth()` and `_SentinelAudit()` (needs health monitoring enabled) | — |
-| TI | `ThreatIntelIndicators`, `ThreatIntelObjects`, legacy `ThreatIntelligenceIndicator` | — |
+| Health and audit | `_SentinelHealth()` and `_SentinelAudit()` (needs health monitoring enabled) |, |
+| TI | `ThreatIntelIndicators`, `ThreatIntelObjects`, legacy `ThreatIntelligenceIndicator` |, |
 
 ---
 

@@ -1,5 +1,7 @@
 # P4: connected mode prototype (release-2 spike). Not shipped.
 
+> **Status with version 1.0.0:** this spike was run against the internal release candidate (0.9.0-rc.1), before the product was renamed ArMo MS Defender Migration Assistant. Version 1.0.0 ships none of it: the offline file keeps `connect-src 'none'` and never contacts a tenant. "Release 2" below means a later release after 1.0.
+
 **Question:** can a minimal, safe local launcher enable optional, read-only tenant checks without weakening the offline single-file app?
 
 **Answer: yes, technically, with conditions.** Everything that can be tested without a tenant works and holds up under attack. The unproven part is the real Microsoft Entra sign-in and the real Graph responses, because no app registration exists yet. The recommendation is a **conditional go** (see [Go / no-go](#go--no-go-for-release-2)).
@@ -11,7 +13,7 @@
 | Browsers | Microsoft Edge 155 and Google Chrome 155, headless, driven by playwright-core 1.64 |
 | Library | `@azure/msal-browser` **5.25.1** (MIT). Downloaded from the npm registry; the tarball sha512 matched the registry `dist.integrity`. |
 | Tenant | **None.** Entra and Graph were **mocked** for the sign-in flow. The live probes were unauthenticated. |
-| Scope rule | Only this folder was added. `src/`, `content/`, the build and `dist/` are unchanged. No secrets, tenant IDs or tokens are in the repository. All IDs in the tests are obviously fake (`0000aaaa-1111-...`). |
+| Scope rule | Only this folder was added. `src/`, `content/`, the build and `dist/` are unchanged. No secrets, tenant IDs or tokens are in the repository. All IDs in the tests are clearly fake (`0000aaaa-1111-...`). |
 
 ## What was built
 
@@ -123,7 +125,7 @@ node prototypes/p4-connected/tests/run-p4-import.mjs
 | L6 | Malformed requests | 20 KB of headers: 431. Non-ASCII byte, lowercase method, HTTP/2 preface, `Transfer-Encoding`, obs-fold and space before a colon: 400. A head with bare LF line endings is dropped after 5 s. |
 | L7 | Slow client | The server is single-threaded. One silent connection delayed the next request by **4.7 s**, until its read timeout. This is a local denial of service only. |
 | L8 | Binding while running | Other sockets cannot bind `127.0.0.1` or `::1` on the port (EADDRINUSE, or AccessDenied with SO_REUSEADDR). **Wildcard binds (`0.0.0.0`, `::`) by another process do succeed on Windows**, but they did **not** receive loopback connections: the specific bind wins. |
-| L9 | Pre-squatted port | With a squatter on `::1` or `127.0.0.1`, the launcher refuses (exit 5). With a squatter on `0.0.0.0` or `::`, the launcher starts, and the self-test confirms that loopback traffic reaches the launcher. In normal mode it simply picks another port. |
+| L9 | Pre-squatted port | With a squatter on `::1` or `127.0.0.1`, the launcher refuses (exit 5). With a squatter on `0.0.0.0` or `::`, the launcher starts, and the self-test confirms that loopback traffic reaches the launcher. In normal mode it picks another port. |
 | L10 | Why bind both address families | Demonstration: with only `127.0.0.1` bound and a squatter on `[::1]`, **both Edge and Chrome sent `http://localhost:<port>/` to the squatter**. Without the squatter they fell back to `127.0.0.1`. A launcher that binds only IPv4 can therefore be impersonated. |
 | L11 | Log hygiene | `?code=SECRET...` and an ESC sequence in `Host` never appear in the log. |
 | L12 | Idle shutdown | With `-IdleSeconds 4`, the launcher exited with code 0 after about 4 s, and the port was closed. |
@@ -241,7 +243,7 @@ If any condition fails, keep release 2 on the import-based route: the inventory 
 ## Design changes the main app would need
 
 1. **Packaging.**
-   - Ship connected mode as a **separate, optional companion folder** containing the signed launcher, the connected page and vendored MSAL. Do not put it inside `ArMoHub-Defender-Migration-Assistant.html`.
+   - Ship connected mode as a **separate, optional companion folder** containing the signed launcher, the connected page and vendored MSAL. Do not put it inside `ArMo-MS-Defender-Migration-Assistant.html`.
    - The offline file keeps `connect-src 'none'`. Never let the offline page talk to the launcher.
 2. **New import action in the offline app.**
    - Add `src/core/connected-evidence.js`, based on [`evidence-format.mjs`](evidence-format.mjs), with unit tests.
@@ -274,7 +276,7 @@ If any condition fails, keep release 2 on the import-based route: the inventory 
    - export only after a preview, with titles opt-in and identifiers never exported;
    - a dual-stack exclusive bind, the loopback self-test, the Host allow-list and the Sec-Fetch-Site policy;
    - an idle shutdown.
-8. **Robustness.**
+8. **Resilience.**
    - Use asynchronous accepts in the launcher (L7).
    - Add a "Cancel sign-in" control, because the v5 bridge has no popup-closed signal.
    - Honour `Retry-After` on 429.

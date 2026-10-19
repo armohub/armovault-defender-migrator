@@ -49,16 +49,16 @@ export async function buildPackage(project, getEvidenceBytes, { appVersion, kbVe
     evidenceMissing: missing.map((e) => ({ evidenceId: e.id, fileName: e.fileName })),
   };
   const readme = [
-    `${productName} — project package`,
+    `${productName}: project package`,
     '',
     `Project: ${project.meta.name || '(unnamed)'}`,
     `Created: ${manifest.createdAt}`,
     `App version: ${appVersion}   Knowledge base: ${kbVersion}`,
     '',
     'Contents:',
-    '  project.json  — all project data (answers, statuses, notes, register, decisions, snapshots, audit log)',
-    '  evidence/     — attached screenshots and files',
-    '  manifest.json — file list with SHA-256 hashes used to detect tampering or corruption on import',
+    '  project.json  : all project data (answers, statuses, notes, register, decisions, snapshots, audit log)',
+    '  evidence/     : attached screenshots and files',
+    '  manifest.json : file list with SHA-256 hashes used to detect tampering or corruption on import',
     '',
     'SENSITIVITY: this package may contain customer security information and screenshots.',
     'Store and share it only according to your organisation\'s data-handling policy.',
@@ -90,7 +90,7 @@ export async function readProjectFile(bytes, { kb } = {}) {
     if (!manifestBytes || !projectBytes) throw new Error('The package is missing manifest.json or project.json.');
     let manifest;
     try { manifest = JSON.parse(dec.decode(manifestBytes)); } catch { throw new Error('manifest.json is not valid JSON.'); }
-    if (!manifest || manifest.format !== PACKAGE_FORMAT) throw new Error('This ZIP file is not an ArMoHub project package.');
+    if (!manifest || manifest.format !== PACKAGE_FORMAT) throw new Error('This ZIP file is not a project package from the ArMo MS Defender Migration Assistant.');
     if (Number(manifest.formatVersion) > PACKAGE_VERSION) throw new Error('This package was created by a newer version of the app. Please use a newer release.');
     if (projectBytes.length > MAX_PROJECT_JSON_BYTES) throw new Error('project.json is too large.');
     // Hashes detect corruption and accidental modification. They are not a signature: someone who edits the
@@ -136,7 +136,7 @@ export async function readProjectFile(bytes, { kb } = {}) {
     }
     for (const ev of Object.values(project.evidence)) {
       if ((ev.kind === 'image' || ev.kind === 'file') && !evidence.has(ev.id)) {
-        warnings.push(`No file content for evidence "${ev.fileName || ev.title || ev.id}" — the record is kept, the attachment is missing.`);
+        warnings.push(`No file content for evidence "${ev.fileName || ev.title || ev.id}". The record is kept, the attachment is missing.`);
       }
     }
     if (Array.isArray(manifest.evidenceMissing) && manifest.evidenceMissing.length) {
@@ -168,7 +168,7 @@ function downgradeUnsupportedPasses(project, evidence, warnings) {
     });
     if (!supported) {
       st.status = 'not_verified';
-      warnings.push(`${checkId}: was "Passed" but none of its evidence content is available — imported as "Done — not verified".`);
+      warnings.push(`${checkId}: was "Passed" but none of its evidence content is available, so it was imported as "Done, not verified".`);
     }
   }
 }

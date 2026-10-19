@@ -43,7 +43,7 @@ export function validateProject(input, { kb } = {}) {
   const errors = [];
   const warnings = [];
   if (!isPlainObject(input)) return { ok: false, errors: ['The file does not contain a project object.'], warnings };
-  if (input.schema !== PROJECT_SCHEMA) return { ok: false, errors: ['This file is not an ArMoHub Defender Migration Assistant project (schema identifier missing or different).'], warnings };
+  if (input.schema !== PROJECT_SCHEMA) return { ok: false, errors: ['This file is not an ArMo MS Defender Migration Assistant project (schema identifier missing or different).'], warnings };
   const ver = Number(input.schemaVersion);
   if (!Number.isInteger(ver) || ver < 1) return { ok: false, errors: ['The project schema version is missing or invalid.'], warnings };
   if (ver > PROJECT_SCHEMA_VERSION) return { ok: false, errors: [`This project was created by a newer version of the app (schema v${ver}; this app reads up to v${PROJECT_SCHEMA_VERSION}). Please use a newer release.`], warnings };
@@ -110,11 +110,11 @@ export function validateProject(input, { kb } = {}) {
     // Integrity rule: "passed" requires evidence. If evidence is gone, downgrade and say so.
     if (p.checks[k].status === 'passed' && p.checks[k].evidenceIds.length === 0) {
       p.checks[k].status = 'not_verified';
-      warnings.push(`${k}: was "Passed" but has no evidence in the file — imported as "Done — not verified".`);
+      warnings.push(`${k}: was "Passed" but has no evidence in the file, so it was imported as "Done, not verified".`);
     }
     // Integrity rule: these statuses require a rationale.
     if (['failed', 'blocked', 'not_applicable'].includes(p.checks[k].status) && !p.checks[k].statusReason.trim()) {
-      warnings.push(`${k}: status "${p.checks[k].status}" had no rationale — imported as "Needs review".`);
+      warnings.push(`${k}: status "${p.checks[k].status}" had no rationale, so it was imported as "Needs review".`);
       p.checks[k].status = 'needs_review';
     }
     if (kb && !kb.checks.some((x) => x.id === k)) warnings.push(`${k}: not in the current knowledge base (kept as historical data).`);
@@ -141,7 +141,7 @@ export function validateProject(input, { kb } = {}) {
       const last = p.register[p.register.length - 1];
       if (last.status === 'accepted' && (last.type !== 'exception' || !last.acceptedBy.trim() || !last.rationale.trim())) {
         last.status = 'open';
-        warnings.push(`Register item "${last.title}" was marked accepted without being an exception with a named person and rationale — imported as open.`);
+        warnings.push(`Register item "${last.title}" was marked accepted without being an exception with a named person and rationale, so it was imported as open.`);
       }
       if (kb && last.checkId && !kb.checks.some((x) => x.id === last.checkId)) warnings.push(`Register item "${last.title}" is linked to "${last.checkId}", which is not in the current knowledge base; it is treated as unlinked.`);
     }
@@ -151,7 +151,7 @@ export function validateProject(input, { kb } = {}) {
   p.stages.test = { availability: oneOf(t.availability, ['undecided', 'available', 'unavailable'], 'undecided'), reason: str(t.reason, MAX_TEXT), decidedBy: str(t.decidedBy, 200), decidedAt: iso(t.decidedAt) };
   if (p.stages.test.availability === 'unavailable' && !p.stages.test.reason.trim()) {
     p.stages.test.availability = 'undecided';
-    warnings.push('The test stage was marked unavailable without a reason — imported as "not decided".');
+    warnings.push('The test stage was marked unavailable without a reason, so it was imported as "not decided".');
   }
 
   for (const [k, g] of safeEntries(raw.gates, warnings, 'gates', 100)) {
@@ -203,11 +203,14 @@ export const DEFAULT_SETTINGS = Object.freeze({
   schema: 'armohub.dma.settings',
   schemaVersion: 1,
   storageMode: 'none', // 'none' (manual save/export only) | 'browser' (autosave to this browser's IndexedDB)
-  theme: 'system', // 'system' | 'light' | 'dark'
+  theme: 'dark', // 'system' | 'light' | 'dark'
   density: 'comfortable', // 'comfortable' | 'compact'
   operatorName: '',
   operatorRole: '',
   welcomeSeen: false,
+  introSeen: false, // the animated introduction plays once, then a short splash
+  autoAdvance: true, // the questionnaire moves on after an answer
+  motion: 'system', // 'system' (follow the operating system) | 'reduced'
   disclaimerAcknowledgedAt: '',
   lastProjectId: '',
 });
@@ -216,11 +219,14 @@ export function validateSettings(input) {
   const s = { ...DEFAULT_SETTINGS };
   if (!isPlainObject(input)) return s;
   s.storageMode = oneOf(input.storageMode, ['none', 'browser'], 'none');
-  s.theme = oneOf(input.theme, ['system', 'light', 'dark'], 'system');
+  s.theme = oneOf(input.theme, ['system', 'light', 'dark'], 'dark');
   s.density = oneOf(input.density, ['comfortable', 'compact'], 'comfortable');
   s.operatorName = str(input.operatorName, 200);
   s.operatorRole = str(input.operatorRole, 200);
   s.welcomeSeen = input.welcomeSeen === true;
+  s.introSeen = input.introSeen === true;
+  s.autoAdvance = input.autoAdvance !== false;
+  s.motion = oneOf(input.motion, ['system', 'reduced'], 'system');
   s.disclaimerAcknowledgedAt = iso(input.disclaimerAcknowledgedAt);
   s.lastProjectId = safeId(input.lastProjectId) ? input.lastProjectId : '';
   return s;

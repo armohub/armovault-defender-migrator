@@ -32,7 +32,7 @@ test('no remote URLs are loaded as resources by the template or styles', () => {
 });
 
 test('the built file carries a strict CSP without unsafe-inline or unsafe-eval', () => {
-  const built = 'dist/ArMoHub-Defender-Migration-Assistant.html';
+  const built = 'dist/ArMo-MS-Defender-Migration-Assistant.html';
   if (!fs.existsSync(built)) return; // built in the e2e step
   const html = fs.readFileSync(built, 'utf8');
   const csp = (html.match(/http-equiv="Content-Security-Policy" content="([^"]+)"/) || [])[1] || '';

@@ -1,5 +1,5 @@
 // Report model builder (pure data). The same model drives the printable report, snapshots and CSV exports.
-// It only reflects what is recorded in the project — it never invents evidence, dates, approvals or sign-offs.
+// It only reflects what is recorded in the project. It never invents evidence, dates, approvals or sign-offs.
 
 import { applicabilityMap } from './applicability.js';
 import { assessStage, summariseStage, CONCLUSION_CRITERIA, exceptionsByCheck, overallAssessment } from './readiness.js';
@@ -26,8 +26,8 @@ export const DISCLAIMER_FULL = [
 ];
 
 const VERIFICATION = {
-  passed: 'Verified — evidence attached',
-  not_verified: 'User assertion only — no evidence',
+  passed: 'Verified, evidence attached',
+  not_verified: 'Your word only, no evidence',
   failed: 'Failed',
   blocked: 'Blocked',
   not_applicable: 'Not applicable',

@@ -1,7 +1,9 @@
-# Phase 2 prototypes — evidence for the architecture decision
+# Phase 2 prototypes: evidence for the architecture decision
 
 These are small, throwaway probes. They are kept only as reproducible evidence for
-`docs/architecture-decision-record.md`. They are not part of the product.
+`docs/architecture-decision-record.md`. They are not part of the product, and the
+1.0.0 release ships none of them. The connected-mode spike has its own write-up in
+[`p4-connected/README.md`](p4-connected/README.md).
 
 Environment: Windows 11 Enterprise 10.0.26200, Microsoft Edge 155 and Google Chrome 155
 (installed, driven headless by playwright-core 1.64), run 2026-10-19.
@@ -16,7 +18,7 @@ Run: `node prototypes/run-p1-platform.mjs` (requires Edge and Chrome installed a
 
 ## Observed results (both Edge 155 and Chrome 155 unless stated)
 
-P1 — opened via `file://`, network disabled:
+P1: opened via `file://`, network disabled:
 - `location.protocol` = `file:`, `self.origin` = `"null"`, `isSecureContext` = **true**.
 - Classic `<script src>` loads. **ES module scripts are blocked** (CORS: "Cross origin requests are only supported for protocol schemes … http, https …").
 - **`fetch()` and XHR of a sibling `data.json` are blocked.** Content must therefore be bundled into the script, not loaded at runtime.
@@ -30,11 +32,11 @@ P1 — opened via `file://`, network disabled:
 - Print engine PDF (`page.pdf`, same engine as Ctrl+P → Save as PDF) produced a valid 2-page A4 PDF offline.
 - Zero http(s) requests were observed (only browser-internal `edge://` UI resources for the downloads hub).
 
-P2 — File System Access API:
+P2: File System Access API:
 - The picker could not be automated: Playwright intercepts it and aborts with `AbortError`. An attempt to drive the native Windows dialog with UI Automation was abandoned as unreliable (and unsafe to run on a user desktop).
 - **Conclusion:** the API is present, but persistent file handles and permission re-prompts could not be verified automatically. It is used only as an optional "Save as…" enhancement with a tested download fallback; nothing in the core depends on it. Manual verification steps are in `docs/test-results.md`.
 
-P3 — single HTML file with meta CSP `default-src 'none'; script-src 'sha256-…'; connect-src 'none'; img-src blob: data: …` with the network deliberately **enabled**:
+P3: single HTML file with meta CSP `default-src 'none'; script-src 'sha256-…'; connect-src 'none'; img-src blob: data: …` with the network deliberately **enabled**:
 - Hashed inline script runs on `file://`.
 - `fetch`, XHR, `sendBeacon` and a remote `<img>` were all blocked by CSP; Playwright reports the requests as failed with reason `csp` and no response was received.
 - `blob:` images render (needed for evidence thumbnails).

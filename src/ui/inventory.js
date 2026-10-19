@@ -31,9 +31,9 @@ export async function importInventoryFlow() {
     h('p', null, `Workspace ${res.label}: ${res.counts.analyticsRules} analytics rules, ${res.counts.automationRules} automation rules, ${res.counts.dataConnectors} connectors, ${res.counts.watchlists} watchlists.`),
     res.errors.length ? callout('caution', 'Some requests failed during collection.', h('ul', null, res.errors.map((e) => h('li', null, e)))) : null,
     h('h3', null, 'Add as imported evidence'),
-    h('p', { class: 'small muted' }, 'Each selected finding becomes an evidence note labelled "imported" on the item. Statuses are not changed — you decide them.'),
-    h('ul', { class: 'list' }, res.findings.map((f, i) => h('li', { class: 'list-row' }, h('label', { class: 'check-line' }, h('input', { type: 'checkbox', checked: true, onchange: (e) => { fSel[i] = e.target.checked; } }), h('span', null, h('strong', { class: 'mono' }, f.checkId), ` ${cTitle(f.checkId)} — ${f.title.replace('Imported inventory: ', '')}`))))),
-    h('label', { class: 'check-line' }, h('input', { type: 'checkbox', checked: true, onchange: (e) => { attachFile = e.target.checked; } }), ' Also attach the original inventory file to PREP-DET-01 (kept in project packages)'),
+    h('p', { class: 'small muted' }, 'Each finding you keep becomes an evidence note labelled "imported" on its step. Statuses are not changed: you decide them.'),
+    h('ul', { class: 'list' }, res.findings.map((f, i) => h('li', { class: 'list-row' }, h('label', { class: 'check-line' }, h('input', { type: 'checkbox', checked: true, onchange: (e) => { fSel[i] = e.target.checked; } }), h('span', null, h('strong', null, cTitle(f.checkId)), `: ${f.title.replace('Imported inventory: ', '')}`))))),
+    h('label', { class: 'check-line' }, h('input', { type: 'checkbox', checked: true, onchange: (e) => { attachFile = e.target.checked; } }), ` Also attach the original inventory file to "${cTitle('PREP-DET-01')}" (kept in project packages)`),
     res.suggestions.length ? h('div', null, h('h3', null, 'Suggested questionnaire answers'),
       h('p', { class: 'small muted' }, 'Only "Yes" answers are suggested, based on what was found in this one workspace. Tick the ones you confirm.'),
       h('ul', { class: 'list' }, res.suggestions.map((s, i) => {

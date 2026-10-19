@@ -60,7 +60,7 @@ export function analyseInventory(inv) {
   const label = `${inv.alias || 'workspace'} (collected ${inv.collectedAt || 'unknown time'})`;
   // Which collections failed? The script reports "GET <resourceType> returned HTTP <code>".
   const failed = (type) => inv.errors.some((e) => e.includes(type));
-  const failNote = (type) => (failed(type) ? `\n\nWARNING: collecting ${type} failed (${inv.errors.filter((e) => e.includes(type)).join('; ')}). These results are incomplete — do not treat missing entries as absent.` : '');
+  const failNote = (type) => (failed(type) ? `\n\nWARNING: collecting ${type} failed (${inv.errors.filter((e) => e.includes(type)).join('; ')}). These results are incomplete. Do not treat missing entries as absent.` : '');
   const header = `Imported from ${inv.tool || 'inventory script'} output for ${label}. Values were computed by the read-only script; review them before relying on them.`;
   const findings = [];
   const suggestions = [];
@@ -74,7 +74,7 @@ export function analyseInventory(inv) {
   const fusion = enabled.filter((r) => r.kind === 'Fusion');
   if (fusion.length) { add('PREP-DET-02', 'Fusion rule enabled', list(fusion, (r) => r.name)); suggestions.push({ questionId: 'fusion', value: 'yes', reason: `Fusion rule enabled in ${label}` }); }
   const msic = enabled.filter((r) => r.kind === 'MicrosoftSecurityIncidentCreation');
-  if (msic.length) { add('PREP-DET-03', `${msic.length} Microsoft incident creation rule(s) enabled`, list(msic, (r) => `${r.name}${r.productFilter ? ` — product: ${r.productFilter}` : ''}`)); suggestions.push({ questionId: 'ms_incident_rules', value: 'yes', reason: `${msic.length} enabled in ${label}` }); }
+  if (msic.length) { add('PREP-DET-03', `${msic.length} Microsoft incident creation rule(s) enabled`, list(msic, (r) => `${r.name}${r.productFilter ? ` (product: ${r.productFilter})` : ''}`)); suggestions.push({ questionId: 'ms_incident_rules', value: 'yes', reason: `${msic.length} enabled in ${label}` }); }
   const alertOnly = enabled.filter((r) => r.createIncident === false);
   if (alertOnly.length) { add('PREP-DET-04', `${alertOnly.length} alert-only rule(s)`, list(alertOnly, (r) => `${r.name} (${r.kind})`)); suggestions.push({ questionId: 'alert_only_rules', value: 'yes', reason: `${alertOnly.length} alert-only rules in ${label}` }); }
   const reopen = enabled.filter((r) => r.reopenClosed === true);
@@ -83,7 +83,7 @@ export function analyseInventory(inv) {
   if (reopen.length || grouping.length || tags.length) {
     add('PREP-DET-05', 'grouping, reopen and correlation settings', [
       `Alert grouping enabled: ${grouping.length} rule(s).`, grouping.length ? list(grouping, (r) => r.name, 25) : '',
-      `"Re-open closed matching incidents" enabled: ${reopen.length} rule(s) — not available after connection.`, reopen.length ? list(reopen, (r) => r.name, 25) : '',
+      `"Re-open closed matching incidents" enabled: ${reopen.length} rule(s). This option is not available after connection.`, reopen.length ? list(reopen, (r) => r.name, 25) : '',
       `Correlation tags in descriptions: ${tags.length}.`, tags.length ? list(tags, (r) => `${r.name}: ${r.correlationTag}`, 25) : '',
     ].filter(Boolean).join('\n'));
   }
@@ -104,7 +104,7 @@ export function analyseInventory(inv) {
   const conns = inv.dataConnectors;
   const standalone = conns.filter((c) => isStandalone(c.kind));
   if (conns.length || !failed('dataConnectors')) {
-    add('PREP-CON-01', `${conns.length} data connector(s) reported by the API`, `${list(conns, (c) => `${c.kind}${isStandalone(c.kind) ? ` — ${STANDALONE_KINDS[c.kind]} (standalone; replaced by the Defender XDR connector)` : ''}`) || 'None reported.'}\n\nThe data connectors API does not list every connector type; use the ingestion baseline as ground truth.${failNote('dataConnectors')}`);
+    add('PREP-CON-01', `${conns.length} data connector(s) reported by the API`, `${list(conns, (c) => `${c.kind}${isStandalone(c.kind) ? `: ${STANDALONE_KINDS[c.kind]} (standalone; replaced by the Defender XDR connector)` : ''}`) || 'None reported.'}\n\nThe data connectors API does not list every connector type; use the ingestion baseline as ground truth.${failNote('dataConnectors')}`);
   }
   if (standalone.length) {
     add('PREP-TOP-03', `${standalone.length} standalone Microsoft connector(s)`, list(standalone, (c) => STANDALONE_KINDS[c.kind]));
