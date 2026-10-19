@@ -1,0 +1,255 @@
+{
+  "probe": "P4 evidence import into the offline model",
+  "ranAt": "2026-10-19T12:16:54.951Z",
+  "checks": [
+    {
+      "id": "I1",
+      "description": "TRN-13 and VAL-12 exist in the release-1 knowledge base",
+      "pass": true,
+      "observed": [
+        "TRN-13 Verify incidents flow into the Defender portal",
+        "VAL-12 Hunting queries and bookmarks work"
+      ]
+    },
+    {
+      "id": "I2",
+      "description": "the exported note parses: 2 findings, 2 allowed requests, no warnings",
+      "pass": true,
+      "observed": {
+        "findings": [
+          "TRN-13: Connected check: Microsoft Sentinel alerts in 1 of 2 recent incidents",
+          "VAL-12: Connected check: Sentinel SecurityIncident table queryable in advanced hunting"
+        ],
+        "requests": [
+          "GET https://graph.microsoft.com/v1.0/security/incidents?$top=10&$expand=alerts -> 200",
+          "POST https://graph.microsoft.com/v1.0/security/runHuntingQuery -> 200"
+        ],
+        "warnings": []
+      }
+    },
+    {
+      "id": "I3",
+      "description": "findings become imported evidence notes; check statuses are not changed",
+      "pass": true,
+      "observed": [
+        {
+          "checkId": "TRN-13",
+          "kind": "note",
+          "origin": "import",
+          "stage": "transition",
+          "status": "not_started"
+        },
+        {
+          "checkId": "VAL-12",
+          "kind": "note",
+          "origin": "import",
+          "stage": "validate",
+          "status": "not_started"
+        }
+      ]
+    },
+    {
+      "id": "I4",
+      "description": "validateProject keeps both notes (origin \"import\", text intact, statuses unchanged)",
+      "pass": true,
+      "observed": {
+        "ok": true,
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "id": "I5",
+      "description": "malformed, oversized, wrong-schema, non-read-only and status-claiming notes are refused or trimmed",
+      "pass": true,
+      "observed": {
+        "notJson": {
+          "error": "The file is not valid JSON."
+        },
+        "wrongSchema": {
+          "error": "This is not an evidence note from the connected-mode page (schema identifier missing)."
+        },
+        "futureVersion": {
+          "error": "Unsupported connected-evidence schema version 2."
+        },
+        "notReadOnly": {
+          "error": "The note does not declare read-only collection, so it was not imported."
+        },
+        "tooLarge": {
+          "error": "The file is larger than 1 MB and was not imported."
+        },
+        "withBom": {
+          "findings": [
+            "TRN-13",
+            "VAL-12"
+          ],
+          "warnings": 0,
+          "titleLen": 69
+        },
+        "protoCheckId": {
+          "findings": [
+            "TRN-13",
+            "VAL-12"
+          ],
+          "warnings": 1,
+          "titleLen": 69
+        },
+        "otherCheckId": {
+          "findings": [
+            "TRN-13",
+            "VAL-12"
+          ],
+          "warnings": 1,
+          "titleLen": 69
+        },
+        "duplicateCheck": {
+          "findings": [
+            "TRN-13",
+            "VAL-12"
+          ],
+          "warnings": 1,
+          "titleLen": 69
+        },
+        "hugeTitle": {
+          "findings": [
+            "TRN-13",
+            "VAL-12"
+          ],
+          "warnings": 0,
+          "titleLen": 300
+        },
+        "manyFindings": {
+          "findings": [
+            "TRN-13",
+            "VAL-12"
+          ],
+          "warnings": 19,
+          "titleLen": 69
+        },
+        "unexpectedRequest": {
+          "findings": [
+            "TRN-13",
+            "VAL-12"
+          ],
+          "warnings": 1,
+          "titleLen": 69
+        },
+        "nonObjectFinding": {
+          "findings": [
+            "TRN-13",
+            "VAL-12"
+          ],
+          "warnings": 3,
+          "titleLen": 69
+        },
+        "protoPollutionKey": {
+          "findings": [
+            "TRN-13",
+            "VAL-12"
+          ],
+          "warnings": 0,
+          "titleLen": 69
+        }
+      }
+    }
+  ],
+  "hostile": {
+    "notJson": {
+      "error": "The file is not valid JSON."
+    },
+    "wrongSchema": {
+      "error": "This is not an evidence note from the connected-mode page (schema identifier missing)."
+    },
+    "futureVersion": {
+      "error": "Unsupported connected-evidence schema version 2."
+    },
+    "notReadOnly": {
+      "error": "The note does not declare read-only collection, so it was not imported."
+    },
+    "tooLarge": {
+      "error": "The file is larger than 1 MB and was not imported."
+    },
+    "withBom": {
+      "findings": [
+        "TRN-13",
+        "VAL-12"
+      ],
+      "warnings": 0,
+      "titleLen": 69
+    },
+    "protoCheckId": {
+      "findings": [
+        "TRN-13",
+        "VAL-12"
+      ],
+      "warnings": 1,
+      "titleLen": 69
+    },
+    "otherCheckId": {
+      "findings": [
+        "TRN-13",
+        "VAL-12"
+      ],
+      "warnings": 1,
+      "titleLen": 69
+    },
+    "duplicateCheck": {
+      "findings": [
+        "TRN-13",
+        "VAL-12"
+      ],
+      "warnings": 1,
+      "titleLen": 69
+    },
+    "hugeTitle": {
+      "findings": [
+        "TRN-13",
+        "VAL-12"
+      ],
+      "warnings": 0,
+      "titleLen": 300
+    },
+    "manyFindings": {
+      "findings": [
+        "TRN-13",
+        "VAL-12"
+      ],
+      "warnings": 19,
+      "titleLen": 69
+    },
+    "unexpectedRequest": {
+      "findings": [
+        "TRN-13",
+        "VAL-12"
+      ],
+      "warnings": 1,
+      "titleLen": 69
+    },
+    "nonObjectFinding": {
+      "findings": [
+        "TRN-13",
+        "VAL-12"
+      ],
+      "warnings": 3,
+      "titleLen": 69
+    },
+    "protoPollutionKey": {
+      "findings": [
+        "TRN-13",
+        "VAL-12"
+      ],
+      "warnings": 0,
+      "titleLen": 69
+    }
+  },
+  "requiredAppChanges": [
+    "src/core/connected-evidence.js (this parser) + unit tests",
+    "src/ui: an \"Import connected-mode evidence note\" action next to the inventory import, with the same preview-and-tick dialog",
+    "show requests, collectedAt, tenant alias and warnings in the import dialog; attach the original JSON as a file evidence item on TRN-13",
+    "no change to the CSP, storage or network behaviour of the offline file"
+  ],
+  "summary": {
+    "passed": 5,
+    "failed": []
+  }
+}

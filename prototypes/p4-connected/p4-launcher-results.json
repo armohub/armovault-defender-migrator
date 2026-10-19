@@ -1,0 +1,621 @@
+{
+  "probe": "P4 launcher",
+  "ranAt": "2026-10-19T12:10:25.134Z",
+  "os": "Windows_NT 10.0.26200",
+  "powershell": "5.1.26100.9711",
+  "checks": [
+    {
+      "id": "L0",
+      "description": "launcher starts and reports a port in 49152-65535",
+      "pass": true,
+      "observed": {
+        "port": 59610,
+        "firstLines": [
+          "ARMO_P4_LISTENING port=59610 ipv4=127.0.0.1 ipv6=::1 idleSeconds=300"
+        ]
+      }
+    },
+    {
+      "id": "L1a",
+      "description": "listens on 127.0.0.1 and ::1 only",
+      "pass": true,
+      "observed": [
+        "::1",
+        "127.0.0.1"
+      ]
+    },
+    {
+      "id": "L1b",
+      "description": "connection to the machine's non-loopback IPv4 addresses is refused",
+      "pass": true,
+      "observed": [
+        {
+          "address": "<lan-ip>",
+          "result": "ECONNREFUSED"
+        }
+      ]
+    },
+    {
+      "id": "L2a",
+      "description": "only localhost/127.0.0.1/[::1] with our port are accepted (DNS rebinding)",
+      "pass": true,
+      "observed": [
+        {
+          "host": "localhost:<port>",
+          "status": 200,
+          "want": 200
+        },
+        {
+          "host": "LOCALHOST:<port>",
+          "status": 200,
+          "want": 200
+        },
+        {
+          "host": "127.0.0.1:<port>",
+          "status": 200,
+          "want": 200
+        },
+        {
+          "host": "[::1]:<port>",
+          "status": 200,
+          "want": 200
+        },
+        {
+          "host": "localhost",
+          "status": 421,
+          "want": 421
+        },
+        {
+          "host": "localhost:59611",
+          "status": 421,
+          "want": 421
+        },
+        {
+          "host": "evil.example:<port>",
+          "status": 421,
+          "want": 421
+        },
+        {
+          "host": "localhost.evil.example:<port>",
+          "status": 421,
+          "want": 421
+        },
+        {
+          "host": "127.0.0.2:<port>",
+          "status": 421,
+          "want": 421
+        },
+        {
+          "host": "0.0.0.0:<port>",
+          "status": 421,
+          "want": 421
+        },
+        {
+          "host": "localhost:<port>.evil.example",
+          "status": 421,
+          "want": 421
+        },
+        {
+          "host": "localhost:0<port>",
+          "status": 421,
+          "want": 421
+        }
+      ]
+    },
+    {
+      "id": "L2b",
+      "description": "missing or repeated Host header is rejected",
+      "pass": true,
+      "observed": {
+        "missing": 400,
+        "repeated": 400
+      }
+    },
+    {
+      "id": "L3a",
+      "description": "every method except GET/HEAD gets 405, with no CORS headers",
+      "pass": true,
+      "observed": {
+        "POST": {
+          "status": 405,
+          "acao": null
+        },
+        "PUT": {
+          "status": 405,
+          "acao": null
+        },
+        "DELETE": {
+          "status": 405,
+          "acao": null
+        },
+        "PATCH": {
+          "status": 405,
+          "acao": null
+        },
+        "OPTIONS": {
+          "status": 405,
+          "acao": null
+        },
+        "TRACE": {
+          "status": 405,
+          "acao": null
+        },
+        "CONNECT": {
+          "status": 405,
+          "acao": null
+        }
+      }
+    },
+    {
+      "id": "L3b",
+      "description": "HEAD returns headers only",
+      "pass": true,
+      "observed": {
+        "status": 200,
+        "bodyBytes": 0
+      }
+    },
+    {
+      "id": "L3c",
+      "description": "GET with a foreign Origin header still gets no Access-Control-Allow-Origin",
+      "pass": true,
+      "observed": [
+        "content-type",
+        "content-length",
+        "cache-control",
+        "x-content-type-options",
+        "referrer-policy",
+        "cross-origin-resource-policy",
+        "connection"
+      ]
+    },
+    {
+      "id": "L4a",
+      "description": "anything outside the fixed route table is 404 (no traversal, no case folding)",
+      "pass": true,
+      "observed": [
+        {
+          "path": "/../Start-ArMoConnected.ps1",
+          "status": 404
+        },
+        {
+          "path": "/..%2fStart-ArMoConnected.ps1",
+          "status": 404
+        },
+        {
+          "path": "/%2e%2e/Start-ArMoConnected.ps1",
+          "status": 404
+        },
+        {
+          "path": "/vendor/../connected.js",
+          "status": 404
+        },
+        {
+          "path": "/vendor/..\\..\\README.md",
+          "status": 404
+        },
+        {
+          "path": "/Start-ArMoConnected.ps1",
+          "status": 404
+        },
+        {
+          "path": "/README.md",
+          "status": 404
+        },
+        {
+          "path": "/web/connected.html",
+          "status": 404
+        },
+        {
+          "path": "/connected.html",
+          "status": 404
+        },
+        {
+          "path": "/Redirect.html",
+          "status": 404
+        },
+        {
+          "path": "/vendor/",
+          "status": 404
+        },
+        {
+          "path": "/vendor/LICENSE-msal-browser.txt",
+          "status": 404
+        },
+        {
+          "path": "//etc/passwd",
+          "status": 404
+        },
+        {
+          "path": "/C:/Windows/win.ini",
+          "status": 404
+        },
+        {
+          "path": "/redirect.html/",
+          "status": 404
+        },
+        {
+          "path": "/connected.js%00.txt",
+          "status": 404
+        },
+        {
+          "path": "/favicon.ico",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "id": "L4b",
+      "description": "the 7 routes are served (query string ignored); absolute-form target is refused",
+      "pass": true,
+      "observed": {
+        "okPaths": [
+          {
+            "path": "/",
+            "status": 200
+          },
+          {
+            "path": "/redirect.html",
+            "status": 200
+          },
+          {
+            "path": "/redirect.html?code=abc&state=xyz",
+            "status": 200
+          },
+          {
+            "path": "/connected.js",
+            "status": 200
+          },
+          {
+            "path": "/connected.css",
+            "status": 200
+          },
+          {
+            "path": "/redirect.js",
+            "status": 200
+          },
+          {
+            "path": "/vendor/msal-browser.min.js",
+            "status": 200
+          },
+          {
+            "path": "/vendor/msal-redirect-bridge.min.js",
+            "status": 200
+          }
+        ],
+        "absoluteForm": 400
+      }
+    },
+    {
+      "id": "L5",
+      "description": "Sec-Fetch-Site policy: only same-origin/none, plus a top-level navigation to /redirect.html",
+      "pass": true,
+      "observed": [
+        {
+          "path": "/",
+          "Sec-Fetch-Site": "none",
+          "Sec-Fetch-Mode": "navigate",
+          "Sec-Fetch-Dest": "document",
+          "why": "user opens the URL",
+          "status": 200,
+          "want": 200
+        },
+        {
+          "path": "/",
+          "Sec-Fetch-Site": "same-origin",
+          "Sec-Fetch-Mode": "navigate",
+          "Sec-Fetch-Dest": "document",
+          "why": "reload / own navigation",
+          "status": 200,
+          "want": 200
+        },
+        {
+          "path": "/",
+          "Sec-Fetch-Site": "cross-site",
+          "Sec-Fetch-Mode": "navigate",
+          "Sec-Fetch-Dest": "document",
+          "why": "another website navigates to the app",
+          "status": 403,
+          "want": 403
+        },
+        {
+          "path": "/",
+          "Sec-Fetch-Site": "same-site",
+          "Sec-Fetch-Mode": "navigate",
+          "Sec-Fetch-Dest": "document",
+          "why": "another localhost port navigates to the app",
+          "status": 403,
+          "want": 403
+        },
+        {
+          "path": "/",
+          "Sec-Fetch-Site": "cross-site",
+          "Sec-Fetch-Mode": "navigate",
+          "Sec-Fetch-Dest": "iframe",
+          "why": "framed by another site",
+          "status": 403,
+          "want": 403
+        },
+        {
+          "path": "/redirect.html",
+          "Sec-Fetch-Site": "cross-site",
+          "Sec-Fetch-Mode": "navigate",
+          "Sec-Fetch-Dest": "document",
+          "why": "return from login.microsoftonline.com",
+          "status": 200,
+          "want": 200
+        },
+        {
+          "path": "/redirect.html",
+          "Sec-Fetch-Site": "cross-site",
+          "Sec-Fetch-Mode": "navigate",
+          "Sec-Fetch-Dest": "iframe",
+          "why": "redirect page in a cross-site frame",
+          "status": 403,
+          "want": 403
+        },
+        {
+          "path": "/redirect.html",
+          "Sec-Fetch-Site": "cross-site",
+          "Sec-Fetch-Mode": "no-cors",
+          "Sec-Fetch-Dest": "script",
+          "why": "redirect page as a cross-site subresource",
+          "status": 403,
+          "want": 403
+        },
+        {
+          "path": "/connected.js",
+          "Sec-Fetch-Site": "same-origin",
+          "Sec-Fetch-Mode": "no-cors",
+          "Sec-Fetch-Dest": "script",
+          "why": "our page loads its script",
+          "status": 200,
+          "want": 200
+        },
+        {
+          "path": "/connected.js",
+          "Sec-Fetch-Site": "same-site",
+          "Sec-Fetch-Mode": "no-cors",
+          "Sec-Fetch-Dest": "script",
+          "why": "another localhost port includes our script",
+          "status": 403,
+          "want": 403
+        },
+        {
+          "path": "/connected.js",
+          "Sec-Fetch-Site": "cross-site",
+          "Sec-Fetch-Mode": "cors",
+          "Sec-Fetch-Dest": "empty",
+          "why": "fetch() from a website",
+          "status": 403,
+          "want": 403
+        },
+        {
+          "path": "/vendor/msal-browser.min.js",
+          "Sec-Fetch-Site": "cross-site",
+          "Sec-Fetch-Mode": "no-cors",
+          "Sec-Fetch-Dest": "script",
+          "why": "website includes MSAL from us",
+          "status": 403,
+          "want": 403
+        }
+      ]
+    },
+    {
+      "id": "L6a",
+      "description": "malformed requests are rejected (431 / 400)",
+      "pass": true,
+      "observed": {
+        "hugeHeaders": 431,
+        "nonAsciiByte": 400,
+        "lowercaseMethod": 400,
+        "http2Preface": 400,
+        "transferEncoding": 400,
+        "obsFoldHeader": 400,
+        "spaceBeforeColon": 400
+      }
+    },
+    {
+      "id": "L6b",
+      "description": "a request that never completes its head (bare LF) is dropped by the 5 s read timeout",
+      "pass": true,
+      "observed": {
+        "ms": 5036,
+        "status": 0
+      }
+    },
+    {
+      "id": "L7",
+      "description": "a silent connection blocks the single-threaded server only until its 5 s read timeout",
+      "pass": true,
+      "observed": {
+        "secondRequestDelayMs": 4716,
+        "silentConnectionClosedAfterMs": 5014
+      }
+    },
+    {
+      "id": "L8a",
+      "description": "while running, no other socket can bind 127.0.0.1 or ::1 on the port (plain or SO_REUSEADDR)",
+      "pass": true,
+      "observed": {
+        "nodeBinds": {
+          "127.0.0.1": "EADDRINUSE",
+          "0.0.0.0": "BOUND",
+          "::1": "EADDRINUSE",
+          "::": "BOUND"
+        },
+        "soReuseAddr": {
+          "127.0.0.1": "AccessDenied",
+          "0.0.0.0": "BOUND",
+          "::1": "AccessDenied",
+          "::": "BOUND"
+        }
+      }
+    },
+    {
+      "id": "L8b",
+      "description": "wildcard squatters bound after start do not receive loopback connections (specific bind wins)",
+      "pass": true,
+      "observed": {
+        "squatter0000": "bound",
+        "squatterIn6Any": "bound",
+        "127.0.0.1": "launcher",
+        "::1": "launcher"
+      }
+    },
+    {
+      "id": "L11",
+      "description": "launcher log never contains query strings or raw hostile header values",
+      "pass": true,
+      "observed": [
+        "14:10:38 403 fetch-metadata site=cross-site dest=iframe /redirect.html",
+        "14:10:38 403 fetch-metadata site=cross-site dest=script /redirect.html",
+        "14:10:55 200 GET /redirect.html"
+      ]
+    },
+    {
+      "id": "L9",
+      "description": "with a pre-squatted port the launcher either refuses it, or (wildcard squatter) still owns all loopback traffic",
+      "pass": true,
+      "observed": [
+        "::1: refused, exit 5",
+        "127.0.0.1: refused, exit 5",
+        "0.0.0.0: started {\"127.0.0.1\":\"launcher\",\"::1\":\"launcher\"}",
+        "::: started {\"127.0.0.1\":\"launcher\",\"::1\":\"launcher\"}"
+      ]
+    },
+    {
+      "id": "L9b",
+      "description": "in normal (random-port) mode the launcher simply picks another free port",
+      "pass": true
+    },
+    {
+      "id": "L10",
+      "description": "demonstration: with only 127.0.0.1 bound, a squatter on [::1] receives http://localhost:<port>/",
+      "pass": true,
+      "observed": {
+        "withIpv6Squatter": {
+          "msedge": "SQUATTER",
+          "chrome": "SQUATTER"
+        },
+        "withoutSquatter": {
+          "msedge": "OURS"
+        }
+      }
+    },
+    {
+      "id": "L12",
+      "description": "launcher exits by itself after the idle period and the port closes",
+      "pass": true,
+      "observed": {
+        "exitCode": 0,
+        "afterMs": 4067,
+        "lastLine": "ARMO_P4_STOPPED reason=idle",
+        "connectAfterExit": "ECONNREFUSED"
+      }
+    },
+    {
+      "id": "L13",
+      "description": "launcher refuses to start when a vendored MSAL file does not match its pinned SHA-256",
+      "pass": true,
+      "observed": {
+        "exitCode": 4,
+        "line": "ARMO_P4_ERROR integrity ... Refusing to start."
+      }
+    },
+    {
+      "id": "L14",
+      "description": "in a Constrained Language session the launcher stops with a clear message and exit code 3",
+      "pass": true,
+      "observed": [
+        "ARMO_P4_ERROR language-mode=ConstrainedLanguage The launcher needs FullLanguage mode (it uses .NET sockets). It cannot run under Constrained Language Mode (AppLocker/WDAC) unless it is signed and allowed by your policy.",
+        "exit=3"
+      ]
+    },
+    {
+      "id": "L15",
+      "description": "a downloaded (Mark-of-the-Web) unsigned copy is refused under RemoteSigned: release needs code signing or Unblock-File guidance",
+      "pass": true,
+      "observed": {
+        "machinePolicy": "RemoteSigned",
+        "downloadedCopyUnderRemoteSigned": [
+          "File <home>\\AppData\\Local\\Temp\\armo-p4-sYu9Dc\\p4-motw\\Start-ArMoConnected.ps1 cannot be loaded. The ",
+          "file <home>\\AppData\\Local\\Temp\\armo-p4-sYu9Dc\\p4-motw\\Start-ArMoConnected.ps1 is not digitally ",
+          "exit=1"
+        ]
+      }
+    }
+  ],
+  "squatting": [
+    {
+      "squatterOn": "::1",
+      "launcher": "refused, exit 5",
+      "lines": [
+        "ARMO_P4_BIND_FAILED port=53538 reason=AddressAlreadyInUse",
+        "ARMO_P4_ERROR the requested port is not exclusively ours on both loopback addresses."
+      ]
+    },
+    {
+      "squatterOn": "127.0.0.1",
+      "launcher": "refused, exit 5",
+      "lines": [
+        "ARMO_P4_BIND_FAILED port=58105 reason=AddressAlreadyInUse",
+        "ARMO_P4_ERROR the requested port is not exclusively ours on both loopback addresses."
+      ]
+    },
+    {
+      "squatterOn": "0.0.0.0",
+      "launcher": "started",
+      "lines": [
+        "ARMO_P4_LISTENING port=57667 ipv4=127.0.0.1 ipv6=::1 idleSeconds=30"
+      ],
+      "loopbackReaches": {
+        "127.0.0.1": "launcher",
+        "::1": "launcher"
+      }
+    },
+    {
+      "squatterOn": "::",
+      "launcher": "started",
+      "lines": [
+        "ARMO_P4_LISTENING port=63855 ipv4=127.0.0.1 ipv6=::1 idleSeconds=30"
+      ],
+      "loopbackReaches": {
+        "127.0.0.1": "launcher",
+        "::1": "launcher"
+      }
+    }
+  ],
+  "naiveLocalhostResolution": {
+    "withIpv6Squatter": {
+      "msedge": "SQUATTER",
+      "chrome": "SQUATTER"
+    },
+    "withoutSquatter": {
+      "msedge": "OURS"
+    }
+  },
+  "constrainedLanguage": {
+    "sessionLanguageModeSet": [
+      "ARMO_P4_ERROR language-mode=ConstrainedLanguage The launcher needs FullLanguage mode (it uses .NET sockets). It cannot run under Constrained Language Mode (AppLocker/WDAC) unless it is signed and allowed by your policy.",
+      "exit=3"
+    ],
+    "lockdownPolicyEnv4": {
+      "exitCode": 0,
+      "startedInFullLanguage": true,
+      "note": "the __PSLockdownPolicy=4 test hook was not honoured by this Windows PowerShell build, so it cannot simulate WDAC here"
+    }
+  },
+  "executionPolicy": {
+    "machinePolicy": "RemoteSigned",
+    "downloadedCopyUnderRemoteSigned": [
+      "File <home>\\AppData\\Local\\Temp\\armo-p4-sYu9Dc\\p4-motw\\Start-ArMoConnected.ps1 cannot be loaded. The ",
+      "file <home>\\AppData\\Local\\Temp\\armo-p4-sYu9Dc\\p4-motw\\Start-ArMoConnected.ps1 is not digitally ",
+      "exit=1"
+    ]
+  },
+  "summary": {
+    "passed": 24,
+    "failed": []
+  }
+}

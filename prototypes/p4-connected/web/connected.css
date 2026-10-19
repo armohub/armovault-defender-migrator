@@ -1,0 +1,21 @@
+/* PROTOTYPE P4 - deliberately minimal styling. */
+:root { color-scheme: light dark; --fg: #1b1b1b; --bg: #fff; --muted: #555; --line: #ccc; --warn: #8a5300; --bad: #a4262c; --ok: #107c10; }
+@media (prefers-color-scheme: dark) { :root { --fg: #eee; --bg: #1b1b1b; --muted: #aaa; --line: #444; --warn: #ffb74d; --bad: #ff8a80; --ok: #81c784; } }
+body { margin: 0; font: 15px/1.5 "Segoe UI", system-ui, sans-serif; color: var(--fg); background: var(--bg); }
+main { max-width: 60rem; margin: 0 auto; padding: 1rem 1.25rem 3rem; }
+.banner { padding: .5rem 1.25rem; background: #fff4ce; color: #3b2a00; border-bottom: 1px solid #e0c060; }
+section { border-top: 1px solid var(--line); margin-top: 1.25rem; padding-top: .5rem; }
+.grid { display: grid; grid-template-columns: max-content 1fr; gap: .4rem .75rem; align-items: center; max-width: 44rem; }
+input:not([type]), input[type=text] { font: inherit; padding: .25rem .4rem; }
+table { border-collapse: collapse; width: 100%; margin: .5rem 0; }
+th, td { border: 1px solid var(--line); padding: .25rem .5rem; text-align: left; vertical-align: top; }
+code, .code { font-family: Consolas, "Cascadia Mono", monospace; font-size: .9em; }
+.code { white-space: pre-wrap; word-break: break-word; border: 1px solid var(--line); padding: .5rem; max-height: 28rem; overflow: auto; }
+.small { font-size: .875em; color: var(--muted); }
+.error, .bad { color: var(--bad); }
+.warn { color: var(--warn); }
+.good { color: var(--ok); }
+.check { margin: 1rem 0; }
+.check-line { display: block; margin: .5rem 0; }
+button { font: inherit; padding: .3rem .8rem; }
+.out td { word-break: break-word; }

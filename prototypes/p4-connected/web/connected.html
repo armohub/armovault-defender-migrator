@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src https://login.microsoftonline.com https://graph.microsoft.com; frame-src 'none'; form-action 'none'; base-uri 'none'; object-src 'none'; worker-src 'none'; manifest-src 'none'; require-trusted-types-for 'script'; trusted-types 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ArMoHub DMA - connected checks (prototype)</title>
+<link rel="stylesheet" href="/connected.css">
+<script src="/vendor/msal-browser.min.js" defer></script>
+<script src="/connected.js" defer></script>
+</head>
+<body>
+<div class="banner" role="note"><strong>Prototype (release-2 spike P4).</strong> Not part of release 1. Optional, read-only checks against your own tenant. The offline assistant works without this page.</div>
+<main>
+  <h1>Connected checks</h1>
+  <p id="env-error" class="error" hidden></p>
+
+  <section id="s-config" aria-labelledby="h-config">
+    <h2 id="h-config">1. Your app registration</h2>
+    <p>Use the <strong>single-tenant</strong> app registration that your administrator created in <strong>your own tenant</strong> (platform: Single-page application, redirect URI <code>http://localhost/redirect.html</code>, no secret). This page has no built-in client ID.</p>
+    <div class="grid">
+      <label for="tenant">Directory (tenant) ID</label>
+      <input id="tenant" autocomplete="off" spellcheck="false" maxlength="36" placeholder="00000000-0000-0000-0000-000000000000">
+      <label for="client">Application (client) ID</label>
+      <input id="client" autocomplete="off" spellcheck="false" maxlength="36" placeholder="00000000-0000-0000-0000-000000000000">
+      <label for="alias">Tenant alias for the evidence note</label>
+      <input id="alias" autocomplete="off" maxlength="60" value="TENANT-A">
+    </div>
+    <p class="small">The IDs stay in this tab's memory. They are never written to the evidence note; the alias is used instead.</p>
+  </section>
+
+  <section id="s-consent" aria-labelledby="h-consent">
+    <h2 id="h-consent">2. What this page will read</h2>
+    <p>Signing in asks Microsoft Entra for these <strong>delegated, read-only</strong> Microsoft Graph permissions. A tenant administrator must have granted consent for them on the app registration. Your own account also needs a supported Entra role (for example Security Reader).</p>
+    <table>
+      <thead><tr><th scope="col">Permission</th><th scope="col">Used for</th><th scope="col">Can it change anything?</th></tr></thead>
+      <tbody>
+        <tr><td><code>SecurityIncident.Read.All</code></td><td>Check 1: list the 10 most recent incidents</td><td>No (read only)</td></tr>
+        <tr><td><code>SecurityAlert.Read.All</code></td><td>Check 1: the alerts inside those incidents (<code>$expand=alerts</code>), to see which product raised them</td><td>No (read only)</td></tr>
+        <tr><td><code>ThreatHunting.Read.All</code></td><td>Check 2: run one fixed advanced-hunting query (shown below)</td><td>No (hunting queries cannot write)</td></tr>
+        <tr><td><code>openid</code>, <code>profile</code>, <code>offline_access</code></td><td>Added by Microsoft's sign-in library to identify you and keep the session alive for up to 24 hours</td><td>No</td></tr>
+      </tbody>
+    </table>
+    <h3>The only two requests this page can send to your tenant</h3>
+    <ol>
+      <li><code>GET https://graph.microsoft.com/v1.0/security/incidents?$top=10&amp;$expand=alerts</code></li>
+      <li><code>POST https://graph.microsoft.com/v1.0/security/runHuntingQuery</code> with this fixed query and <code>Timespan</code> P7D:
+        <pre id="kql" class="code"></pre></li>
+    </ol>
+    <h3>Data it reads, keeps and exports</h3>
+    <ul>
+      <li><strong>Reads:</strong> incident titles, severity, status, creation time and portal link host; for each alert only the product fields (<code>serviceSource</code>, <code>detectionSource</code>, <code>productName</code>). Graph also returns alert details and entity evidence (device names, IP addresses, accounts); the page discards them as soon as they arrive. The hunting query returns counts per table and provider only.</li>
+      <li><strong>Keeps:</strong> results and tokens in this tab's memory only. Nothing is written to browser storage, cookies or disk. Closing or reloading the tab forgets everything.</li>
+      <li><strong>Exports:</strong> only when you click <em>Export evidence note</em>, a JSON file with counts and short findings that you can preview first. Incident titles are excluded unless you tick the option. Tenant ID, client ID, account names and tokens are never exported.</li>
+    </ul>
+    <h3>What it never does</h3>
+    <ul>
+      <li>It cannot create, update, assign, close or delete anything: it requests no write permission, and its code refuses any request other than the two above.</li>
+      <li>It sends nothing anywhere except <code>login.microsoftonline.com</code> and <code>graph.microsoft.com</code> (enforced by the browser's Content-Security-Policy). No telemetry.</li>
+    </ul>
+    <label class="check-line"><input type="checkbox" id="consent"> I have read this. Sign me in with my own account to run the read-only checks.</label>
+    <p><button id="signin" type="button" disabled>Sign in (opens a Microsoft pop-up)</button> <span id="signin-status" class="small" role="status"></span></p>
+  </section>
+
+  <section id="s-session" hidden aria-labelledby="h-session">
+    <h2 id="h-session">3. Run the checks</h2>
+    <p>Signed in as <strong id="who"></strong>. <button id="signout" type="button">Forget tokens and reset</button></p>
+    <div class="check">
+      <h3>Check 1 - recent incidents and their source products</h3>
+      <p class="small">Confirms incidents are visible through the Defender XDR incident API and whether Microsoft Sentinel alerts are among them. Maps to TRN-13.</p>
+      <button id="run-incidents" type="button">Run check 1</button>
+      <div id="out-incidents" class="out" aria-live="polite"></div>
+    </div>
+    <div class="check">
+      <h3>Check 2 - Sentinel and Defender tables in advanced hunting</h3>
+      <p class="small">Confirms advanced hunting can query the Microsoft Sentinel <code>SecurityIncident</code> table next to Defender XDR <code>AlertInfo</code>. Maps to VAL-12.</p>
+      <button id="run-hunting" type="button">Run check 2</button>
+      <div id="out-hunting" class="out" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <section id="s-export" hidden aria-labelledby="h-export">
+    <h2 id="h-export">4. Export an evidence note for the offline assistant</h2>
+    <label class="check-line"><input type="checkbox" id="include-titles"> Include incident titles and IDs (they can contain user, host or customer names)</label>
+    <label for="operator">Checked by (optional, free text)</label>
+    <input id="operator" autocomplete="off" maxlength="80">
+    <p><button id="preview" type="button">Preview</button> <button id="export" type="button" disabled>Export evidence note (.json)</button></p>
+    <pre id="export-preview" class="code" hidden></pre>
+  </section>
+</main>
+</body>
+</html>

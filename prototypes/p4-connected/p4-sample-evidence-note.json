@@ -1,0 +1,111 @@
+{
+  "schema": "armohub.dma.connected-evidence",
+  "schemaVersion": 1,
+  "tool": {
+    "name": "ArMoHub DMA connected-mode prototype (P4)",
+    "version": "0.0.0-p4"
+  },
+  "collectedAt": "2026-10-19T12:15:17.344Z",
+  "tenant": {
+    "alias": "SOC-TEST <b>"
+  },
+  "operator": "Analyst A",
+  "readOnly": true,
+  "requests": [
+    {
+      "method": "GET",
+      "url": "https://graph.microsoft.com/v1.0/security/incidents?$top=10&$expand=alerts",
+      "at": "2026-10-19T12:15:16.827Z",
+      "httpStatus": 200
+    },
+    {
+      "method": "POST",
+      "url": "https://graph.microsoft.com/v1.0/security/runHuntingQuery",
+      "at": "2026-10-19T12:15:16.909Z",
+      "httpStatus": 200,
+      "query": "let since = ago(7d);\nunion isfuzzy=true\n    (SecurityIncident\n    | where TimeGenerated > since\n    | extend Table = \"SecurityIncident\", Provider = tostring(ProviderName)\n    | summarize Items = dcount(IncidentNumber) by Table, Provider),\n    (AlertInfo\n    | where Timestamp > since\n    | extend Table = \"AlertInfo\", Provider = tostring(ServiceSource)\n    | summarize Items = dcount(AlertId) by Table, Provider)\n| order by Table asc, Items desc\n| take 50",
+      "timespan": "P7D"
+    }
+  ],
+  "findings": [
+    {
+      "checkId": "TRN-13",
+      "title": "Connected check: Microsoft Sentinel alerts in 1 of 2 recent incidents",
+      "text": "Collected by ArMoHub DMA connected-mode prototype (P4) 0.0.0-p4 for tenant alias \"SOC-TEST <b>\" at 2026-10-19T12:15:17.344Z with delegated, read-only Microsoft Graph permissions, checked by Analyst A. Values are as returned by Microsoft Graph; review them before relying on them.\n\nRequest: GET https://graph.microsoft.com/v1.0/security/incidents?$top=10&$expand=alerts -> HTTP 200\n\nMicrosoft Graph returned the 2 most recent incident(s) (more exist), created between 2026-10-18T10:00:00.123Z and 2026-10-18T10:00:00.123Z.\nAlerts by service source: microsoftDefenderForEndpoint 1, microsoftSentinel 1, other 1.\nIncident links point to: (not https) 1, security.microsoft.com 1.\nSeverities: high 1, other 1.\nIncidents with Microsoft Sentinel alerts (serviceSource microsoftSentinel): 1 of 2. Sentinel incidents are therefore visible in the Defender XDR incident queue."
+    },
+    {
+      "checkId": "VAL-12",
+      "title": "Connected check: Sentinel SecurityIncident table queryable in advanced hunting",
+      "text": "Collected by ArMoHub DMA connected-mode prototype (P4) 0.0.0-p4 for tenant alias \"SOC-TEST <b>\" at 2026-10-19T12:15:17.344Z with delegated, read-only Microsoft Graph permissions, checked by Analyst A. Values are as returned by Microsoft Graph; review them before relying on them.\n\nRequest: POST https://graph.microsoft.com/v1.0/security/runHuntingQuery -> HTTP 200\nQuery (Timespan P7D):\nlet since = ago(7d);\nunion isfuzzy=true\n    (SecurityIncident\n    | where TimeGenerated > since\n    | extend Table = \"SecurityIncident\", Provider = tostring(ProviderName)\n    | summarize Items = dcount(IncidentNumber) by Table, Provider),\n    (AlertInfo\n    | where Timestamp > since\n    | extend Table = \"AlertInfo\", Provider = tostring(ServiceSource)\n    | summarize Items = dcount(AlertId) by Table, Provider)\n| order by Table asc, Items desc\n| take 50\n\nAdvanced hunting (Microsoft Graph runHuntingQuery, last 7 days, primary workspace) returned 3 row(s).\nSecurityIncident (Microsoft Sentinel table) distinct incidents by provider: Azure Sentinel 12.\nAlertInfo (Defender XDR table) distinct alerts by service source: Microsoft Defender for Endpoint 40, <img src=x onerror=\"window.__xss='kql'\"> 3.\nThe Microsoft Sentinel SecurityIncident table is queryable from Defender advanced hunting, so the workspace is connected and hunting queries run."
+    }
+  ],
+  "summary": {
+    "incidents": {
+      "httpStatus": 200,
+      "incidents": 2,
+      "alerts": 3,
+      "alertServiceSources": [
+        {
+          "name": "microsoftDefenderForEndpoint",
+          "count": 1
+        },
+        {
+          "name": "microsoftSentinel",
+          "count": 1
+        },
+        {
+          "name": "other",
+          "count": 1
+        }
+      ],
+      "portalHosts": [
+        {
+          "name": "(not https)",
+          "count": 1
+        },
+        {
+          "name": "security.microsoft.com",
+          "count": 1
+        }
+      ],
+      "severities": [
+        {
+          "name": "high",
+          "count": 1
+        },
+        {
+          "name": "other",
+          "count": 1
+        }
+      ],
+      "oldestCreated": "2026-10-18T10:00:00.123Z",
+      "newestCreated": "2026-10-18T10:00:00.123Z",
+      "incidentsWithSentinelAlerts": 1
+    },
+    "hunting": {
+      "httpStatus": 200,
+      "columns": [
+        "Table",
+        "Provider",
+        "Items"
+      ],
+      "rows": [
+        [
+          "AlertInfo",
+          "Microsoft Defender for Endpoint",
+          "40"
+        ],
+        [
+          "AlertInfo",
+          "<img src=x onerror=\"window.__xss='kql'\">",
+          "3"
+        ],
+        [
+          "SecurityIncident",
+          "Azure Sentinel",
+          "12"
+        ]
+      ]
+    }
+  }
+}

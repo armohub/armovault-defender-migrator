@@ -1,0 +1,1098 @@
+{
+  "probe": "P4 browser (mocked Entra + Graph)",
+  "ranAt": "2026-10-19T12:15:04.789Z",
+  "msal": "@azure/msal-browser 5.25.1 (vendored)",
+  "channels": {
+    "msedge": {
+      "requests": [
+        "GET http://localhost:50910/",
+        "GET http://localhost:50910/connected.css",
+        "GET http://localhost:50910/vendor/msal-browser.min.js",
+        "GET http://localhost:50910/connected.js",
+        "GET https://login.microsoftonline.com/0000aaaa-1111-2222-3333-444455556666/oauth2/v2.0/authorize",
+        "GET http://localhost:50910/redirect.html",
+        "GET http://localhost:50910/connected.css",
+        "GET http://localhost:50910/vendor/msal-redirect-bridge.min.js",
+        "GET http://localhost:50910/redirect.js",
+        "POST https://login.microsoftonline.com/0000aaaa-1111-2222-3333-444455556666/oauth2/v2.0/token",
+        "GET https://graph.microsoft.com/v1.0/security/incidents",
+        "POST https://graph.microsoft.com/v1.0/security/runHuntingQuery",
+        "GET http://localhost:50910/",
+        "GET http://localhost:50910/connected.css",
+        "GET http://localhost:50910/vendor/msal-browser.min.js",
+        "GET http://localhost:50910/connected.js"
+      ],
+      "consoleErrors": [
+        "Connecting to 'https://example.com/exfil?x=1' violates the following Content Security Policy directive: \"connect-src https://login.microsoftonline.com https://graph.microsoft.com\". The action has been",
+        "Connecting to 'https://example.com/exfil?x=1' violates the following Content Security Policy directive: \"connect-src https://login.microsoftonline.com https://graph.microsoft.com\". The action has been",
+        "Fetch API cannot load https://example.com/exfil?x=1. Refused to connect because it violates the document's Content Security Policy.",
+        "Connecting to 'https://management.azure.com/subscriptions' violates the following Content Security Policy directive: \"connect-src https://login.microsoftonline.com https://graph.microsoft.com\". The ac",
+        "Connecting to 'https://management.azure.com/subscriptions' violates the following Content Security Policy directive: \"connect-src https://login.microsoftonline.com https://graph.microsoft.com\". The ac",
+        "Fetch API cannot load https://management.azure.com/subscriptions. Refused to connect because it violates the document's Content Security Policy.",
+        "This document requires 'TrustedHTML' assignment. The action has been blocked.",
+        "This document requires 'TrustedHTML' assignment. The action has been blocked.",
+        "This document requires 'TrustedScript' assignment. The action has been blocked.",
+        "This document requires 'TrustedScript' assignment. The action has been blocked."
+      ],
+      "login": {
+        "token": {
+          "grantType": "authorization_code",
+          "codeMatches": true,
+          "hasVerifier": true,
+          "hasClientSecret": false,
+          "pkceS256Valid": true,
+          "redirectUri": "http://localhost:<port>/redirect.html",
+          "origin": "http://localhost:<port>"
+        },
+        "verifierWasInSessionStorage": false,
+        "authorize": {
+          "response_type": "code",
+          "response_mode": "fragment",
+          "code_challenge_method": "S256",
+          "hasCodeChallenge": true,
+          "redirect_uri": "http://localhost:<port>/redirect.html",
+          "client_id_matches": true,
+          "prompt": "select_account",
+          "scope": "https://graph.microsoft.com/SecurityIncident.Read.All https://graph.microsoft.com/SecurityAlert.Read.All https://graph.microsoft.com/ThreatHunting.Read.All openid profile offline_access",
+          "hasNonce": true,
+          "hasState": true,
+          "hasClientSecret": false
+        },
+        "sessionStorageKeysDuringPopup": [
+          "msal.interaction.status"
+        ]
+      },
+      "graph": [
+        {
+          "method": "GET",
+          "url": "https://graph.microsoft.com/v1.0/security/incidents?$top=10&$expand=alerts",
+          "bearerOk": true,
+          "cookieSent": false,
+          "referer": null
+        },
+        {
+          "method": "POST",
+          "url": "https://graph.microsoft.com/v1.0/security/runHuntingQuery",
+          "bearerOk": true,
+          "cookieSent": false,
+          "referer": null,
+          "body": {
+            "Query": "let since = ago(7d);\nunion isfuzzy=true\n    (SecurityIncident\n    | where TimeGenerated > since\n    | extend Table = \"SecurityIncident\", Provider = tostring(ProviderName)\n    | summarize Items = dcount(IncidentNumber) by Table, Provider),\n    (AlertInfo\n    | where Timestamp > since\n    | extend Table = \"AlertInfo\", Provider = tostring(ServiceSource)\n    | summarize Items = dcount(AlertId) by Table, Provider)\n| order by Table asc, Items desc\n| take 50",
+            "Timespan": "P7D"
+          }
+        }
+      ],
+      "storageAfterSignIn": {
+        "localStorageKeys": 0,
+        "sessionStorageKeys": 0,
+        "secretsInWebStorage": 0,
+        "cookie": "",
+        "indexedDb": [],
+        "cacheStorage": []
+      },
+      "hostsContacted": [
+        "localhost:<port>",
+        "login.microsoftonline.com",
+        "graph.microsoft.com"
+      ]
+    },
+    "chrome": {
+      "requests": [
+        "GET http://localhost:50910/",
+        "GET http://localhost:50910/connected.css",
+        "GET http://localhost:50910/vendor/msal-browser.min.js",
+        "GET http://localhost:50910/connected.js",
+        "GET https://login.microsoftonline.com/0000aaaa-1111-2222-3333-444455556666/oauth2/v2.0/authorize",
+        "GET http://localhost:50910/redirect.html",
+        "GET http://localhost:50910/connected.css",
+        "GET http://localhost:50910/vendor/msal-redirect-bridge.min.js",
+        "GET http://localhost:50910/redirect.js",
+        "POST https://login.microsoftonline.com/0000aaaa-1111-2222-3333-444455556666/oauth2/v2.0/token",
+        "GET https://graph.microsoft.com/v1.0/security/incidents",
+        "POST https://graph.microsoft.com/v1.0/security/runHuntingQuery",
+        "GET http://localhost:50910/",
+        "GET http://localhost:50910/connected.css",
+        "GET http://localhost:50910/vendor/msal-browser.min.js",
+        "GET http://localhost:50910/connected.js"
+      ],
+      "consoleErrors": [
+        "Connecting to 'https://example.com/exfil?x=1' violates the following Content Security Policy directive: \"connect-src https://login.microsoftonline.com https://graph.microsoft.com\". The action has been",
+        "Connecting to 'https://example.com/exfil?x=1' violates the following Content Security Policy directive: \"connect-src https://login.microsoftonline.com https://graph.microsoft.com\". The action has been",
+        "Fetch API cannot load https://example.com/exfil?x=1. Refused to connect because it violates the document's Content Security Policy.",
+        "Connecting to 'https://management.azure.com/subscriptions' violates the following Content Security Policy directive: \"connect-src https://login.microsoftonline.com https://graph.microsoft.com\". The ac",
+        "Connecting to 'https://management.azure.com/subscriptions' violates the following Content Security Policy directive: \"connect-src https://login.microsoftonline.com https://graph.microsoft.com\". The ac",
+        "Fetch API cannot load https://management.azure.com/subscriptions. Refused to connect because it violates the document's Content Security Policy.",
+        "This document requires 'TrustedHTML' assignment. The action has been blocked.",
+        "This document requires 'TrustedHTML' assignment. The action has been blocked.",
+        "This document requires 'TrustedScript' assignment. The action has been blocked.",
+        "This document requires 'TrustedScript' assignment. The action has been blocked."
+      ],
+      "login": {
+        "token": {
+          "grantType": "authorization_code",
+          "codeMatches": true,
+          "hasVerifier": true,
+          "hasClientSecret": false,
+          "pkceS256Valid": true,
+          "redirectUri": "http://localhost:<port>/redirect.html",
+          "origin": "http://localhost:<port>"
+        },
+        "verifierWasInSessionStorage": false,
+        "authorize": {
+          "response_type": "code",
+          "response_mode": "fragment",
+          "code_challenge_method": "S256",
+          "hasCodeChallenge": true,
+          "redirect_uri": "http://localhost:<port>/redirect.html",
+          "client_id_matches": true,
+          "prompt": "select_account",
+          "scope": "https://graph.microsoft.com/SecurityIncident.Read.All https://graph.microsoft.com/SecurityAlert.Read.All https://graph.microsoft.com/ThreatHunting.Read.All openid profile offline_access",
+          "hasNonce": true,
+          "hasState": true,
+          "hasClientSecret": false
+        },
+        "sessionStorageKeysDuringPopup": [
+          "msal.interaction.status"
+        ]
+      },
+      "graph": [
+        {
+          "method": "GET",
+          "url": "https://graph.microsoft.com/v1.0/security/incidents?$top=10&$expand=alerts",
+          "bearerOk": true,
+          "cookieSent": false,
+          "referer": null
+        },
+        {
+          "method": "POST",
+          "url": "https://graph.microsoft.com/v1.0/security/runHuntingQuery",
+          "bearerOk": true,
+          "cookieSent": false,
+          "referer": null,
+          "body": {
+            "Query": "let since = ago(7d);\nunion isfuzzy=true\n    (SecurityIncident\n    | where TimeGenerated > since\n    | extend Table = \"SecurityIncident\", Provider = tostring(ProviderName)\n    | summarize Items = dcount(IncidentNumber) by Table, Provider),\n    (AlertInfo\n    | where Timestamp > since\n    | extend Table = \"AlertInfo\", Provider = tostring(ServiceSource)\n    | summarize Items = dcount(AlertId) by Table, Provider)\n| order by Table asc, Items desc\n| take 50",
+            "Timespan": "P7D"
+          }
+        }
+      ],
+      "storageAfterSignIn": {
+        "localStorageKeys": 0,
+        "sessionStorageKeys": 0,
+        "secretsInWebStorage": 0,
+        "cookie": "",
+        "indexedDb": [],
+        "cacheStorage": []
+      },
+      "hostsContacted": [
+        "localhost:<port>",
+        "login.microsoftonline.com",
+        "graph.microsoft.com"
+      ]
+    }
+  },
+  "checks": [
+    {
+      "id": "A1-msedge",
+      "description": "page loads from the launcher with CSP, COOP and frame-ancestors headers; no environment error",
+      "pass": true,
+      "observed": {
+        "status": 200,
+        "coop": "same-origin",
+        "secureContext": true
+      }
+    },
+    {
+      "id": "A2-msedge",
+      "description": "launcher prefill (#tenant/#client) is applied and removed from the address bar; sign-in stays disabled until consent",
+      "pass": true,
+      "observed": {
+        "hashAfter": "",
+        "signinDisabled": true
+      }
+    },
+    {
+      "id": "A3-msedge",
+      "description": "sign-in completes: popup -> mocked Entra -> launcher /redirect.html -> BroadcastChannel -> main page",
+      "pass": true,
+      "observed": {
+        "signedIn": true,
+        "popupClosed": true,
+        "status": "Signed in. Tokens are held in this tab’s memory only."
+      }
+    },
+    {
+      "id": "A4-msedge",
+      "description": "authorization request is auth code + PKCE S256, response in the URL fragment, redirect http://localhost:<port>/redirect.html, exact scopes",
+      "pass": true,
+      "observed": {
+        "response_type": "code",
+        "response_mode": "fragment",
+        "code_challenge_method": "S256",
+        "hasCodeChallenge": true,
+        "redirect_uri": "http://localhost:<port>/redirect.html",
+        "client_id_matches": true,
+        "prompt": "select_account",
+        "scope": "https://graph.microsoft.com/SecurityIncident.Read.All https://graph.microsoft.com/SecurityAlert.Read.All https://graph.microsoft.com/ThreatHunting.Read.All openid profile offline_access",
+        "hasNonce": true,
+        "hasState": true,
+        "hasClientSecret": false
+      }
+    },
+    {
+      "id": "A5-msedge",
+      "description": "token redemption sends the PKCE verifier (S256 matches), no secret, with an Origin header",
+      "pass": true,
+      "observed": {
+        "grantType": "authorization_code",
+        "codeMatches": true,
+        "hasVerifier": true,
+        "hasClientSecret": false,
+        "pkceS256Valid": true,
+        "redirectUri": "http://localhost:<port>/redirect.html",
+        "origin": "http://localhost:<port>"
+      }
+    },
+    {
+      "id": "A6-msedge",
+      "description": "after sign-in: no token, refresh token, ID token or code in localStorage/sessionStorage; no cookies, IndexedDB or Cache Storage",
+      "pass": true,
+      "observed": {
+        "localStorageKeys": 0,
+        "sessionStorageKeys": 0,
+        "secretsInWebStorage": 0,
+        "cookie": "",
+        "indexedDb": [],
+        "cacheStorage": [],
+        "pkceVerifierInSessionStorageWhilePopupOpen": false,
+        "sessionStorageKeysDuringPopup": [
+          "msal.interaction.status"
+        ]
+      }
+    },
+    {
+      "id": "A7-msedge",
+      "description": "hostile account display name is rendered as text",
+      "pass": true,
+      "observed": "<img src=x onerror=\"window.__xss='name'\">P4 Tester"
+    },
+    {
+      "id": "A8-msedge",
+      "description": "check 1 sends exactly GET /v1.0/security/incidents?$top=10&$expand=alerts with the bearer token, no cookies or referrer",
+      "pass": true,
+      "observed": {
+        "url": "https://graph.microsoft.com/v1.0/security/incidents?$top=10&$expand=alerts",
+        "bearerOk": true,
+        "cookieSent": false,
+        "referer": null
+      }
+    },
+    {
+      "id": "A9-msedge",
+      "description": "hostile incident data renders as inert text (no elements created, no script ran, no prototype pollution)",
+      "pass": true,
+      "observed": {
+        "rows": 2,
+        "injectedElements": 0,
+        "xss": null,
+        "polluted": null,
+        "row1Title": "<img src=x onerror=\"window.__xss='title'\">Brute force on VIP account"
+      }
+    },
+    {
+      "id": "A10-msedge",
+      "description": "bidi/control characters neutralised, long strings capped, unknown enums and bad URLs downgraded",
+      "pass": true,
+      "observed": {
+        "row2": [
+          "",
+          "other",
+          "other",
+          "Payroll �gnp.exe� =HYPERLINK(\"http://evil.example\") AAAAAAAA",
+          "other 1",
+          "(not https)"
+        ]
+      }
+    },
+    {
+      "id": "A11-msedge",
+      "description": "alert titles, entity evidence and comments returned by Graph are discarded, never shown",
+      "pass": true,
+      "observed": "no SECRET-* strings in page"
+    },
+    {
+      "id": "A12-msedge",
+      "description": "Sentinel provenance detected from alert serviceSource",
+      "pass": true,
+      "observed": "Microsoft Graph returned the 2 most recent incident(s) (more exist), created between 2026-10-18T10:00:00.123Z and 2026-10-18T10:00:00.123Z."
+    },
+    {
+      "id": "A13-msedge",
+      "description": "check 2 sends exactly one POST runHuntingQuery with the fixed query shown on the consent screen and Timespan P7D",
+      "pass": true,
+      "observed": {
+        "bodyKeys": [
+          "Query",
+          "Timespan"
+        ],
+        "queryMatchesConsentScreen": true
+      }
+    },
+    {
+      "id": "A14-msedge",
+      "description": "hunting rows render as text; PascalCase and camelCase result keys both map to columns",
+      "pass": true,
+      "observed": [
+        [
+          "AlertInfo",
+          "Microsoft Defender for Endpoint",
+          "40"
+        ],
+        [
+          "AlertInfo",
+          "<img src=x onerror=\"window.__xss='kql'\">",
+          "3"
+        ],
+        [
+          "SecurityIncident",
+          "Azure Sentinel",
+          "12"
+        ]
+      ]
+    },
+    {
+      "id": "A15-msedge",
+      "description": "any request other than the two documented ones is refused in code; other hosts blocked by CSP; innerHTML and injected scripts blocked by Trusted Types",
+      "pass": true,
+      "observed": {
+        "deleteIncidents": "refused: Refused: this page only sends its two documented read-only requests.",
+        "patchIncident": "refused: Refused: this page only sends its two documented read-only requests.",
+        "getMe": "refused: Refused: this page only sends its two documented read-only requests.",
+        "getIncidentsOtherQuery": "refused: Refused: this page only sends its two documented read-only requests.",
+        "fetchOtherHost": "blocked",
+        "fetchArm": "blocked",
+        "innerHTML": "blocked: TypeError",
+        "cspHasNoUnsafeEval": true,
+        "inlineScript": "blocked: TypeError",
+        "cspViolations": [
+          "connect-src https://example.com/exfil?x=1",
+          "connect-src https://example.com/exfil?x=1",
+          "connect-src https://management.azure.com/subscriptions",
+          "connect-src https://management.azure.com/subscriptions",
+          "require-trusted-types-for trusted-types-sink",
+          "require-trusted-types-for trusted-types-sink",
+          "require-trusted-types-for trusted-types-sink",
+          "require-trusted-types-for trusted-types-sink"
+        ]
+      }
+    },
+    {
+      "id": "A16-msedge",
+      "description": "the refused requests never reached the network",
+      "pass": true,
+      "observed": [
+        "GET https://graph.microsoft.com/v1.0/security/incidents?$top=10&$expand=alerts",
+        "POST https://graph.microsoft.com/v1.0/security/runHuntingQuery"
+      ]
+    },
+    {
+      "id": "A17-msedge",
+      "description": "export requires a preview; the downloaded file equals the preview",
+      "pass": true,
+      "observed": {
+        "exportDisabledBeforePreview": true,
+        "file": "armohub-connected-evidence-SOC-TEST-b-20261019T1215.json"
+      }
+    },
+    {
+      "id": "A18-msedge",
+      "description": "evidence note contains findings for TRN-13 and VAL-12 and no tokens, tenant/client/object IDs, account names, entity data or titles",
+      "pass": true,
+      "observed": {
+        "findings": [
+          "TRN-13: Connected check: Microsoft Sentinel alerts in 1 of 2 recent incidents",
+          "VAL-12: Connected check: Sentinel SecurityIncident table queryable in advanced hunting"
+        ],
+        "leaks": []
+      }
+    },
+    {
+      "id": "A19-msedge",
+      "description": "changing an option forces a new preview; titles appear only when ticked, still sanitised",
+      "pass": true,
+      "observed": {
+        "disabledAfterChange": true
+      }
+    },
+    {
+      "id": "A20-msedge",
+      "description": "the browser contacted only the launcher, login.microsoftonline.com and graph.microsoft.com",
+      "pass": true,
+      "observed": {
+        "hosts": [
+          "localhost:<port>",
+          "login.microsoftonline.com",
+          "graph.microsoft.com"
+        ],
+        "loginRequests": [
+          "GET https://login.microsoftonline.com/<tenant>/oauth2/v2.0/authorize",
+          "POST https://login.microsoftonline.com/<tenant>/oauth2/v2.0/token"
+        ]
+      }
+    },
+    {
+      "id": "A21-msedge",
+      "description": "\"Forget tokens\" clears MSAL and reloads; nothing remains in any browser storage",
+      "pass": true,
+      "observed": {
+        "localStorageKeys": 0,
+        "sessionStorageKeys": 0,
+        "secretsInWebStorage": 0,
+        "cookie": "",
+        "indexedDb": [],
+        "cacheStorage": []
+      }
+    },
+    {
+      "id": "A22-msedge",
+      "description": "no console errors during the flow other than those the A15 attack step causes on purpose",
+      "pass": true,
+      "observed": {
+        "unexpected": [],
+        "deliberateA15Errors": 10
+      }
+    },
+    {
+      "id": "A1-chrome",
+      "description": "page loads from the launcher with CSP, COOP and frame-ancestors headers; no environment error",
+      "pass": true,
+      "observed": {
+        "status": 200,
+        "coop": "same-origin",
+        "secureContext": true
+      }
+    },
+    {
+      "id": "A2-chrome",
+      "description": "launcher prefill (#tenant/#client) is applied and removed from the address bar; sign-in stays disabled until consent",
+      "pass": true,
+      "observed": {
+        "hashAfter": "",
+        "signinDisabled": true
+      }
+    },
+    {
+      "id": "A3-chrome",
+      "description": "sign-in completes: popup -> mocked Entra -> launcher /redirect.html -> BroadcastChannel -> main page",
+      "pass": true,
+      "observed": {
+        "signedIn": true,
+        "popupClosed": true,
+        "status": "Signed in. Tokens are held in this tab’s memory only."
+      }
+    },
+    {
+      "id": "A4-chrome",
+      "description": "authorization request is auth code + PKCE S256, response in the URL fragment, redirect http://localhost:<port>/redirect.html, exact scopes",
+      "pass": true,
+      "observed": {
+        "response_type": "code",
+        "response_mode": "fragment",
+        "code_challenge_method": "S256",
+        "hasCodeChallenge": true,
+        "redirect_uri": "http://localhost:<port>/redirect.html",
+        "client_id_matches": true,
+        "prompt": "select_account",
+        "scope": "https://graph.microsoft.com/SecurityIncident.Read.All https://graph.microsoft.com/SecurityAlert.Read.All https://graph.microsoft.com/ThreatHunting.Read.All openid profile offline_access",
+        "hasNonce": true,
+        "hasState": true,
+        "hasClientSecret": false
+      }
+    },
+    {
+      "id": "A5-chrome",
+      "description": "token redemption sends the PKCE verifier (S256 matches), no secret, with an Origin header",
+      "pass": true,
+      "observed": {
+        "grantType": "authorization_code",
+        "codeMatches": true,
+        "hasVerifier": true,
+        "hasClientSecret": false,
+        "pkceS256Valid": true,
+        "redirectUri": "http://localhost:<port>/redirect.html",
+        "origin": "http://localhost:<port>"
+      }
+    },
+    {
+      "id": "A6-chrome",
+      "description": "after sign-in: no token, refresh token, ID token or code in localStorage/sessionStorage; no cookies, IndexedDB or Cache Storage",
+      "pass": true,
+      "observed": {
+        "localStorageKeys": 0,
+        "sessionStorageKeys": 0,
+        "secretsInWebStorage": 0,
+        "cookie": "",
+        "indexedDb": [],
+        "cacheStorage": [],
+        "pkceVerifierInSessionStorageWhilePopupOpen": false,
+        "sessionStorageKeysDuringPopup": [
+          "msal.interaction.status"
+        ]
+      }
+    },
+    {
+      "id": "A7-chrome",
+      "description": "hostile account display name is rendered as text",
+      "pass": true,
+      "observed": "<img src=x onerror=\"window.__xss='name'\">P4 Tester"
+    },
+    {
+      "id": "A8-chrome",
+      "description": "check 1 sends exactly GET /v1.0/security/incidents?$top=10&$expand=alerts with the bearer token, no cookies or referrer",
+      "pass": true,
+      "observed": {
+        "url": "https://graph.microsoft.com/v1.0/security/incidents?$top=10&$expand=alerts",
+        "bearerOk": true,
+        "cookieSent": false,
+        "referer": null
+      }
+    },
+    {
+      "id": "A9-chrome",
+      "description": "hostile incident data renders as inert text (no elements created, no script ran, no prototype pollution)",
+      "pass": true,
+      "observed": {
+        "rows": 2,
+        "injectedElements": 0,
+        "xss": null,
+        "polluted": null,
+        "row1Title": "<img src=x onerror=\"window.__xss='title'\">Brute force on VIP account"
+      }
+    },
+    {
+      "id": "A10-chrome",
+      "description": "bidi/control characters neutralised, long strings capped, unknown enums and bad URLs downgraded",
+      "pass": true,
+      "observed": {
+        "row2": [
+          "",
+          "other",
+          "other",
+          "Payroll �gnp.exe� =HYPERLINK(\"http://evil.example\") AAAAAAAA",
+          "other 1",
+          "(not https)"
+        ]
+      }
+    },
+    {
+      "id": "A11-chrome",
+      "description": "alert titles, entity evidence and comments returned by Graph are discarded, never shown",
+      "pass": true,
+      "observed": "no SECRET-* strings in page"
+    },
+    {
+      "id": "A12-chrome",
+      "description": "Sentinel provenance detected from alert serviceSource",
+      "pass": true,
+      "observed": "Microsoft Graph returned the 2 most recent incident(s) (more exist), created between 2026-10-18T10:00:00.123Z and 2026-10-18T10:00:00.123Z."
+    },
+    {
+      "id": "A13-chrome",
+      "description": "check 2 sends exactly one POST runHuntingQuery with the fixed query shown on the consent screen and Timespan P7D",
+      "pass": true,
+      "observed": {
+        "bodyKeys": [
+          "Query",
+          "Timespan"
+        ],
+        "queryMatchesConsentScreen": true
+      }
+    },
+    {
+      "id": "A14-chrome",
+      "description": "hunting rows render as text; PascalCase and camelCase result keys both map to columns",
+      "pass": true,
+      "observed": [
+        [
+          "AlertInfo",
+          "Microsoft Defender for Endpoint",
+          "40"
+        ],
+        [
+          "AlertInfo",
+          "<img src=x onerror=\"window.__xss='kql'\">",
+          "3"
+        ],
+        [
+          "SecurityIncident",
+          "Azure Sentinel",
+          "12"
+        ]
+      ]
+    },
+    {
+      "id": "A15-chrome",
+      "description": "any request other than the two documented ones is refused in code; other hosts blocked by CSP; innerHTML and injected scripts blocked by Trusted Types",
+      "pass": true,
+      "observed": {
+        "deleteIncidents": "refused: Refused: this page only sends its two documented read-only requests.",
+        "patchIncident": "refused: Refused: this page only sends its two documented read-only requests.",
+        "getMe": "refused: Refused: this page only sends its two documented read-only requests.",
+        "getIncidentsOtherQuery": "refused: Refused: this page only sends its two documented read-only requests.",
+        "fetchOtherHost": "blocked",
+        "fetchArm": "blocked",
+        "innerHTML": "blocked: TypeError",
+        "cspHasNoUnsafeEval": true,
+        "inlineScript": "blocked: TypeError",
+        "cspViolations": [
+          "connect-src https://example.com/exfil?x=1",
+          "connect-src https://example.com/exfil?x=1",
+          "connect-src https://management.azure.com/subscriptions",
+          "connect-src https://management.azure.com/subscriptions",
+          "require-trusted-types-for trusted-types-sink",
+          "require-trusted-types-for trusted-types-sink",
+          "require-trusted-types-for trusted-types-sink",
+          "require-trusted-types-for trusted-types-sink"
+        ]
+      }
+    },
+    {
+      "id": "A16-chrome",
+      "description": "the refused requests never reached the network",
+      "pass": true,
+      "observed": [
+        "GET https://graph.microsoft.com/v1.0/security/incidents?$top=10&$expand=alerts",
+        "POST https://graph.microsoft.com/v1.0/security/runHuntingQuery"
+      ]
+    },
+    {
+      "id": "A17-chrome",
+      "description": "export requires a preview; the downloaded file equals the preview",
+      "pass": true,
+      "observed": {
+        "exportDisabledBeforePreview": true,
+        "file": "armohub-connected-evidence-SOC-TEST-b-20261019T1215.json"
+      }
+    },
+    {
+      "id": "A18-chrome",
+      "description": "evidence note contains findings for TRN-13 and VAL-12 and no tokens, tenant/client/object IDs, account names, entity data or titles",
+      "pass": true,
+      "observed": {
+        "findings": [
+          "TRN-13: Connected check: Microsoft Sentinel alerts in 1 of 2 recent incidents",
+          "VAL-12: Connected check: Sentinel SecurityIncident table queryable in advanced hunting"
+        ],
+        "leaks": []
+      }
+    },
+    {
+      "id": "A19-chrome",
+      "description": "changing an option forces a new preview; titles appear only when ticked, still sanitised",
+      "pass": true,
+      "observed": {
+        "disabledAfterChange": true
+      }
+    },
+    {
+      "id": "A20-chrome",
+      "description": "the browser contacted only the launcher, login.microsoftonline.com and graph.microsoft.com",
+      "pass": true,
+      "observed": {
+        "hosts": [
+          "localhost:<port>",
+          "login.microsoftonline.com",
+          "graph.microsoft.com"
+        ],
+        "loginRequests": [
+          "GET https://login.microsoftonline.com/<tenant>/oauth2/v2.0/authorize",
+          "POST https://login.microsoftonline.com/<tenant>/oauth2/v2.0/token"
+        ]
+      }
+    },
+    {
+      "id": "A21-chrome",
+      "description": "\"Forget tokens\" clears MSAL and reloads; nothing remains in any browser storage",
+      "pass": true,
+      "observed": {
+        "localStorageKeys": 0,
+        "sessionStorageKeys": 0,
+        "secretsInWebStorage": 0,
+        "cookie": "",
+        "indexedDb": [],
+        "cacheStorage": []
+      }
+    },
+    {
+      "id": "A22-chrome",
+      "description": "no console errors during the flow other than those the A15 attack step causes on purpose",
+      "pass": true,
+      "observed": {
+        "unexpected": [],
+        "deliberateA15Errors": 10
+      }
+    },
+    {
+      "id": "A23",
+      "description": "launcher log never contains the authorization code (it travels in the URL fragment)",
+      "pass": true,
+      "observed": [
+        "14:15:10 200 GET /redirect.html",
+        "14:15:11 200 GET /vendor/msal-redirect-bridge.min.js",
+        "14:15:11 200 GET /redirect.js",
+        "14:15:23 200 GET /redirect.html"
+      ]
+    },
+    {
+      "id": "B1-msedge",
+      "description": "a page on another localhost port cannot read our files, run our scripts, frame or script our page",
+      "pass": true,
+      "observed": {
+        "corsFetch": "blocked (TypeError)",
+        "noCorsFetch": "blocked (TypeError)",
+        "scriptTag": "blocked",
+        "iframe": "loaded but cross-origin (TypeError)",
+        "windowOpenRead": "cross-origin (SecurityError)",
+        "attackerLocalStorageVisible": null,
+        "cookieVisible": "p4probe=from-other-port",
+        "launcherLog": [
+          "403 fetch-metadata site=same-site dest=empty /connected.js",
+          "403 fetch-metadata site=same-site dest=empty /connected.js",
+          "403 fetch-metadata site=same-site dest=script /vendor/msal-browser.min.js",
+          "403 fetch-metadata site=same-site dest=iframe /",
+          "403 fetch-metadata site=same-site dest=document /",
+          "404 /favicon.ico",
+          "200 GET /",
+          "200 GET /connected.css"
+        ]
+      }
+    },
+    {
+      "id": "B2-msedge",
+      "description": "observed: cookies are shared across localhost ports (why the app must never use cookies)",
+      "pass": true,
+      "observed": "p4probe=from-other-port"
+    },
+    {
+      "id": "B1-chrome",
+      "description": "a page on another localhost port cannot read our files, run our scripts, frame or script our page",
+      "pass": true,
+      "observed": {
+        "corsFetch": "blocked (TypeError)",
+        "noCorsFetch": "blocked (TypeError)",
+        "scriptTag": "blocked",
+        "iframe": "loaded but cross-origin (TypeError)",
+        "windowOpenRead": "cross-origin (SecurityError)",
+        "attackerLocalStorageVisible": null,
+        "cookieVisible": "p4probe=from-other-port",
+        "launcherLog": [
+          "403 fetch-metadata site=same-site dest=empty /connected.js",
+          "403 fetch-metadata site=same-site dest=empty /connected.js",
+          "403 fetch-metadata site=same-site dest=script /vendor/msal-browser.min.js",
+          "403 fetch-metadata site=same-site dest=iframe /",
+          "403 fetch-metadata site=same-site dest=document /",
+          "404 /favicon.ico",
+          "200 GET /",
+          "200 GET /connected.css"
+        ]
+      }
+    },
+    {
+      "id": "B2-chrome",
+      "description": "observed: cookies are shared across localhost ports (why the app must never use cookies)",
+      "pass": true,
+      "observed": "p4probe=from-other-port"
+    },
+    {
+      "id": "B3-msedge",
+      "description": "a local file:// page cannot read our files or script our page",
+      "pass": true,
+      "observed": {
+        "corsFetch": "blocked (TypeError)",
+        "noCorsFetch": "blocked (TypeError)",
+        "scriptTag": "blocked",
+        "iframe": "loaded but cross-origin (TypeError)",
+        "windowOpenRead": "cross-origin (SecurityError)",
+        "launcherLog": [
+          "403 fetch-metadata site=cross-site dest=empty /connected.js",
+          "403 fetch-metadata site=cross-site dest=empty /connected.js",
+          "403 fetch-metadata site=cross-site dest=script /vendor/msal-browser.min.js",
+          "403 fetch-metadata site=cross-site dest=iframe /",
+          "403 fetch-metadata site=cross-site dest=document /",
+          "404 /favicon.ico"
+        ]
+      }
+    },
+    {
+      "id": "B3-chrome",
+      "description": "a local file:// page cannot read our files or script our page",
+      "pass": true,
+      "observed": {
+        "corsFetch": "blocked (TypeError)",
+        "noCorsFetch": "blocked (TypeError)",
+        "scriptTag": "blocked",
+        "iframe": "loaded but cross-origin (TypeError)",
+        "windowOpenRead": "cross-origin (SecurityError)",
+        "launcherLog": [
+          "403 fetch-metadata site=cross-site dest=empty /connected.js",
+          "403 fetch-metadata site=cross-site dest=empty /connected.js",
+          "403 fetch-metadata site=cross-site dest=script /vendor/msal-browser.min.js",
+          "403 fetch-metadata site=cross-site dest=iframe /",
+          "403 fetch-metadata site=cross-site dest=document /",
+          "404 /favicon.ico"
+        ]
+      }
+    },
+    {
+      "id": "B4-msedge",
+      "description": "DNS rebinding (attacker hostname resolving to 127.0.0.1) gets 421, never the app",
+      "pass": true,
+      "observed": {
+        "status": 421,
+        "body": "421 Misdirected Request"
+      }
+    },
+    {
+      "id": "B4-chrome",
+      "description": "DNS rebinding (attacker hostname resolving to 127.0.0.1) gets 421, never the app",
+      "pass": true,
+      "observed": {
+        "status": 421,
+        "body": "421 Misdirected Request"
+      }
+    },
+    {
+      "id": "B5-msedge",
+      "description": "a public website cannot read anything from the launcher (whether or not Local Network Access blocks the request first)",
+      "pass": true,
+      "observed": {
+        "cors": "blocked (Failed to fetch)",
+        "noCors": "blocked (Failed to fetch)",
+        "reachedLauncher": []
+      }
+    },
+    {
+      "id": "B5-chrome",
+      "description": "a public website cannot read anything from the launcher (whether or not Local Network Access blocks the request first)",
+      "pass": true,
+      "observed": {
+        "cors": "blocked (Failed to fetch)",
+        "noCors": "blocked (Failed to fetch)",
+        "reachedLauncher": []
+      }
+    },
+    {
+      "id": "B6-msedge",
+      "description": "live: Graph (GET incidents, POST runHuntingQuery) and Entra (metadata, token) responses are readable from http://localhost:<port> under the page CSP",
+      "pass": true,
+      "observed": {
+        "graphIncidents": {
+          "status": 401,
+          "readable": true,
+          "code": "InvalidAuthenticationToken",
+          "requestIdReadable": true
+        },
+        "graphHunting": {
+          "status": 401,
+          "readable": true,
+          "code": "InvalidAuthenticationToken",
+          "requestIdReadable": true
+        },
+        "entraMetadata": {
+          "status": 200,
+          "readable": true,
+          "code": "metadata",
+          "requestIdReadable": false
+        },
+        "entraToken": {
+          "status": 400,
+          "readable": true,
+          "code": "invalid_grant",
+          "requestIdReadable": true
+        }
+      }
+    },
+    {
+      "id": "B6-chrome",
+      "description": "live: Graph (GET incidents, POST runHuntingQuery) and Entra (metadata, token) responses are readable from http://localhost:<port> under the page CSP",
+      "pass": true,
+      "observed": {
+        "graphIncidents": {
+          "status": 401,
+          "readable": true,
+          "code": "InvalidAuthenticationToken",
+          "requestIdReadable": true
+        },
+        "graphHunting": {
+          "status": 401,
+          "readable": true,
+          "code": "InvalidAuthenticationToken",
+          "requestIdReadable": true
+        },
+        "entraMetadata": {
+          "status": 200,
+          "readable": true,
+          "code": "metadata",
+          "requestIdReadable": false
+        },
+        "entraToken": {
+          "status": 400,
+          "readable": true,
+          "code": "invalid_grant",
+          "requestIdReadable": true
+        }
+      }
+    }
+  ],
+  "partB": {
+    "msedge": {
+      "otherLocalPage": {
+        "corsFetch": "blocked (TypeError)",
+        "noCorsFetch": "blocked (TypeError)",
+        "scriptTag": "blocked",
+        "iframe": "loaded but cross-origin (TypeError)",
+        "windowOpenRead": "cross-origin (SecurityError)",
+        "attackerLocalStorageVisible": null,
+        "cookieVisible": "p4probe=from-other-port",
+        "launcherLog": [
+          "403 fetch-metadata site=same-site dest=empty /connected.js",
+          "403 fetch-metadata site=same-site dest=empty /connected.js",
+          "403 fetch-metadata site=same-site dest=script /vendor/msal-browser.min.js",
+          "403 fetch-metadata site=same-site dest=iframe /",
+          "403 fetch-metadata site=same-site dest=document /",
+          "404 /favicon.ico",
+          "200 GET /",
+          "200 GET /connected.css",
+          "200 GET /vendor/msal-browser.min.js",
+          "200 GET /connected.js"
+        ]
+      },
+      "filePage": {
+        "corsFetch": "blocked (TypeError)",
+        "noCorsFetch": "blocked (TypeError)",
+        "scriptTag": "blocked",
+        "iframe": "loaded but cross-origin (TypeError)",
+        "windowOpenRead": "cross-origin (SecurityError)",
+        "launcherLog": [
+          "403 fetch-metadata site=cross-site dest=empty /connected.js",
+          "403 fetch-metadata site=cross-site dest=empty /connected.js",
+          "403 fetch-metadata site=cross-site dest=script /vendor/msal-browser.min.js",
+          "403 fetch-metadata site=cross-site dest=iframe /",
+          "403 fetch-metadata site=cross-site dest=document /",
+          "404 /favicon.ico"
+        ]
+      },
+      "dnsRebinding": {
+        "status": 421,
+        "body": "421 Misdirected Request"
+      },
+      "publicWebsite": {
+        "cors": "blocked (Failed to fetch)",
+        "noCors": "blocked (Failed to fetch)",
+        "reachedLauncher": []
+      },
+      "liveCors": {
+        "graphIncidents": {
+          "status": 401,
+          "readable": true,
+          "code": "InvalidAuthenticationToken",
+          "requestIdReadable": true
+        },
+        "graphHunting": {
+          "status": 401,
+          "readable": true,
+          "code": "InvalidAuthenticationToken",
+          "requestIdReadable": true
+        },
+        "entraMetadata": {
+          "status": 200,
+          "readable": true,
+          "code": "metadata",
+          "requestIdReadable": false
+        },
+        "entraToken": {
+          "status": 400,
+          "readable": true,
+          "code": "invalid_grant",
+          "requestIdReadable": true
+        }
+      }
+    },
+    "chrome": {
+      "otherLocalPage": {
+        "corsFetch": "blocked (TypeError)",
+        "noCorsFetch": "blocked (TypeError)",
+        "scriptTag": "blocked",
+        "iframe": "loaded but cross-origin (TypeError)",
+        "windowOpenRead": "cross-origin (SecurityError)",
+        "attackerLocalStorageVisible": null,
+        "cookieVisible": "p4probe=from-other-port",
+        "launcherLog": [
+          "403 fetch-metadata site=same-site dest=empty /connected.js",
+          "403 fetch-metadata site=same-site dest=empty /connected.js",
+          "403 fetch-metadata site=same-site dest=script /vendor/msal-browser.min.js",
+          "403 fetch-metadata site=same-site dest=iframe /",
+          "403 fetch-metadata site=same-site dest=document /",
+          "404 /favicon.ico",
+          "200 GET /",
+          "200 GET /connected.css",
+          "200 GET /vendor/msal-browser.min.js",
+          "200 GET /connected.js"
+        ]
+      },
+      "filePage": {
+        "corsFetch": "blocked (TypeError)",
+        "noCorsFetch": "blocked (TypeError)",
+        "scriptTag": "blocked",
+        "iframe": "loaded but cross-origin (TypeError)",
+        "windowOpenRead": "cross-origin (SecurityError)",
+        "launcherLog": [
+          "403 fetch-metadata site=cross-site dest=empty /connected.js",
+          "403 fetch-metadata site=cross-site dest=empty /connected.js",
+          "403 fetch-metadata site=cross-site dest=script /vendor/msal-browser.min.js",
+          "403 fetch-metadata site=cross-site dest=iframe /",
+          "403 fetch-metadata site=cross-site dest=document /",
+          "404 /favicon.ico"
+        ]
+      },
+      "dnsRebinding": {
+        "status": 421,
+        "body": "421 Misdirected Request"
+      },
+      "publicWebsite": {
+        "cors": "blocked (Failed to fetch)",
+        "noCors": "blocked (Failed to fetch)",
+        "reachedLauncher": []
+      },
+      "liveCors": {
+        "graphIncidents": {
+          "status": 401,
+          "readable": true,
+          "code": "InvalidAuthenticationToken",
+          "requestIdReadable": true
+        },
+        "graphHunting": {
+          "status": 401,
+          "readable": true,
+          "code": "InvalidAuthenticationToken",
+          "requestIdReadable": true
+        },
+        "entraMetadata": {
+          "status": 200,
+          "readable": true,
+          "code": "metadata",
+          "requestIdReadable": false
+        },
+        "entraToken": {
+          "status": 400,
+          "readable": true,
+          "code": "invalid_grant",
+          "requestIdReadable": true
+        }
+      }
+    }
+  },
+  "summary": {
+    "passed": 57,
+    "failed": []
+  }
+}
