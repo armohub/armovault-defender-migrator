@@ -78,8 +78,10 @@ export function createProject({ meta = {}, mode = 'tailored', appVersion, kbVers
       windowEnd: '',
       environments: [],
       workstreamOwners: {},
+      workstreamPeople: {},
       approvers: [],
       plannedPrimary: '',
+      plannedPrimaries: {},
       helpers: {},
       notes: '',
       ...meta,
@@ -427,6 +429,39 @@ export function setEnvironments(project, list) {
 
 export const workstreamKey = (stage, workstream) => `${stage}:${workstream}`;
 
+// The planned primary workspace of a tenant: a decision, separate from what is connected today.
+// Without tenants it is meta.plannedPrimary; with tenants, meta.plannedPrimaries[tenant]. A primary chosen
+// before tenants were entered still counts for the tenant its workspace belongs to.
+export function plannedPrimaryOf(project, tenant = '') {
+  const t = String(tenant || '');
+  if (!t) return project.meta.plannedPrimary || '';
+  const set = (project.meta.plannedPrimaries || {})[t];
+  if (set) return set;
+  const legacy = project.meta.plannedPrimary || '';
+  return legacy && (project.meta.environments || []).some((e) => e.tenant === t && e.alias === legacy) ? legacy : '';
+}
+
+export function setPlannedPrimary(project, tenant, alias) {
+  const t = String(tenant || '').trim().slice(0, 120);
+  const a = String(alias || '').trim().slice(0, 120);
+  if (!t) project.meta.plannedPrimary = a;
+  else {
+    const next = { ...(project.meta.plannedPrimaries || {}) };
+    if (a) next[t] = a; else delete next[t];
+    project.meta.plannedPrimaries = next;
+    if (project.meta.plannedPrimary && (project.meta.environments || []).some((e) => e.tenant === t && e.alias === project.meta.plannedPrimary)) project.meta.plannedPrimary = '';
+  }
+  addAudit(project, 'project.primary', a ? `Planned primary workspace${t ? ` for tenant ${t}` : ''}: ${a}` : `Planned primary workspace${t ? ` for tenant ${t}` : ''} cleared`);
+  return { ok: true };
+}
+
+// 'primary' or 'secondary' once the workspace's tenant has a planned primary, else ''.
+export function plannedRole(project, env) {
+  if (!env || !env.alias) return '';
+  const primary = plannedPrimaryOf(project, env.tenant || '');
+  return !primary ? '' : primary === env.alias ? 'primary' : 'secondary';
+}
+
 export function setWorkstreamOwners(project, map) {
   const out = {};
   for (const [k, v] of Object.entries(map || {})) {
@@ -437,6 +472,34 @@ export function setWorkstreamOwners(project, map) {
   project.meta.workstreamOwners = out;
   addAudit(project, 'project.owners', `Workstream owners updated (${Object.keys(out).length} assigned)`);
   return { ok: true };
+}
+
+// The other people in a workstream besides its lead, each with what they cover (for example "timeline").
+export const MAX_WORKSTREAM_PEOPLE = 20;
+export function cleanWorkstreamPeople(map) {
+  const out = {};
+  for (const [k, list] of Object.entries(map || {})) {
+    if (!/^[a-z-]+:[a-z-]+$/.test(k) || !Array.isArray(list)) continue;
+    const people = list.filter((x) => x && typeof x === 'object')
+      .map((x) => ({ name: String(x.name == null ? '' : x.name).trim().slice(0, 200), covers: String(x.covers == null ? '' : x.covers).trim().slice(0, 200) }))
+      .filter((x) => x.name).slice(0, MAX_WORKSTREAM_PEOPLE);
+    if (people.length) out[k] = people;
+  }
+  return out;
+}
+
+export function setWorkstreamPeople(project, map) {
+  const out = cleanWorkstreamPeople(map);
+  project.meta.workstreamPeople = out;
+  const n = Object.values(out).reduce((sum, l) => sum + l.length, 0);
+  addAudit(project, 'project.owners', `Workstream people updated (${n} ${n === 1 ? 'person' : 'people'} besides the leads)`);
+  return { ok: true };
+}
+
+// The lead and the other people of a step's workstream.
+export function workstreamTeam(project, check) {
+  const key = workstreamKey(check.stage, check.workstream);
+  return { lead: (project.meta.workstreamOwners || {})[key] || '', people: (project.meta.workstreamPeople || {})[key] || [] };
 }
 
 export function setApprovers(project, list) {
@@ -460,6 +523,7 @@ export function knownPeople(project) {
   const add = (n) => { const v = String(n || '').trim(); if (v) names.add(v); };
   add(project.meta.operatorName);
   Object.values(project.meta.workstreamOwners || {}).forEach(add);
+  Object.values(project.meta.workstreamPeople || {}).forEach((l) => l.forEach((x) => add(x.name)));
   (project.meta.approvers || []).forEach((a) => add(a.name));
   (project.meta.environments || []).forEach((e) => add(e.owner));
   Object.values(project.meta.helpers || {}).forEach((x) => (x.subjects || []).forEach((s) => add(s.person)));

@@ -5,7 +5,7 @@ import { state, mutate, getEvidenceBlob } from '../../app/store.js';
 import { route, go } from '../shell.js';
 import { applicabilityMap } from '../../core/applicability.js';
 import { effectiveStatus } from '../../core/readiness.js';
-import { STATUSES, statusById, setCheckStatus, setCheckField, setApplicabilityOverride, recordGate, GATE_DECISIONS, setEvidenceWaiver, clearEvidenceWaiver, workstreamKey } from '../../core/model.js';
+import { STATUSES, statusById, setCheckStatus, setCheckField, setApplicabilityOverride, recordGate, GATE_DECISIONS, setEvidenceWaiver, clearEvidenceWaiver, workstreamTeam } from '../../core/model.js';
 import { statusPill, critBadge, kindChip, applicabilityChip, provenanceChip, validationChip, callout, emptyState, sourceLine, btn, linkBtn, kv } from '../components.js';
 import { attachFiles, addNoteEvidence, addLinkEvidence, removeEvidenceFlow } from '../actions.js';
 import { formatDate, bytesLabel } from '../../core/util.js';
@@ -220,7 +220,9 @@ function recordPanel(c) {
   const st = p.checks[c.id] || { status: 'not_started', notes: '', owner: '', due: '', statusReason: '', evidenceIds: [], history: [] };
   const evidence = st.evidenceIds.map((id) => p.evidence[id]).filter(Boolean);
   const lastStatus = [...(st.history || [])].reverse().find((x) => x.field === 'status');
-  const wsOwner = (p.meta.workstreamOwners || {})[workstreamKey(c.stage, c.workstream)] || '';
+  const team = workstreamTeam(p, c);
+  const wsOwner = team.lead;
+  const alsoInvolved = team.people.length ? ` Also in this workstream: ${team.people.map((x) => (x.covers ? `${x.name} (${x.covers})` : x.name)).join(', ')}.` : '';
 
   const setStatus = async (status) => {
     let reason = '';
@@ -268,7 +270,7 @@ function recordPanel(c) {
     h('div', null, h('h3', null, 'Status'), statusGroup, h('p', { class: 'status-explain', style: { marginTop: '8px' } }, STATUS_HELP[st.status] || ''),
       lastStatus ? h('p', { class: 'checked-by' }, icon('user', 'icon-xs'), ` Set to ${statusById(lastStatus.to).short} by ${lastStatus.by}, `, h('span', { class: 'tnum' }, formatDate(lastStatus.at, true)), '. Who checked and when is recorded for you.') : h('p', { class: 'checked-by muted' }, 'When you set a status, the assistant records who did it and when.')),
     (['failed', 'blocked', 'not_applicable', 'needs_review'].includes(st.status) || st.statusReason) ? field('Reason for this status', textInput('statusReason', { rows: '2', maxlength: '20000' }, true)) : null,
-    h('div', { class: 'grid-2' }, field('Owner', textInput('owner', { type: 'text', maxlength: '200', list: 'people-list', placeholder: wsOwner || 'Name or team' }), { hint: wsOwner && !st.owner ? 'From the workstream owner. Type a name to change it for this step.' : h('span', null, 'Responsible for getting it done. ', h('a', { href: '#/item/PREP-SCOPE-02' }, 'Set owners per workstream')) }), field('Due date', textInput('due', { type: 'date' }), { hint: 'When it should be done.' })),
+    h('div', { class: 'grid-2' }, field('Owner', textInput('owner', { type: 'text', maxlength: '200', list: 'people-list', placeholder: wsOwner || 'Name or team' }), { hint: wsOwner && !st.owner ? `From the workstream lead. Type a name to change it for this step.${alsoInvolved}` : h('span', null, `Responsible for getting it done.${alsoInvolved} `, h('a', { href: '#/item/PREP-SCOPE-02' }, 'Set owners per workstream')) }), field('Due date', textInput('due', { type: 'date' }), { hint: 'When it should be done.' })),
     field('Notes', textInput('notes', { rows: '4', maxlength: '20000', placeholder: 'What you saw, what you decided, ticket numbers' }, true), { hint: 'Your own words. Use evidence for results that prove a status.' }),
     h('div', { class: 'evidence-block' },
       h('h3', null, `Evidence (${evidence.length})`),

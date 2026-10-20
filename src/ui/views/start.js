@@ -101,6 +101,15 @@ function resetDraft() {
 }
 resetDraft();
 
+// Keeps the window's end on or after its start while typing, without redrawing the page.
+function checkWindow() {
+  const e = document.getElementById('wiz-window-end');
+  const m = document.getElementById('wiz-window-error');
+  const bad = !!(draft.windowStart && draft.windowEnd && draft.windowEnd < draft.windowStart);
+  if (e) { e.dataset.pickerMin = draft.windowStart || ''; e.setAttribute('aria-invalid', bad ? 'true' : 'false'); }
+  if (m) { m.hidden = !bad; m.textContent = bad ? 'The window must end on or after the day it starts.' : ''; }
+}
+
 function bound(key, attrs = {}) {
   return h('input', { type: 'text', value: draft[key] || '', 'data-focus-key': `draft-${key}`, oninput: (e) => { draft[key] = e.target.value; }, ...attrs });
 }
@@ -139,14 +148,15 @@ route('setup', ({ params }) => {
     body = h('div', { class: 'stack' },
       h('div', { class: 'grid-3' },
         field('Project start date', bound('startDate', { type: 'date' })),
-        field('Planned window: from', bound('windowStart', { type: 'date' }), { hint: 'When you plan to connect production.' }),
-        field('Planned window: to', bound('windowEnd', { type: 'date' }))),
+        field('Planned window: from', bound('windowStart', { type: 'date', id: 'wiz-window-start', oninput: (e) => { draft.windowStart = e.target.value; checkWindow(); } }), { hint: 'When you plan to connect production.' }),
+        field('Planned window: to', bound('windowEnd', { type: 'date', id: 'wiz-window-end', 'data-picker-min': draft.windowStart || null, oninput: (e) => { draft.windowEnd = e.target.value; checkWindow(); } }))),
+      h('p', { class: 'field-error', id: 'wiz-window-error', role: 'alert', hidden: true }),
       h('h3', null, 'Workspaces in scope'),
       h('p', { class: 'small muted' }, 'Use aliases, not tenant or subscription IDs. Reports print what you enter here, and you can add more later.'),
       ...rows,
       btn('Add a workspace', () => { draft.environments.push({ alias: '', kind: 'production', notes: '' }); go('#/setup/2'); }, { iconName: 'plus', small: true }));
     next = () => {
-      if (draft.windowStart && draft.windowEnd && draft.windowEnd < draft.windowStart) { toast('The window ends before it starts. Check the dates.', 'bad'); return false; }
+      if (draft.windowStart && draft.windowEnd && draft.windowEnd < draft.windowStart) { checkWindow(); toast('The window must end on or after the day it starts.', 'bad'); return false; }
       if (draft.windowEnd && draft.windowEnd > '2027-03-31') toast('Your window ends after 31 March 2027, when Sentinel leaves the Azure portal. Consider an earlier date.', 'info', 8000);
       return true;
     };

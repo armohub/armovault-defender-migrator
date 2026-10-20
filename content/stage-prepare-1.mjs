@@ -242,6 +242,7 @@ export const PREPARE_1 = [
       'Incidents in secondary workspaces do not include data from other workspaces or from Defender XDR.',
       'The Workbooks page shows only primary-workspace data, and custom detections and API queries are limited to the primary.',
       'The optional data lake must be in the primary\'s region.',
+      'Secondary workspaces keep working: their analytics rules and automation run on their own, and their incidents appear in the same unified queue. But their alerts are not correlated with Defender XDR data or with other workspaces.',
     ],
     roles: [
       'The security architect makes the decision',
@@ -253,6 +254,15 @@ export const PREPARE_1 = [
       {
         "text": "Assess each candidate against the primary-only behaviours under **Why it matters**.",
         "tip": "Microsoft recommends considering the primary workspace for your global security operations centre."
+      },
+      {
+        "text": "If production is split across several workspaces, for example because one workspace reached the analytics rule limit, plan where each rule runs:",
+        "bullets": [
+          "The limit is 512 enabled scheduled rules per workspace (1,024 including disabled ones). Near-real-time rules are counted separately: 50 enabled. With a dedicated cluster, Microsoft support can raise it to 1,024 enabled scheduled rules.",
+          "Only one of these workspaces can be primary. Rules in the others keep running and their incidents appear in the unified queue, but their alerts are not correlated with Defender XDR.",
+          "A cross-workspace rule, using the workspace() expression, can query up to 20 workspaces, and Microsoft recommends no more than 5. Its alerts and incidents exist only in the workspace where the rule is defined.",
+          "Microsoft now recommends custom detections for new rules. They are created in the primary workspace only and do not support the workspace() expression."
+        ]
       },
       {
         "text": "Identify which workspaces currently use the Defender XDR connector. This matters because:",
@@ -274,7 +284,11 @@ export const PREPARE_1 = [
       "Secondary workspaces and their impact, in [[do:write-notes|this step's notes]]"
     ],
     evidence: ['The decision record: [[do:add-decision|add it to the register]]'],
-    sources: [src('multiws', 'Primary/secondary behaviours, connector moves, recommendation for global SOC'), src('onboard', 'Set as primary steps'), src('lakeonboard', 'Data lake must be in the same region as the primary workspace')],
+    practiceNotes: [
+      'Splitting production to get past the rule limit is common. Microsoft does not list rule limits among its reasons for several workspaces, and suggests re-architecting workspaces that come from an older design. Before you add workspaces, retire disabled and duplicate rules, and ask whether the dedicated cluster limit applies to you.',
+      'When production is split, keep in the primary the rules whose alerts most need correlation with Defender XDR, for example identity, endpoint and email detections. Define cross-workspace rules in the primary too: their alerts then belong to the primary and can be correlated.',
+    ],
+    sources: [src('multiws', 'Primary/secondary behaviours, connector moves, recommendation for global SOC'), src('onboard', 'Set as primary steps'), src('lakeonboard', 'Data lake must be in the same region as the primary workspace'), src('correlation', 'Alerts from secondary workspaces are not correlated with Defender XDR or other workspaces'), src('limits', 'Analytics rule limits per workspace, and the dedicated cluster limits'), src('crossws', 'Cross-workspace rules: up to 20 workspaces, no more than 5 recommended, alerts exist only where the rule is defined'), src('comparerules', 'Custom detections are now the recommended way to create new rules'), src('customfunctions', 'The workspace() expression is not supported in custom detections'), src('prepmultiws', 'Reasons for several workspaces, and re-architecting legacy designs')],
   }),
   k({
     id: 'PREP-TOP-03', stage: 'prepare', workstream: 'topology', order: 30, kind: 'check', criticality: 'high', applicability: all(q('multi_workspace'), q('standalone_connectors')), testable: true,

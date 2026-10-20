@@ -25,6 +25,13 @@ The first public version, released as one final version. There are no release ca
 - Owners set per workstream appear on every step of that workstream, and known names are suggested in owner and decision fields.
 - The questionnaire's test environment answer switches the optional Test stage on or off. Questions that the inventory script can answer say so, and your workspace list hints at answers. A soft "Answer recorded" notice replaces the flash after each answer.
 
+### Changes from the review on 20 October
+
+- **Dates:** typing a date no longer redraws the page, so the screen stays put and the digits land where you type them. A click opens the calendar. The window's end date must be on or after its start: the calendar greys out earlier days, a message explains the problem and Save waits until it is fixed. The same check runs in the new-project wizard.
+- **Owners:** each workstream has a lead, and under **More people and step owners** you add the other people involved with what they cover (for example "timeline"), and give a step its own owner. Steps name everyone in their workstream, and reports list the lead and the others.
+- **Briefing:** rewritten for the person who reads it. Choose the reader (security leadership, the SOC team, or a client of a service provider) and the email adapts its subject, opening and requests. Each change says what it is and what it means: for example, Microsoft incident creation rules detect nothing themselves, so no detection is lost when they are turned off. Points that your answers rule out are left out, and the email names your window, workspaces and planned primary. The email-app link opens a shorter version when the full one would be too long.
+- **Several production workspaces:** the primary workspace choice is now made per tenant, and every other workspace shows as secondary with what that means (its rules keep running, its incidents appear in the same queue, its alerts are not correlated with Defender XDR). The primary workspace step explains how to place rules when production is split because of the analytics rule limit (512 enabled scheduled rules per workspace), with three new Microsoft Learn sources.
+
 ### New look
 
 - A graphite "console" design. Dark by default, with a light theme in Settings. Reports always print on white.

@@ -316,6 +316,69 @@ await step('Do it here: owners flow into steps, workspaces into reports, briefin
   await page.locator('button[role="radio"][aria-checked="true"][title^="In progress"]').waitFor();
 });
 
+await step('Dates: typing never redraws the page, and the window cannot end before it starts', async () => {
+  await go(page, '#/item/PREP-SCOPE-03');
+  const tool = page.locator('#do-it-here');
+  const from = tool.getByLabel('Window from');
+  const to = tool.getByLabel('Window to');
+  await from.fill('2026-12-05');
+  const kept = await from.evaluate((el) => { el.dataset.e2eMark = '1'; return true; });
+  await to.fill('2026-12-01');
+  assert.ok(kept && (await from.getAttribute('data-e2e-mark')) === '1', 'the date field was not redrawn while typing');
+  await tool.getByText('The window must end on or after the day it starts.').waitFor();
+  assert.equal(await tool.getByRole('button', { name: 'Save', exact: true }).isDisabled(), true);
+  assert.equal(await to.getAttribute('aria-invalid'), 'true');
+  await to.fill('2026-12-12');
+  assert.equal(await tool.getByText('The window must end on or after the day it starts.').isVisible(), false);
+  const discard = tool.getByRole('button', { name: 'Discard' });
+  if (await discard.count()) await discard.click();
+});
+
+await step('Owners: a lead per workstream, more people with what they cover, and a step of its own', async () => {
+  await go(page, '#/item/PREP-SCOPE-02');
+  const tool = page.locator('#do-it-here');
+  await tool.getByLabel('Scope, governance and timeline: lead').fill('E2E Lead');
+  await tool.locator('.ws-owner').first().locator('details.ws-more > summary').click();
+  await tool.locator('.ws-owner').first().getByRole('button', { name: 'Add a person' }).click();
+  await page.keyboard.type('E2E Planner');
+  await tool.getByLabel('Scope, governance and timeline: what person 1 covers').fill('timeline');
+  await tool.locator('[id="own-step-PREP-SCOPE-03"]').fill('E2E Planner');
+  await tool.getByRole('button', { name: 'Save', exact: true }).last().click();
+  await page.waitForTimeout(200);
+  await go(page, '#/item/PREP-SCOPE-03');
+  assert.equal(await page.locator('[data-focus-key="owner-PREP-SCOPE-03"]').inputValue(), 'E2E Planner');
+  await go(page, '#/item/PREP-SCOPE-01');
+  await page.getByText('Also in this workstream: E2E Planner (timeline).').waitFor();
+});
+
+await step('Briefing: one email per reader, and each change says what it means', async () => {
+  await go(page, '#/item/PREP-SCOPE-01');
+  const tool = page.locator('#do-it-here');
+  await tool.getByRole('heading', { name: 'If something goes wrong' }).waitFor();
+  await tool.getByText('In short:').waitFor();
+  assert.equal(await tool.getByText('A few investigation features work differently.').count(), 0, 'the SOC-only point is not in the leadership email');
+  await tool.locator('label.choice', { hasText: 'SOC team' }).click();
+  await tool.getByText('A few investigation features work differently.').waitFor();
+  assert.match(await tool.locator('.email-subject').textContent(), /what changes for the SOC/);
+  await tool.locator('label.choice', { hasText: 'A client we serve' }).click();
+  await tool.getByText('As your security service provider, we plan and run this move with you.', { exact: false }).waitFor();
+  const href = await tool.locator('a', { hasText: 'Open in email app' }).getAttribute('href');
+  assert.ok(href.length <= 2000, `mailto link is ${href.length} characters`);
+  await tool.locator('label.choice', { hasText: 'Security leadership' }).click();
+});
+
+await step('Several workspaces: one primary per tenant, the others shown as secondary with what that means', async () => {
+  await go(page, '#/item/PREP-TOP-02');
+  const tool = page.locator('#do-it-here');
+  const first = tool.locator('label.choice').first();
+  await first.click();
+  await first.locator('.chip', { hasText: 'Primary' }).waitFor();
+  const roles = await tool.locator('label.choice .chip').allTextContents();
+  assert.equal(roles.filter((x) => x === 'Primary').length, 1, 'exactly one primary');
+  assert.ok(roles.filter((x) => x === 'Secondary').length >= 1);
+  await tool.getByText('Its alerts are not correlated with Defender XDR data, or with other workspaces.').waitFor();
+});
+
 await step('Decision helper: a verdict only where the step gives one, and the saved choice is recorded as a decision', async () => {
   await go(page, '#/item/PREP-ACC-03');
   const tool = page.locator('#do-it-here');

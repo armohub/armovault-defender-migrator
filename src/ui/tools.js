@@ -3,7 +3,8 @@
 import { h, icon, toast, field, copyText, savedPulse, externalLink } from './dom.js';
 import { state, mutate } from '../app/store.js';
 import { render } from './shell.js';
-import { setEnvironments, setWorkstreamOwners, setApprovers, DEFENDER_STATES, ENV_KINDS, workstreamKey, knownPeople, addAudit, setHelper, MAX_HELPER_SUBJECTS } from '../core/model.js';
+import { setEnvironments, setPlannedPrimary, plannedPrimaryOf, plannedRole, setWorkstreamOwners, setWorkstreamPeople, cleanWorkstreamPeople, setApprovers, setCheckField, DEFENDER_STATES, ENV_KINDS, workstreamKey, knownPeople, addAudit, setHelper, MAX_HELPER_SUBJECTS } from '../core/model.js';
+import { applicabilityMap } from '../core/applicability.js';
 import { evaluateHelper, decisionDraft } from '../core/decision-helper.js';
 import { formatDate } from '../core/util.js';
 import { btn, callout } from './components.js';
@@ -81,119 +82,240 @@ export function workspaceTool({ show = 'all' } = {}) {
   return wrap;
 }
 
-// Planned primary workspace (a decision, separate from what is connected today).
+// Planned primary workspace: one per tenant, a decision separate from what is connected today.
+// Every other workspace of the tenant becomes secondary, and the tool says what that means.
 export function primaryTool() {
+  const kb = state.kb;
   const p = state.project;
+  const roles = kb.reference.workspaceRoles;
   const envs = (p.meta.environments || []).filter((e) => e.alias);
   if (!envs.length) return h('div', { class: 'tool' }, callout('info', 'Add your workspaces first.', ' ', h('a', { href: '#/item/PREP-TOP-01' }, 'Inventory your workspaces'), ', then come back to choose the primary one.'));
-  const choose = (alias) => mutate((pr) => { pr.meta.plannedPrimary = alias; addAudit(pr, 'project.primary', alias ? `Planned primary workspace: ${alias}` : 'Planned primary workspace cleared'); });
+  const tenants = [...new Set(envs.map((e) => e.tenant || ''))];
+  const byTenant = tenants.length > 1 || tenants[0] !== '';
+  const cite = roles.sources.map((id) => kb.sources.find((x) => x.id === id)).filter(Boolean);
+  const group = (tenant, ti) => {
+    const list = envs.filter((e) => (e.tenant || '') === tenant);
+    const primary = plannedPrimaryOf(p, tenant);
+    const secondaries = list.filter((e) => primary && e.alias !== primary);
+    const prod = list.filter((e) => e.kind === 'production');
+    const choose = (alias) => mutate((pr) => setPlannedPrimary(pr, tenant, alias));
+    return h('div', { class: 'stack primary-group' },
+      h('fieldset', { class: 'choices' }, h('legend', { class: 'small muted' }, byTenant ? `Tenant ${tenant || '(not set)'}: which workspace should be primary?` : 'Which workspace should be primary?'),
+        list.map((e) => {
+          const role = plannedRole(p, e);
+          return h('label', { class: ['choice', role === 'primary' && 'selected'] },
+            h('input', { type: 'radio', name: `planned-primary-${ti}`, checked: role === 'primary', 'data-focus-key': `primary-${ti}-${e.alias}`, onchange: () => { choose(e.alias); savedPulse('Primary workspace recorded'); } }),
+            h('div', null,
+              h('div', { class: 'row' }, h('strong', null, e.alias), role ? h('span', { class: ['chip', role === 'primary' ? 'chip-accent' : null] }, role === 'primary' ? 'Primary' : 'Secondary') : null),
+              h('p', { class: 'small' }, [e.kind[0].toUpperCase() + e.kind.slice(1), e.region, (DEFENDER_STATES.find((d) => d.id === e.defender) || {}).label].filter(Boolean).join(', '))));
+        })),
+      prod.length > 1 ? callout('info', `${prod.length} production workspaces${byTenant ? ` in tenant ${tenant || '(not set)'}` : ''}.`, ' ', roles.split) : null,
+      primary && list.length > 1 ? h('div', { class: 'brief-cols role-cols' },
+        h('div', { class: 'brief-col' }, h('h3', null, `Primary: ${primary}`), h('ul', { class: 'bullets' }, roles.primary.map((x) => h('li', null, x)))),
+        h('div', { class: 'brief-col' }, h('h3', null, `${secondaries.length === 1 ? 'Secondary' : 'Each secondary'}: ${secondaries.map((e) => e.alias).join(', ')}`), h('ul', { class: 'bullets' }, roles.secondary.map((x) => h('li', null, x))))) : null);
+  };
+  const any = tenants.some((t) => plannedPrimaryOf(p, t));
   return h('div', { class: 'tool' },
-    h('fieldset', { class: 'choices' }, h('legend', { class: 'small muted' }, 'Which workspace should be primary?'),
-      envs.map((e) => h('label', { class: ['choice', p.meta.plannedPrimary === e.alias && 'selected'] },
-        h('input', { type: 'radio', name: 'planned-primary', checked: p.meta.plannedPrimary === e.alias, onchange: () => { choose(e.alias); savedPulse('Primary workspace recorded'); } }),
-        h('div', null, h('strong', null, e.alias), h('p', { class: 'small' }, [e.kind, e.region, (DEFENDER_STATES.find((d) => d.id === e.defender) || {}).label].filter(Boolean).join(', ')))))),
-    p.meta.plannedPrimary ? h('p', { class: 'small muted' }, 'Recorded as your planned primary workspace. Record who approved it with the decision button in the steps below.') : null);
+    byTenant ? h('p', { class: 'small muted' }, 'Each tenant has exactly one primary workspace. Choose one per tenant.') : null,
+    ...tenants.map(group),
+    any ? h('p', { class: 'small muted' }, roles.shared, ' Recorded as your plan. Record who approved it with ', h('strong', null, 'Add the decision'), ' in the steps below. Sources: ', ...cite.flatMap((x, i) => [i ? ', ' : '', externalLink(x.url, x.title)]), '.') : null);
 }
 
 // ───────── Owners and approvers ─────────
+// One lead per workstream, the other people in it with what they cover, and an owner per step where
+// it differs from the lead (for example the timeline step goes to the project manager).
 const APPROVER_ROLES = ['Change advisory board', 'Data protection and compliance', 'Identity and access management', 'Ticketing (ITSM) owner', 'SOC lead', 'Security architect'];
-const ownDraft = { id: '', base: '', owners: {}, approvers: [] };
+const ownDraft = { id: '', src: '', base: '', owners: {}, people: {}, steps: {}, approvers: [] };
+const ownOpen = { id: '', keys: new Set() };
+const pruneMap = (o) => Object.fromEntries(Object.entries(o).filter(([, v]) => String(v || '').trim()));
+const prunePeople = (m) => Object.fromEntries(Object.entries(m).map(([k, l]) => [k, l.filter((x) => x.name.trim())]).filter(([, l]) => l.length));
+const draftJson = (d) => JSON.stringify([pruneMap(d.owners), prunePeople(d.people), pruneMap(d.steps), d.approvers]);
+const stepOwnersOf = (p) => Object.fromEntries(Object.entries(p.checks).filter(([, st]) => st && st.owner).map(([id, st]) => [id, st.owner]));
+const personText = (x) => (x.covers ? `${x.name} (${x.covers})` : x.name);
 function ownersDraft() {
   const p = state.project;
-  const base = JSON.stringify([p.meta.workstreamOwners || {}, p.meta.approvers || []]);
-  const dirty = ownDraft.id === p.id && JSON.stringify([ownDraft.owners, ownDraft.approvers]) !== ownDraft.base;
-  if (ownDraft.id !== p.id || (!dirty && ownDraft.base !== base)) {
+  const src = JSON.stringify([p.meta.workstreamOwners || {}, p.meta.workstreamPeople || {}, stepOwnersOf(p), p.meta.approvers || []]);
+  const dirty = ownDraft.id === p.id && draftJson(ownDraft) !== ownDraft.base;
+  if (ownDraft.id !== p.id || (!dirty && ownDraft.src !== src)) {
     ownDraft.id = p.id;
+    ownDraft.src = src;
     ownDraft.owners = { ...(p.meta.workstreamOwners || {}) };
-    ownDraft.approvers = (p.meta.approvers || []).map((a) => ({ ...a }));
+    ownDraft.people = Object.fromEntries(Object.entries(p.meta.workstreamPeople || {}).map(([k, l]) => [k, l.map((x) => ({ ...x }))]));
+    ownDraft.steps = stepOwnersOf(p);
+    ownDraft.approvers = (p.meta.approvers || []).map((x) => ({ ...x }));
     if (!ownDraft.approvers.length) ownDraft.approvers = APPROVER_ROLES.slice(0, 5).map((role) => ({ role, name: '' }));
-    ownDraft.base = JSON.stringify([ownDraft.owners, ownDraft.approvers]);
+    ownDraft.base = draftJson(ownDraft);
   }
+  if (ownOpen.id !== p.id) { ownOpen.id = p.id; ownOpen.keys = new Set(['stage:prepare']); }
   return ownDraft;
 }
 
 export function ownersTool() {
   const kb = state.kb;
+  const p = state.project;
   const d = ownersDraft();
+  const app = applicabilityMap(kb, p);
+  const testUsed = p.stages.test.availability !== 'unavailable';
   const barSlot = h('div');
-  const refresh = () => barSlot.replaceChildren(saveBar(JSON.stringify([d.owners, d.approvers]) !== d.base, save, discard, 'Saved. Steps without their own owner show their workstream owner.'));
-  const row = (stage, ws) => {
+  const refresh = () => barSlot.replaceChildren(saveBar(draftJson(d) !== d.base, save, discard, 'Saved. Each step shows its own owner, or else its workstream lead.'));
+  // Opens and closes are remembered, so adding a person does not fold the section you are working in.
+  const disclose = (key, cls, summary, ...body) => h('details', { class: ['disclose', cls], open: ownOpen.keys.has(key), ontoggle: (e) => { if (e.target.open) ownOpen.keys.add(key); else ownOpen.keys.delete(key); } }, h('summary', null, icon('chevron', 'icon-sm'), ...summary), ...body);
+  const addAndFocus = (fn, focusKey) => { fn(); render(); const el = document.querySelector(`[data-focus-key="${CSS.escape(focusKey)}"]`); if (el) el.focus(); };
+
+  const workstream = (stage, ws) => {
     const key = workstreamKey(stage.id, ws.id);
-    return h('div', { class: 'owner-row' }, h('label', { for: `own-${key}` }, ws.title),
-      h('input', { id: `own-${key}`, type: 'text', list: 'people-list', maxlength: '200', placeholder: 'Name or team', value: d.owners[key] || '', 'data-focus-key': `own-${key}`, oninput: (e) => { d.owners[key] = e.target.value; refresh(); } }));
+    const people = d.people[key] || (d.people[key] = []);
+    const steps = kb.checks.filter((c) => c.stage === ws.stage && c.workstream === ws.id && (app.get(c.id) || {}).value !== 'not_applicable');
+    const named = people.filter((x) => x.name.trim()).length;
+    const ownSteps = steps.filter((c) => (d.steps[c.id] || '').trim()).length;
+    const team = h('datalist', { id: `team-${key}` });
+    const fillTeam = () => team.replaceChildren(...[...new Set([d.owners[key], ...people.map((x) => x.name), ...knownPeople(p)].map((n) => String(n || '').trim()).filter(Boolean))].map((n) => h('option', { value: n })));
+    fillTeam();
+    const counts = () => [named ? `${named} more ${named === 1 ? 'person' : 'people'}` : '', ownSteps ? `${ownSteps} of ${steps.length} steps with their own owner` : ''].filter(Boolean).join(', ');
+    const personRow = (x, i) => h('div', { class: 'person-row' },
+      h('input', { type: 'text', list: 'people-list', maxlength: '200', placeholder: 'Name or team', 'aria-label': `${ws.title}: person ${i + 1}`, value: x.name, 'data-focus-key': `ppl-${key}-${i}`, oninput: (e) => { x.name = e.target.value; fillTeam(); refresh(); } }),
+      h('input', { type: 'text', maxlength: '200', placeholder: 'What they cover, for example: timeline', 'aria-label': `${ws.title}: what person ${i + 1} covers`, value: x.covers, oninput: (e) => { x.covers = e.target.value; refresh(); } }),
+      h('button', { type: 'button', class: 'btn-icon', 'aria-label': `Remove ${x.name || `person ${i + 1}`} from ${ws.title}`, onclick: () => { people.splice(i, 1); render(); } }, icon('trash', 'icon-sm')));
+    const stepRow = (c) => h('div', { class: 'owner-row step-owner' },
+      h('label', { for: `own-step-${c.id}` }, c.title),
+      h('input', { id: `own-step-${c.id}`, type: 'text', list: `team-${key}`, maxlength: '200', placeholder: d.owners[key] ? `Lead: ${d.owners[key]}` : 'Name or team', value: d.steps[c.id] || '', 'data-focus-key': `own-step-${c.id}`, oninput: (e) => { d.steps[c.id] = e.target.value; refresh(); } }));
+    return h('div', { class: 'ws-owner' },
+      h('div', { class: 'owner-row' },
+        h('label', { for: `own-${key}` }, ws.title, h('span', { class: 'small muted' }, ` ${steps.length} step${steps.length === 1 ? '' : 's'}`)),
+        h('input', { id: `own-${key}`, type: 'text', list: 'people-list', maxlength: '200', placeholder: 'Lead: name or team', 'aria-label': `${ws.title}: lead`, value: d.owners[key] || '', 'data-focus-key': `own-${key}`, oninput: (e) => { d.owners[key] = e.target.value; fillTeam(); refresh(); } })),
+      disclose(`ws:${key}`, 'ws-more', ['More people and step owners', h('span', { class: 'small muted' }, counts())],
+        h('div', { class: 'ws-more-body' },
+          team,
+          h('p', { class: 'small muted' }, 'Other people in this workstream, and what they cover.'),
+          people.length ? h('div', { class: 'owner-grid' }, people.map(personRow)) : null,
+          h('button', { type: 'button', class: 'btn btn-sm btn-ghost', 'data-focus-key': `ppl-add-${key}`, onclick: () => addAndFocus(() => people.push({ name: '', covers: '' }), `ppl-${key}-${people.length}`) }, icon('plus', 'icon-sm'), 'Add a person'),
+          steps.length ? h('p', { class: 'small muted', style: { marginTop: '12px' } }, 'Owner per step. Leave a step blank and it shows the lead.') : null,
+          steps.length ? h('div', { class: 'owner-grid' }, steps.map(stepRow)) : null)));
   };
-  const stageBlock = (stage, open) => {
+  const stageBlock = (stage) => {
     const list = kb.workstreams.filter((w) => w.stage === stage.id);
-    const set = list.filter((w) => (d.owners[workstreamKey(stage.id, w.id)] || '').trim()).length;
-    return h('details', { class: 'owner-stage disclose', open },
-      h('summary', null, icon('chevron', 'icon-sm'), stage.short, h('span', { class: 'small muted tnum' }, ` ${set} of ${list.length} assigned`)),
-      stage.id !== 'prepare' ? h('div', { class: 'row', style: { margin: '8px 0' } }, btn('Use the Prepare owners where the area matches', () => {
-        for (const w of list) { const k = workstreamKey(stage.id, w.id); const from = d.owners[workstreamKey('prepare', w.id)]; if (from && !d.owners[k]) d.owners[k] = from; }
+    const led = list.filter((w) => (d.owners[workstreamKey(stage.id, w.id)] || '').trim()).length;
+    return disclose(`stage:${stage.id}`, 'owner-stage', [stage.short, h('span', { class: 'small muted tnum' }, ` ${led} of ${list.length} with a lead`)],
+      stage.id !== 'prepare' ? h('div', { class: 'row', style: { margin: '8px 0' } }, btn('Use the Prepare leads and people where the area matches', () => {
+        for (const w of list) {
+          const k = workstreamKey(stage.id, w.id);
+          const pk = workstreamKey('prepare', w.id);
+          if (d.owners[pk] && !d.owners[k]) d.owners[k] = d.owners[pk];
+          if ((d.people[pk] || []).length && !(d.people[k] || []).some((x) => x.name.trim())) d.people[k] = d.people[pk].map((x) => ({ ...x }));
+        }
         render();
       }, { small: true, kind: 'ghost' })) : null,
-      h('div', { class: 'owner-grid' }, list.map((w) => row(stage, w))));
+      h('div', { class: 'owner-grid' }, list.map((w) => workstream(stage, w))));
   };
-  const approvers = h('div', { class: 'owner-grid' }, d.approvers.map((a, i) => h('div', { class: 'approver-row' },
-    h('input', { type: 'text', list: 'role-list', 'aria-label': `Approver role ${i + 1}`, value: a.role, maxlength: '200', placeholder: 'Role', oninput: (e) => { a.role = e.target.value; refresh(); } }),
-    h('input', { type: 'text', list: 'people-list', 'aria-label': `Approver name ${i + 1}`, value: a.name, maxlength: '200', placeholder: 'Name', oninput: (e) => { a.name = e.target.value; refresh(); } }),
+  const approvers = h('div', { class: 'owner-grid' }, d.approvers.map((x, i) => h('div', { class: 'approver-row' },
+    h('input', { type: 'text', list: 'role-list', 'aria-label': `Approver role ${i + 1}`, value: x.role, maxlength: '200', placeholder: 'Role', oninput: (e) => { x.role = e.target.value; refresh(); } }),
+    h('input', { type: 'text', list: 'people-list', 'aria-label': `Approver name ${i + 1}`, value: x.name, maxlength: '200', placeholder: 'Name', 'data-focus-key': `appr-${i}`, oninput: (e) => { x.name = e.target.value; refresh(); } }),
     h('button', { type: 'button', class: 'btn-icon', 'aria-label': `Remove approver ${i + 1}`, onclick: () => { d.approvers.splice(i, 1); render(); } }, icon('trash', 'icon-sm')))));
   function save() {
-    mutate((pr) => { setWorkstreamOwners(pr, d.owners); setApprovers(pr, d.approvers.filter((a) => a.role.trim() && a.name.trim())); });
+    const kbv = kb.meta.version;
+    mutate((pr) => {
+      const owners = pruneMap(d.owners);
+      if (!same(owners, pr.meta.workstreamOwners || {})) setWorkstreamOwners(pr, owners);
+      const people = prunePeople(d.people);
+      if (!same(cleanWorkstreamPeople(people), pr.meta.workstreamPeople || {})) setWorkstreamPeople(pr, people);
+      const steps = pruneMap(d.steps);
+      const current = stepOwnersOf(pr);
+      for (const id of new Set([...Object.keys(steps), ...Object.keys(current)])) {
+        const v = String(steps[id] || '').trim();
+        if (v !== (current[id] || '')) setCheckField(pr, id, 'owner', v, kbv);
+      }
+      const appr = d.approvers.filter((x) => x.role.trim() && x.name.trim()).map((x) => ({ role: x.role.trim(), name: x.name.trim() }));
+      if (!same(appr, pr.meta.approvers || [])) setApprovers(pr, appr);
+    });
     ownDraft.id = '';
     savedPulse('Owners and approvers saved');
     render();
   }
   function discard() { ownDraft.id = ''; render(); }
+  const stages = kb.stages.filter((st) => st.id !== 'test' || testUsed);
   refresh();
   return h('div', { class: 'tool' },
     h('datalist', { id: 'role-list' }, APPROVER_ROLES.map((r) => h('option', { value: r }))),
     h('h3', null, 'Who owns each workstream'),
-    h('p', { class: 'small muted' }, 'Type a name once per workstream. Every step in that workstream shows this owner, unless you set a different owner on the step itself.'),
-    ...kb.stages.map((s, i) => stageBlock(s, i === 0)),
+    h('p', { class: 'small muted' }, 'Name one lead per workstream. Under ', h('strong', null, 'More people and step owners'), ', add the other people involved and what they cover, and give a step its own owner when it is not the lead: for example the timeline step to your project manager.'),
+    ...stages.map(stageBlock),
     h('h3', null, 'Who approves the change'),
     h('p', { class: 'small muted' }, 'These names are suggested wherever the assistant asks who decided or approved something.'),
     approvers,
-    btn('Add an approver', () => { d.approvers.push({ role: '', name: '' }); render(); }, { small: true, iconName: 'plus' }),
+    h('button', { type: 'button', class: 'btn btn-sm', 'data-focus-key': 'appr-add', onclick: () => addAndFocus(() => d.approvers.push({ role: '', name: '' }), `appr-${d.approvers.length}`) }, icon('plus', 'icon-sm'), 'Add an approver'),
     barSlot);
 }
 
 // ───────── Stakeholder briefing ─────────
-const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-function briefingEmail() {
+// One structure, shown three ways: on screen, as a formatted email (Outlook) and as plain text.
+const esc = (x) => String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const longDate = (iso) => { const d = new Date(`${iso}T00:00:00Z`); return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }); };
+let briefAudience = 'leadership';
+let briefSources = false;
+
+export function briefingModel(audienceId = briefAudience) {
   const kb = state.kb;
   const p = state.project;
   const b = kb.reference.briefing;
-  const links = b.sources.map((id) => kb.sources.find((s) => s.id === id)).filter(Boolean);
-  const org = p.meta.organisation || 'our organisation';
-  const windowLine = p.meta.windowStart ? `We plan to make the change between ${p.meta.windowStart}${p.meta.windowEnd ? ` and ${p.meta.windowEnd}` : ''}. We will confirm the exact date and what to expect beforehand.` : 'We will share the planned date and what to expect before the change.';
-  const sign = [p.meta.operatorName, p.meta.operatorRole].filter(Boolean).join(', ');
+  const aud = b.audiences.find((x) => x.id === audienceId) || b.audiences[0];
+  const no = (id) => !!(p.answers[id] && p.answers[id].value === 'no');
+  const forReader = (x) => !x.audiences || x.audiences.includes(aud.id);
+  const ruledOut = (x) => !!(x.skipWhenNo && x.skipWhenNo.every(no));
+  const envs = (p.meta.environments || []).filter((e) => e.alias);
+  const primaries = envs.filter((e) => plannedRole(p, e) === 'primary').map((e) => e.alias);
+  const when = [
+    p.meta.windowStart
+      ? (p.meta.windowEnd && p.meta.windowEnd !== p.meta.windowStart ? `We plan to make the change between ${longDate(p.meta.windowStart)} and ${longDate(p.meta.windowEnd)}.` : `We plan to make the change on ${longDate(p.meta.windowStart)}.`) + ' We will confirm the exact date and what to expect beforehand.'
+      : 'We will share the planned date and what to expect before the change.',
+    envs.length ? `It covers ${envs.length} Sentinel workspace${envs.length === 1 ? '' : 's'}${primaries.length === 1 ? `, with ${primaries[0]} planned as the primary workspace` : primaries.length > 1 ? `, with ${primaries.slice(0, -1).join(', ')} and ${primaries[primaries.length - 1]} planned as the primary workspaces of their tenants` : ''}.` : '',
+    b.deadline,
+  ].filter(Boolean).join(' ');
+  const org = p.meta.organisation && aud.id !== 'client' ? ` for ${p.meta.organisation}` : '';
+  return {
+    audience: aud,
+    subject: aud.subject,
+    opening: `Microsoft is retiring the Azure portal experience for Microsoft Sentinel and moving it to the Microsoft Defender portal. ${b.intro}${aud.intro ? ` ${aud.intro}` : ''} Here is what it means${org}.`,
+    openingShort: `Microsoft is retiring the Azure portal experience for Microsoft Sentinel and moving it to the Microsoft Defender portal.${aud.intro ? ` ${aud.intro}` : ''}`,
+    inShort: b.inShort,
+    changes: b.changes.filter(forReader).filter((x) => !ruledOut(x)),
+    left: b.changes.filter(forReader).filter(ruledOut),
+    same: b.same.filter(forReader),
+    fallback: b.fallback,
+    when,
+    asksTitle: aud.asksTitle,
+    asks: aud.asks,
+    links: b.sources.map((id) => kb.sources.find((x) => x.id === id)).filter(Boolean),
+    closing: b.closing,
+    sign: [p.meta.operatorName, p.meta.operatorRole].filter(Boolean).join(', '),
+  };
+}
+
+// level 0: the full email; 1: headlines only; 2: headlines of the changes only, for the shortest links.
+function briefingEmail(m, { level = 0 } = {}) {
+  const short = level > 0;
   const text = [
-    'Hello,',
-    '',
-    `Microsoft is moving the Microsoft Sentinel experience from the Azure portal to the Microsoft Defender portal. ${b.deadline} Here is what this means for ${org}.`,
-    '',
-    'What changes:',
-    ...b.changes.map((x) => `- ${x}`),
-    '',
-    'What stays the same:',
-    ...b.same.map((x) => `- ${x}`),
-    '',
-    windowLine,
-    '',
-    'Read more (Microsoft Learn):',
-    ...links.map((s) => `- ${s.title}: ${s.url}`),
-    '',
-    'If you have questions or depend on Sentinel in a way we should know about, please reply to this email.',
-    '',
-    'Kind regards,',
-    sign || '',
+    'Hello,', '',
+    level > 1 ? m.openingShort : m.opening, '',
+    `In short: ${m.inShort}`, '',
+    'What changes, and what it means:',
+    ...m.changes.flatMap((x, i) => (short ? [`${i + 1}. ${x.what}`] : [`${i + 1}. ${x.what}`, `   ${x.meaning}`, ''])),
+    ...(short ? [''] : []),
+    ...(level > 1 ? [] : ['What stays the same:', ...m.same.map((x) => (short ? `- ${x.what}` : `- ${x.what} ${x.meaning}`)), '']),
+    ...(short ? [] : ['If something goes wrong:', m.fallback.text, '']),
+    'When:', m.when, '',
+    ...(short ? [] : [`${m.asksTitle}:`, ...m.asks.map((x) => `- ${x}`), '', 'Read more (Microsoft Learn):', ...m.links.map((x) => `- ${x.title}: ${x.url}`), '']),
+    m.closing, '',
+    'Kind regards,', m.sign,
   ].join('\n');
-  const html = `<p>Hello,</p><p>Microsoft is moving the Microsoft Sentinel experience from the Azure portal to the Microsoft Defender portal. ${esc(b.deadline)} Here is what this means for ${esc(org)}.</p>`
-    + `<p><b>What changes</b></p><ul>${b.changes.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>`
-    + `<p><b>What stays the same</b></p><ul>${b.same.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>`
-    + `<p>${esc(windowLine)}</p><p><b>Read more (Microsoft Learn)</b></p><ul>${links.map((s) => `<li><a href="${esc(s.url)}">${esc(s.title)}</a></li>`).join('')}</ul>`
-    + `<p>If you have questions or depend on Sentinel in a way we should know about, please reply to this email.</p><p>Kind regards,<br>${esc(sign)}</p>`;
-  return { subject: b.subject, text, html };
+  const html = `<p>Hello,</p><p>${esc(m.opening)}</p><p><b>In short:</b> ${esc(m.inShort)}</p>`
+    + `<p><b>What changes, and what it means</b></p><ol>${m.changes.map((x) => `<li><b>${esc(x.what)}</b><br>${esc(x.meaning)}</li>`).join('')}</ol>`
+    + `<p><b>What stays the same</b></p><ul>${m.same.map((x) => `<li><b>${esc(x.what)}</b> ${esc(x.meaning)}</li>`).join('')}</ul>`
+    + `<p><b>If something goes wrong</b><br>${esc(m.fallback.text)}</p>`
+    + `<p><b>When</b><br>${esc(m.when)}</p>`
+    + `<p><b>${esc(m.asksTitle)}</b></p><ul>${m.asks.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>`
+    + `<p><b>Read more (Microsoft Learn)</b></p><ul>${m.links.map((x) => `<li><a href="${esc(x.url)}">${esc(x.title)}</a></li>`).join('')}</ul>`
+    + `<p>${esc(m.closing)}</p><p>Kind regards,<br>${esc(m.sign)}</p>`;
+  return { subject: m.subject, text, html };
 }
 
 async function copyRich(text, html) {
@@ -206,27 +328,55 @@ async function copyRich(text, html) {
   return copyText(text);
 }
 
+// Email apps cut long mailto links, so a long briefing opens as a shorter version (headlines only).
+const MAILTO_LIMIT = 2000;
+function mailtoFor(m) {
+  const link = (mail) => `mailto:?subject=${encodeURIComponent(mail.subject)}&body=${encodeURIComponent(mail.text)}`;
+  const links = [0, 1, 2].map((level) => link(briefingEmail(m, { level })));
+  const level = links.findIndex((x) => x.length <= MAILTO_LIMIT);
+  return level === 0 ? { href: links[0], short: false } : { href: links[level < 0 ? 2 : level], short: true };
+}
+
 export function briefingTool() {
   const kb = state.kb;
-  const b = kb.reference.briefing;
-  const mail = briefingEmail();
-  const mailto = `mailto:?subject=${encodeURIComponent(mail.subject)}&body=${encodeURIComponent(mail.text)}`;
-  const links = b.sources.map((id) => kb.sources.find((s) => s.id === id)).filter(Boolean);
+  const m = briefingModel();
+  const mail = briefingEmail(m);
+  const mailto = mailtoFor(m);
+  const cite = (ids) => (ids || []).map((id) => kb.sources.find((x) => x.id === id)).filter(Boolean);
+  const sourceLine = (ids) => (briefSources ? h('span', { class: 'brief-src' }, 'Source: ', ...cite(ids).flatMap((src, i) => [i ? ', ' : '', externalLink(src.url, src.title)])) : null);
+  const point = (x) => h('li', null, h('strong', null, x.what), ' ', x.meaning, sourceLine(x.sources));
+  const readers = h('fieldset', { class: 'choices brief-readers' }, h('legend', { class: 'small muted' }, 'Who is it for?'),
+    kb.reference.briefing.audiences.map((x) => h('label', { class: ['choice', x.id === m.audience.id && 'selected'] },
+      h('input', { type: 'radio', name: 'brief-reader', checked: x.id === m.audience.id, 'data-focus-key': `brief-reader-${x.id}`, onchange: () => { briefAudience = x.id; render(); } }),
+      h('div', null, h('strong', null, x.label), h('p', { class: 'small' }, x.hint)))));
   return h('div', { class: 'tool' },
-    h('div', { class: 'brief-cols' },
-      h('div', { class: 'brief-col' }, h('h3', null, icon('refresh', 'icon-sm'), 'What changes'), h('ul', { class: 'bullets' }, b.changes.map((x) => h('li', null, x)))),
-      h('div', { class: 'brief-col' }, h('h3', null, icon('check', 'icon-sm'), 'What stays the same'), h('ul', { class: 'bullets' }, b.same.map((x) => h('li', null, x))))),
-    h('p', { class: 'small' }, h('strong', null, 'Deadline: '), b.deadline, ' The full list is in ', h('a', { href: '#/knowledge/changes' }, 'Feature changes'), '.'),
-    h('h3', null, 'Ready-to-send email'),
-    h('p', { class: 'small muted' }, 'Copy it into Outlook, or open it in your email app. It uses your project name, window and signature from Project setup. Edit it as you like before sending.'),
-    h('div', { class: 'email-preview', tabindex: '0', 'aria-label': 'Email preview' },
-      h('div', { class: 'email-subject' }, h('span', { class: 'muted' }, 'Subject: '), mail.subject),
-      h('pre', { class: 'email-body' }, mail.text)),
+    readers,
+    h('label', { class: 'check-line small brief-toggle' }, h('input', { type: 'checkbox', checked: briefSources, 'data-focus-key': 'brief-sources', onchange: (e) => { briefSources = e.target.checked; render(); } }), ' Show the Microsoft Learn source for each point (for you to check; not part of the email)'),
+    h('article', { class: 'email-preview brief-email', 'aria-label': `Email for ${m.audience.label}` },
+      h('div', { class: 'email-subject' }, h('span', { class: 'muted' }, 'Subject: '), m.subject),
+      h('p', null, 'Hello,'),
+      h('p', null, m.opening),
+      h('p', { class: 'brief-short' }, h('strong', null, 'In short: '), m.inShort),
+      h('h3', null, 'What changes, and what it means'),
+      h('ol', { class: 'brief-points' }, m.changes.map(point)),
+      h('h3', null, 'What stays the same'),
+      h('ul', { class: 'brief-points' }, m.same.map(point)),
+      h('h3', null, 'If something goes wrong'),
+      h('p', null, m.fallback.text, sourceLine(m.fallback.sources)),
+      h('h3', null, 'When'),
+      h('p', null, m.when),
+      h('h3', null, m.asksTitle),
+      h('ul', { class: 'bullets' }, m.asks.map((x) => h('li', null, x))),
+      h('h3', null, 'Read more (Microsoft Learn)'),
+      h('ul', { class: 'bullets' }, m.links.map((x) => h('li', null, externalLink(x.url, x.title)))),
+      h('p', null, m.closing),
+      h('p', null, 'Kind regards,', h('br'), m.sign || h('span', { class: 'muted' }, 'Your name, from Project setup'))),
+    m.left.length ? h('p', { class: 'small muted' }, `Left out because you answered No in the questions: ${m.left.map((x) => `"${x.what.replace(/\.$/, '')}"`).join(', ')}.`) : null,
     h('div', { class: 'row-actions' },
       h('button', { type: 'button', class: 'btn btn-primary btn-sm', onclick: async () => { const ok = await copyRich(mail.text, mail.html); if (ok) savedPulse('Email copied. Paste it into Outlook.'); else toast('Copy failed. Select the text and copy it by hand.', 'bad'); } }, icon('copy', 'icon-sm'), 'Copy email'),
       h('button', { type: 'button', class: 'btn btn-sm', onclick: async () => { const ok = await copyText(mail.subject); if (ok) savedPulse('Subject copied'); } }, 'Copy subject'),
-      h('a', { class: 'btn btn-sm', href: mailto }, icon('external', 'icon-sm'), 'Open in email app')),
-    h('p', { class: 'small muted' }, 'Sources: ', ...links.flatMap((s, i) => [i ? ', ' : '', externalLink(s.url, s.title)])));
+      h('a', { class: 'btn btn-sm', href: mailto.href }, icon('external', 'icon-sm'), 'Open in email app')),
+    h('p', { class: 'small muted' }, 'Copy email keeps the formatting and links for Outlook. ', mailto.short ? 'Open in email app starts a shorter version with the headlines only, because email apps limit how long a link can be. ' : '', 'The email uses your project name, window, workspaces and signature from Project setup. Edit it as you like before sending. The full list of changes is in ', h('a', { href: '#/knowledge/changes' }, 'Feature changes'), '.'));
 }
 
 // ───────── Transition window planner ─────────
@@ -248,39 +398,58 @@ export function windowTool() {
   const testUsed = p.stages.test.availability === 'available' || (p.answers.test_env && p.answers.test_env.value === 'yes');
   const phases = plan.phases.filter((ph) => ph.id !== 'test' || testUsed).map((ph) => ({ ...ph, range: larger ? ph.larger : ph.smaller }));
   const before = phases.filter((ph) => ph.id !== 'hypercare');
-  const weeksBefore = before.reduce((a, ph) => a + ph.range[1], 0);
+  const weeksBefore = before.reduce((n, ph) => n + ph.range[1], 0);
   const after = phases.find((ph) => ph.id === 'hypercare');
   const today = new Date().toISOString().slice(0, 10);
-  const startBy = v.windowStart ? addDays(v.windowStart, -7 * weeksBefore) : '';
-  const doneBy = (v.windowEnd || v.windowStart) ? addDays(v.windowEnd || v.windowStart, 7 * after.range[1]) : '';
+
   const barSlot = h('div');
-  const refresh = () => barSlot.replaceChildren(saveBar(JSON.stringify([v.startDate, v.windowStart, v.windowEnd]) !== winDraft.base, save, discard, 'Saved in Project setup.'));
-  const date = (key, label) => field(label, h('input', { type: 'date', value: v[key], 'data-focus-key': `win-${key}`, oninput: (e) => { v[key] = e.target.value; refresh(); }, onchange: () => render() }));
+  const planSlot = h('div');
+  const msg = h('p', { class: 'field-error', role: 'alert', hidden: true });
+  const invalid = () => !!(v.windowStart && v.windowEnd && v.windowEnd < v.windowStart);
+  const inputs = {};
+  const refresh = () => {
+    const bad = invalid();
+    msg.hidden = !bad;
+    msg.textContent = bad ? 'The window must end on or after the day it starts.' : '';
+    if (inputs.windowEnd) { inputs.windowEnd.dataset.pickerMin = v.windowStart || ''; inputs.windowEnd.setAttribute('aria-invalid', bad ? 'true' : 'false'); }
+    barSlot.replaceChildren(saveBar(!bad && JSON.stringify([v.startDate, v.windowStart, v.windowEnd]) !== winDraft.base, save, discard, bad ? 'Fix the dates to save.' : 'Saved in Project setup.'));
+    planSlot.replaceChildren(...planView());
+  };
+  const date = (key, label) => {
+    const el = h('input', { type: 'date', value: v[key], 'data-focus-key': `win-${key}`, oninput: (e) => { v[key] = e.target.value; refresh(); } });
+    inputs[key] = el;
+    return field(label, el);
+  };
+  function planView() {
+    const startBy = v.windowStart ? addDays(v.windowStart, -7 * weeksBefore) : '';
+    const doneBy = (v.windowEnd || v.windowStart) ? addDays(v.windowEnd || v.windowStart, 7 * after.range[1]) : '';
+    return [
+      h('h3', null, 'How much time to plan'),
+      h('p', { class: 'small muted' }, larger ? plan.larger : plan.smaller),
+      h('div', { class: 'table-wrap' }, h('table', { class: 'table' },
+        h('thead', null, h('tr', null, h('th', { scope: 'col' }, 'Phase'), h('th', { scope: 'col', class: 'num' }, 'Typical time'))),
+        h('tbody', null,
+          ...before.map((ph) => h('tr', null, h('td', null, ph.label), h('td', { class: 'num' }, `${ph.range[0]} to ${ph.range[1]} weeks`))),
+          h('tr', null, h('td', null, plan.change), h('td', { class: 'num' }, '1 day')),
+          h('tr', null, h('td', null, after.label), h('td', { class: 'num' }, `${after.range[0]} to ${after.range[1]} weeks`))))),
+      v.windowStart && !invalid() ? h('ul', { class: 'bullets', style: { marginTop: '12px' } },
+        h('li', null, 'To reach your window with time to spare, start Prepare by ', h('strong', { class: 'tnum' }, startBy), startBy < today ? '. That date has passed: start now, or consider a later window.' : '.'),
+        h('li', null, 'Expect to sign off around ', h('strong', { class: 'tnum' }, doneBy), doneBy > '2027-03-31' ? '. That is after 31 March 2027: consider an earlier window.' : ', comfortably before 31 March 2027.'))
+        : h('p', { class: 'small' }, invalid() ? 'Fix the dates above to see when to start each phase.' : 'Enter your window above to see when to start each phase.'),
+      h('p', { class: 'small muted' }, plan.note),
+    ];
+  }
   function save() {
-    if (v.windowStart && v.windowEnd && v.windowEnd < v.windowStart) { toast('The window ends before it starts. Check the dates.', 'bad'); return; }
+    if (invalid()) { toast('The window must end on or after the day it starts.', 'bad'); return; }
     mutate((pr) => { Object.assign(pr.meta, { startDate: v.startDate, windowStart: v.windowStart, windowEnd: v.windowEnd }); addAudit(pr, 'project.details', 'Planned transition window updated'); });
     winDraft.id = '';
     savedPulse('Window saved');
     render();
   }
   function discard() { winDraft.id = ''; render(); }
+  const grid = h('div', { class: 'tool-grid' }, date('startDate', 'Project start'), date('windowStart', 'Window from'), date('windowEnd', 'Window to'));
   refresh();
-  return h('div', { class: 'tool' },
-    h('div', { class: 'tool-grid' }, date('startDate', 'Project start'), date('windowStart', 'Window from'), date('windowEnd', 'Window to')),
-    barSlot,
-    h('h3', null, 'How much time to plan'),
-    h('p', { class: 'small muted' }, larger ? plan.larger : plan.smaller),
-    h('div', { class: 'table-wrap' }, h('table', { class: 'table' },
-      h('thead', null, h('tr', null, h('th', { scope: 'col' }, 'Phase'), h('th', { scope: 'col', class: 'num' }, 'Typical time'))),
-      h('tbody', null,
-        ...before.map((ph) => h('tr', null, h('td', null, ph.label), h('td', { class: 'num' }, `${ph.range[0]} to ${ph.range[1]} weeks`))),
-        h('tr', null, h('td', null, plan.change), h('td', { class: 'num' }, '1 day')),
-        h('tr', null, h('td', null, after.label), h('td', { class: 'num' }, `${after.range[0]} to ${after.range[1]} weeks`))))),
-    v.windowStart ? h('ul', { class: 'bullets', style: { marginTop: '12px' } },
-      h('li', null, 'To reach your window with time to spare, start Prepare by ', h('strong', { class: 'tnum' }, startBy), startBy < today ? '. That date has passed: start now, or consider a later window.' : '.'),
-      h('li', null, 'Expect to sign off around ', h('strong', { class: 'tnum' }, doneBy), doneBy > '2027-03-31' ? '. That is after 31 March 2027: consider an earlier window.' : ', comfortably before 31 March 2027.'))
-      : h('p', { class: 'small' }, 'Enter your window above to see when to start each phase.'),
-    h('p', { class: 'small muted' }, plan.note));
+  return h('div', { class: 'tool' }, grid, msg, barSlot, planSlot);
 }
 
 // ───────── Decision helpers ─────────

@@ -5,6 +5,7 @@
 import {
   PROJECT_SCHEMA, PROJECT_SCHEMA_VERSION, STATUS_IDS, ANSWER_IDS, REGISTER_TYPE_IDS, REGISTER_STATUS_IDS,
   SEVERITY_IDS, GATE_DECISION_IDS, EVIDENCE_KINDS, MAX_TEXT, HELPER_KEYS, MAX_HELPER_SUBJECTS, cleanHelperSubject,
+  MAX_WORKSTREAM_PEOPLE, cleanWorkstreamPeople,
 } from './model.js';
 import { FORBIDDEN_KEYS, isPlainObject } from './util.js';
 
@@ -76,7 +77,9 @@ export function validateProject(input, { kb } = {}) {
     startDate: iso(m.startDate), windowStart: iso(m.windowStart), windowEnd: iso(m.windowEnd), notes: str(m.notes, MAX_TEXT),
     environments: Array.isArray(m.environments) ? m.environments.slice(0, 50).filter(isPlainObject).map((e) => ({ alias: str(e.alias, 120), kind: oneOf(e.kind, ['production', 'test', 'other'], 'other'), tenant: str(e.tenant, 120), subscription: str(e.subscription, 200), resourceGroup: str(e.resourceGroup, 200), region: str(e.region, 80), owner: str(e.owner, 200), defender: oneOf(e.defender, ['unknown', 'not_connected', 'primary', 'secondary'], 'unknown'), notes: str(e.notes, 2000) })) : [],
     workstreamOwners: {},
+    workstreamPeople: {},
     plannedPrimary: str(m.plannedPrimary, 120),
+    plannedPrimaries: {},
     approvers: Array.isArray(m.approvers) ? m.approvers.slice(0, 30).filter(isPlainObject).map((a) => ({ role: str(a.role, 200), name: str(a.name, 200) })).filter((a) => a.role && a.name) : [],
     helpers: {},
   };
@@ -96,6 +99,21 @@ export function validateProject(input, { kb } = {}) {
       const name = str(v, 200);
       if (name) p.meta.workstreamOwners[k] = name;
     }
+  }
+  if (isPlainObject(m.plannedPrimaries)) {
+    for (const [k, v] of Object.entries(m.plannedPrimaries).slice(0, 50)) {
+      const t = str(k, 120);
+      const a = str(v, 120);
+      if (!FORBIDDEN_KEYS.has(k) && t && a) p.meta.plannedPrimaries[t] = a;
+    }
+  }
+  if (isPlainObject(m.workstreamPeople)) {
+    const safe = {};
+    for (const [k, v] of Object.entries(m.workstreamPeople).slice(0, 100)) {
+      if (FORBIDDEN_KEYS.has(k) || !Array.isArray(v)) continue;
+      safe[k] = v.slice(0, MAX_WORKSTREAM_PEOPLE).filter(isPlainObject).map((x) => ({ name: str(x.name, 200), covers: str(x.covers, 200) }));
+    }
+    p.meta.workstreamPeople = cleanWorkstreamPeople(safe);
   }
 
   for (const [k, a] of safeEntries(raw.answers, warnings, 'answers', 500)) {

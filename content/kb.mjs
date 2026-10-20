@@ -58,24 +58,115 @@ export const WORKSTREAMS = [
 
 // Reference material shown under Knowledge. Every entry cites sources.
 export const REFERENCE = {
-  // The stakeholder briefing on the first Prepare step: a short summary and a ready-to-send email.
-  // Every line restates a fact from the cited Microsoft Learn pages.
+  // The stakeholder briefing on the first Prepare step: one email, written for the person who reads it.
+  // Each change says what it is, then what it means for the reader. Every statement restates the cited
+  // Microsoft Learn pages. skipWhenNo: left out when every listed question was answered No.
   briefing: {
-    subject: 'Microsoft Sentinel is moving to the Microsoft Defender portal: what it means for us',
+    audiences: [
+      {
+        id: 'leadership', label: 'Security leadership', hint: 'CISO or security manager: impact, risk and the decisions needed.',
+        subject: 'Microsoft Sentinel moves to the Defender portal: what it means for us',
+        asksTitle: 'What we need from you',
+        asks: [
+          'Approve the change window, and confirm who approves the change itself.',
+          'Ask compliance and data protection to review the data policy change described above.',
+          'Make time for analyst training before the switch.',
+        ],
+      },
+      {
+        id: 'soc', label: 'SOC team', hint: 'SOC lead and analysts: how daily work changes.',
+        subject: 'Microsoft Sentinel moves to the Defender portal: what changes for the SOC',
+        asksTitle: 'What we need from you',
+        asks: [
+          'Tell us about automation, reports or integrations that rely on incident titles, descriptions or the incident provider.',
+          'Join the Defender portal training, and review the updated runbooks before the switch.',
+          'After the switch, report anything that looks different: missing or duplicate incidents, or automation that did not run.',
+        ],
+      },
+      {
+        id: 'client', label: 'A client we serve', hint: 'From a security service provider to a customer.',
+        subject: 'Microsoft Sentinel moves to the Defender portal: what it means for you',
+        intro: 'As your security service provider, we plan and run this move with you.',
+        asksTitle: 'What we need from you',
+        asks: [
+          'Confirm the change window, and who on your side approves the change.',
+          'Ask your compliance or data protection team to review the data policy change described above.',
+          'Tell us about tools on your side that read incidents, such as ticketing or reporting.',
+          'Tell us who on your side needs access to incidents in the Defender portal.',
+        ],
+      },
+    ],
+    intro: 'Sentinel itself stays. This is a move to a new portal and a new incident engine, not a new product and not a data migration.',
+    inShort: 'detections keep running, log data stays where it is, and Microsoft charges nothing extra for the move. What changes is where analysts work and how alerts become incidents. We review and adjust that before the switch.',
     changes: [
-      'Analysts will work in the Microsoft Defender portal (security.microsoft.com) instead of the Azure portal.',
-      'Incidents are created and correlated by the Defender XDR engine. The Fusion rule is turned off.',
-      'Microsoft incident creation rules are deactivated.',
-      'Some automation rule conditions and playbook options change, so automation must be checked before the move.',
-      'Defender XDR data policies apply to Sentinel data used in the Defender portal.',
+      {
+        what: 'Analysts work in the Microsoft Defender portal (security.microsoft.com) instead of the Azure portal.',
+        meaning: 'Sentinel and Defender XDR incidents appear in one queue, and advanced hunting covers both. Menus, runbooks and habits change, so analysts get training and updated procedures before the switch.',
+        sources: ['defportal', 'onboard'],
+      },
+      {
+        what: 'The Defender XDR engine creates all incidents, and the Fusion rule is turned off.',
+        meaning: 'Analytics rules keep running and raising alerts as they do today, and multistage attack detection continues: the Defender XDR correlation engine takes over from Fusion. Alert grouping and incident titles can differ from today, and closed incidents are not reopened: new alerts open a new incident. We set the grouping options and check what depends on titles before the switch.',
+        sources: ['move', 'fusion', 'corrsettings'],
+      },
+      {
+        what: 'Microsoft incident creation rules are turned off.',
+        meaning: 'These rules detect nothing themselves. They only turned alerts from Microsoft security products, such as Defender for Endpoint, into Sentinel incidents. The Defender portal now does this itself, which avoids duplicate incidents, so no detection is lost. Where these rules filtered alerts, for example high severity only, we move that filter to alert tuning or automation rules. Without that, more alerts can become incidents.',
+        sources: ['xdrint', 'createincidents', 'move'],
+        skipWhenNo: ['ms_incident_rules'],
+      },
+      {
+        what: 'Some automation rules and playbooks need changes.',
+        meaning: 'Conditions on the incident provider, title or description no longer work as before, so a rule can run on the wrong incidents or not at all. Playbooks can no longer be run by hand on a single alert or entity, and automation can run up to 10 minutes after an alert. We review and fix every affected rule and playbook before the switch.',
+        sources: ['automation', 'move'],
+        skipWhenNo: ['automation_rules', 'playbooks'],
+      },
+      {
+        what: 'Tools that read incidents, such as ticketing, reports or scripts, may need changes.',
+        meaning: 'Every incident now has Microsoft XDR as its provider, the incident description is no longer included, and titles can differ. Incidents created by hand, through the API or by a playbook are not synchronised to the Defender portal. We check each integration end to end before the switch.',
+        sources: ['move', 'automation'],
+        skipWhenNo: ['itsm', 'api_consumers', 'manual_incidents'],
+      },
+      {
+        what: 'A few investigation features work differently.',
+        meaning: 'Similar incidents, editing comments and livestream are not available in the Defender portal. Bookmarks are under Microsoft Sentinel > Threat management > Hunting, not in advanced hunting. The updated runbooks cover each of these.',
+        sources: ['move', 'ah', 'hunting'],
+        audiences: ['soc'],
+      },
+      {
+        what: 'Microsoft Defender XDR data policies apply to Sentinel data used in the Defender portal.',
+        meaning: 'Raw log data stays where it is stored today. Alert and incident data may be processed in Defender XDR regions and follows Defender XDR retention. Where customer-managed keys (CMK) are in use, alerts and incidents are no longer encrypted with them. Compliance reviews this before the switch.',
+        sources: ['move', 'residency', 'xdrprivacy', 'cmk'],
+      },
     ],
     same: [
-      'Microsoft Sentinel itself continues. Only its Azure portal experience is retired.',
-      'Our log data stays in Log Analytics, where it is today.',
-      'Microsoft states the transition has no extra cost. Sentinel billing continues as today.',
+      { what: 'Microsoft Sentinel stays the SIEM.', meaning: 'Only its Azure portal experience is retired, not the product.', sources: ['defportal', 'overview'] },
+      { what: 'Detections keep running.', meaning: 'Microsoft states that analytics rules work the same way. Their logic, schedules and the data they query do not change.', sources: ['move'] },
+      { what: 'Log data stays in Log Analytics.', meaning: 'Connecting changes the portal, not how logs are stored.', sources: ['move'] },
+      { what: 'No extra cost for the move.', meaning: 'Sentinel billing continues as today. The optional Sentinel data lake is a separate decision with its own billing.', sources: ['move', 'lakeonboard'] },
     ],
+    fallback: { text: 'A workspace can be disconnected from the Defender portal again as a temporary fallback, but that does not undo every change the connection made. So we back up the configuration first and keep a written rollback plan.', sources: ['onboard'] },
     deadline: 'After 31 March 2027, Microsoft Sentinel is no longer supported in the Azure portal and is available only in the Defender portal.',
-    sources: ['defportal', 'move', 'overview'],
+    closing: 'Questions, or something that depends on Sentinel that we should know about? Reply to this email.',
+    sources: ['defportal', 'move', 'xdrint', 'overview'],
+  },
+  // What being primary or secondary means after connection. Shown in the primary workspace tool.
+  workspaceRoles: {
+    primary: [
+      'Its alerts are correlated with Defender XDR data, and Defender XDR alerts and incidents sync to it.',
+      'Custom detections, queries through the API and the Workbooks page work with this workspace only.',
+      'Insider Risk Management alerts are correlated to it only.',
+      'The optional data lake attaches only workspaces in the same region as this one.',
+    ],
+    secondary: [
+      'Keeps running its own analytics rules and automation.',
+      'Its incidents appear in the same unified queue, which you can filter by workspace.',
+      'Its alerts are not correlated with Defender XDR data, or with other workspaces.',
+      'Standalone Microsoft product connectors, such as Defender for Endpoint and Office 365, are disconnected automatically. It can still ingest Defender XDR tables.',
+    ],
+    shared: 'Global search, entity pages and SOC optimization combine data from all connected workspaces.',
+    split: 'Only one can be primary. The others keep running as secondary workspaces, so splitting production does not stop any detection. The steps below explain where to put each rule if you split because of the analytics rule limit.',
+    sources: ['multiws', 'correlation'],
   },
   // Planning ranges for the window planner. Practical guidance from the makers, not Microsoft guidance.
   planning: {

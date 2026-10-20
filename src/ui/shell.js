@@ -219,6 +219,19 @@ export function startShell() {
   subscribe(render);
   subscribeStatus(refreshSaveStatus);
   window.addEventListener('hashchange', render);
+  // Date fields: a click opens the browser's calendar picker; typing still works.
+  // A field can name its earliest day in data-picker-min. The calendar then greys out earlier days,
+  // but the limit is lifted as soon as you type: with a min set, browsers reject digits mid-entry.
+  const isDate = (t) => t instanceof HTMLInputElement && t.type === 'date';
+  document.addEventListener('click', (e) => {
+    const t = e.target;
+    if (isDate(t) && !t.disabled && !t.readOnly && typeof t.showPicker === 'function') {
+      if (t.dataset.pickerMin) t.min = t.dataset.pickerMin;
+      try { t.showPicker(); } catch { /* not allowed here; typing still works */ }
+    }
+  });
+  const liftMin = (e) => { if (isDate(e.target) && e.target.hasAttribute('min') && 'pickerMin' in e.target.dataset) e.target.removeAttribute('min'); };
+  for (const type of ['keydown', 'change', 'focusout']) document.addEventListener(type, liftMin, true);
   window.matchMedia('(max-width: 900px)').addEventListener('change', () => render());
   window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && navOpen) { navOpen = false; render(); } });
   window.addEventListener('beforeunload', (e) => {

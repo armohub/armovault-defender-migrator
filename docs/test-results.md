@@ -8,11 +8,11 @@ Only results that were recorded in files are reported as results here. Where no 
 
 | Suite | Command | Recorded result |
 |---|---|---|
-| End-to-end, Edge | `npm run test:e2e` | ✔ **33 of 33 steps passed** on 2026-10-19 at 18:17 UTC, against the final 1.0.0 build of `ArMo-MS-Defender-Migration-Assistant.html` (`test-results/e2e-results-msedge.json`) |
-| Network requests and console errors during those runs | recorded by the end-to-end runner (step 33) | ✔ **none**, in Edge and in Chrome |
-| End-to-end, Chrome | `npm run test:e2e:chrome` | ✔ **33 of 33 steps passed** on 2026-10-19 at 18:18 UTC, against the same build (`test-results/e2e-results-chrome.json`) |
-| Unit tests | `npm run test:unit` | ✔ **76 of 76 passed** on 2026-10-19 against the final 1.0.0 source |
-| Knowledge base integrity and writing rules | `npm run validate-kb` (also runs in every build) | No stored result. Every build runs it and stops on any error. The 1.0 knowledge base has 109 steps, 35 questions, 101 sources and 32 snippets. |
+| End-to-end, Edge | `npm run test:e2e` | ✔ **39 of 39 steps passed** on 2026-10-20 at 07:01 UTC, against the 1.0.0 build of `ArMo-MS-Defender-Migration-Assistant.html` with the 20 October changes (`test-results/e2e-results-msedge.json`) |
+| Network requests and console errors during those runs | recorded by the end-to-end runner (step 39) | ✔ **none**, in Edge and in Chrome |
+| End-to-end, Chrome | `npm run test:e2e:chrome` | ✔ **39 of 39 steps passed** on 2026-10-20 at 07:00 UTC, against the same build (`test-results/e2e-results-chrome.json`) |
+| Unit tests | `npm run test:unit` | ✔ **94 of 94 passed** on 2026-10-20 against the same source |
+| Knowledge base integrity and writing rules | `npm run validate-kb` (also runs in every build) | No stored result. Every build runs it and stops on any error. The knowledge base has 109 steps, 35 questions, 118 sources and 32 snippets. |
 | Inventory script parse and mock run | `powershell -File tests/tools/mock-inventory-run.ps1` (plus `-Fail automationRules`) | No stored result for 1.0. Run it before release (release checklist, B10). |
 | Platform prototypes P1 to P3 | `node prototypes/run-p1-platform.mjs` and the others | Stored results in `prototypes/*.json`. See [prototypes/README.md](../prototypes/README.md). |
 
@@ -30,29 +30,35 @@ The Edge run also generated `test-results/report-prepare-msedge.pdf` and `test-r
 8. Building the plan shows real counts and progress on the route, then the guided overview says where to start.
 9. Applicability: "I don't know yet" keeps steps in scope, and "No" sets steps aside with a reason.
 10. Step page: references are links, "do it here" buttons act on the step, and the window planner saves to Project setup.
-11. Do it here: owners flow into other steps, workspaces into Project setup, the briefing email is ready to copy, and "Leave for now" moves on.
-12. "Not needed for us" lets a step pass, and the report says why.
-13. "Passed" requires evidence; your word alone is recorded as "Not verified".
-14. Add an observation note (containing an injection string) and a screenshot, then mark Passed, verified. No script runs.
-15. Unsafe and oversized evidence files are rejected.
-16. A failed status requires a reason, and an exception with a named acceptance is recorded.
-17. Changing an answer explains the plan change and keeps records.
-18. A gate decision needs a typed decision maker.
-19. The optional test stage can be skipped with a reason, and the route shows it as skipped.
-20. Import read-only inventory results as labelled evidence and confirmed suggestions.
-21. Every main view renders without errors, passes basic accessibility checks and hides item codes.
-22. The readiness report renders and produces a multi-page A4 PDF offline.
-23. A snapshot is saved, listed and verified by its fingerprint.
-24. Save the project package (.zip) with evidence.
-25. Exports: JSON data, checklist CSV, register CSV and evidence index CSV.
-26. Browser autosave survives a full browser restart (project and screenshot restored).
-27. Malformed, foreign and tampered files are refused without changing anything.
-28. Delete browser data, then reopen from the package: statuses, evidence, snapshot and audit log are intact.
-29. About replays the introduction on request.
-30. A full-checklist project without autosave warns about unsaved work.
-31. The demo opens by link with fictional data, and the final report renders.
-32. Reduced motion: the introduction shows everything at once, and the assistant stays usable.
-33. No network request was made during the whole run, and no console errors occurred.
+11. Cancel closes a dialog without saving, and a check on the input keeps it open.
+12. Do it here: owners flow into other steps, workspaces into Project setup, the briefing email is ready to copy, and "Leave for now" moves on.
+13. Dates: typing never redraws the page, and the window cannot end before it starts (message shown, Save disabled).
+14. Owners: a lead per workstream, more people with what they cover, and a step with its own owner. The other steps name everyone in the workstream.
+15. Briefing: one email per reader (leadership, SOC team, a client), each change says what it means, and the email-app link stays under 2,000 characters.
+16. Several workspaces: one primary per tenant, the others shown as secondary with what that means.
+17. Decision helper: a verdict only where the step gives one, and the saved choice is recorded as a decision.
+18. "Not needed for us" lets a step pass, and the report says why.
+19. "Passed" requires evidence; your word alone is recorded as "Not verified".
+20. Add an observation note (containing an injection string) and a screenshot, then mark Passed, verified. No script runs.
+21. Unsafe and oversized evidence files are rejected.
+22. A failed status requires a reason, and an exception with a named acceptance is recorded.
+23. Changing an answer explains the plan change and keeps records.
+24. A gate decision needs a typed decision maker.
+25. The optional test stage can be skipped with a reason, and the route shows it as skipped.
+26. Import read-only inventory results as labelled evidence and confirmed suggestions.
+27. Every main view renders without errors, passes basic accessibility checks and hides item codes.
+28. The readiness report renders and produces a multi-page A4 PDF offline.
+29. A snapshot is saved, listed and verified by its fingerprint.
+30. Save the project package (.zip) with evidence.
+31. Exports: JSON data, checklist CSV, register CSV and evidence index CSV.
+32. Browser autosave survives a full browser restart (project and screenshot restored).
+33. Malformed, foreign and tampered files are refused without changing anything.
+34. Delete browser data, then reopen from the package: statuses, evidence, snapshot and audit log are intact.
+35. About replays the introduction on request.
+36. A full-checklist project without autosave warns about unsaved work.
+37. The demo opens by link with fictional data, and the final report renders.
+38. Reduced motion: the introduction shows everything at once, and the assistant stays usable.
+39. No network request was made during the whole run, and no console errors occurred.
 
 ## What the unit tests cover
 
@@ -87,6 +93,14 @@ There is no stored result for the unit tests, so this lists what they check, by 
   - new settings have safe defaults (dark theme, auto-advance on, motion following the system) and are validated;
   - the brand name, version 1.0.0, the makers' profile links and a knowledge base version without "rc", "beta" or "pilot";
   - the embedded typeface ships with its licence and is the only font source.
+- **`tools-and-waiver.test.mjs`: "do it here" tools and evidence waivers.**
+  - "evidence not needed" needs a reason, lets a step pass, and withdrawing it downgrades an unsupported pass; reports and CSV show the reason;
+  - steps show their workstream owner unless they have their own; approvers and owners are suggested as known people;
+  - the workspace inventory keeps its fields, allows one primary per tenant, and survives import;
+  - every step tool exists, and the briefing has three readers, and each point says what it means, with a source.
+- **`decision-helpers.test.mjs`:** the three decision helpers, their verdict rules, per-tenant subjects and the decision record they fill in.
+- **`workstream-people.test.mjs`:** a lead and other people per workstream with what they cover, step owners that differ from the lead, the report rows, and import safety.
+- **`primary-per-tenant.test.mjs`:** several production workspaces in one tenant (one primary, the rest secondary), one primary per tenant, a primary chosen before tenants were entered, report roles and import safety.
 - **`review-fixes.test.mjs`: regression tests for the findings of the independent review** (see the history below).
 - **`contrast.test.mjs`:** WCAG AA (4.5:1) for 14 text and background token pairs, in the light and the dark theme.
 - **`static.test.mjs`: static safety.**

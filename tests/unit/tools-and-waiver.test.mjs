@@ -115,8 +115,20 @@ test('every step tool named in the knowledge base exists, and briefing and plann
   for (const c of KB.checks) if (c.tool) assert.ok(tools.has(c.tool), `${c.id}: ${c.tool}`);
   assert.ok(KB.checks.filter((c) => c.tool).length >= 6);
   const b = KB.reference.briefing;
-  assert.ok(b.subject && b.changes.length >= 3 && b.same.length >= 2 && b.deadline);
-  for (const id of b.sources) assert.ok(KB.sources.some((s) => s.id === id), id);
+  assert.ok(b.changes.length >= 3 && b.same.length >= 2 && b.deadline && b.inShort && b.closing && b.fallback.text);
+  assert.deepEqual(b.audiences.map((x) => x.id), ['leadership', 'soc', 'client']);
+  for (const x of b.audiences) assert.ok(x.subject && x.label && x.asksTitle && x.asks.length >= 2, x.id);
+  const known = (id) => KB.sources.some((s) => s.id === id);
+  for (const id of [...b.sources, ...b.fallback.sources]) assert.ok(known(id), id);
+  // Every point says what changes and what it means for the reader, with a source.
+  for (const x of [...b.changes, ...b.same]) {
+    assert.ok(x.what && x.meaning && x.sources.length, x.what);
+    for (const id of x.sources) assert.ok(known(id), `${x.what}: ${id}`);
+    for (const q of x.skipWhenNo || []) assert.ok(KB.questions.some((qq) => qq.id === q), `${x.what}: question ${q}`);
+    for (const a of x.audiences || []) assert.ok(b.audiences.some((y) => y.id === a), `${x.what}: reader ${a}`);
+  }
+  // The point that worried readers most says plainly that no detection is lost.
+  assert.match(b.changes.find((x) => /incident creation rules/.test(x.what)).meaning, /detect nothing themselves.*no detection is lost/s);
   const plan = KB.reference.planning;
   for (const ph of plan.phases) { assert.ok(ph.smaller[0] <= ph.smaller[1]); assert.ok(ph.larger[0] <= ph.larger[1]); }
   assert.match(plan.note, /not Microsoft guidance/);

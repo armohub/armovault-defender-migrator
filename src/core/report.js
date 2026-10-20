@@ -3,7 +3,7 @@
 
 import { applicabilityMap } from './applicability.js';
 import { assessStage, summariseStage, CONCLUSION_CRITERIA, exceptionsByCheck, overallAssessment } from './readiness.js';
-import { statusById, answerLabel, actor, effectiveOwner } from './model.js';
+import { statusById, answerLabel, actor, effectiveOwner, plannedRole } from './model.js';
 import { sha256Hex } from './files.js';
 import { nowIso } from './util.js';
 
@@ -142,10 +142,14 @@ export function buildReportModel(kind, kb, project, { appVersion }) {
     kbReviewed: kb.meta.lastReviewed,
     project: {
       id: project.id, name: project.meta.name, organisation: project.meta.organisation, operatorName: project.meta.operatorName, operatorRole: project.meta.operatorRole,
-      startDate: project.meta.startDate, windowStart: project.meta.windowStart, windowEnd: project.meta.windowEnd, environments: project.meta.environments, plannedPrimary: project.meta.plannedPrimary || '', mode: project.mode, isDemo: !!project.isDemo,
+      startDate: project.meta.startDate, windowStart: project.meta.windowStart, windowEnd: project.meta.windowEnd, environments: (project.meta.environments || []).map((e) => ({ ...e, plannedRole: plannedRole(project, e) })), plannedPrimary: project.meta.plannedPrimary || '', mode: project.mode, isDemo: !!project.isDemo,
       owners: [
-        ...kb.workstreams.map((w) => ({ area: `${(kb.stages.find((s) => s.id === w.stage) || {}).short}: ${w.title}`, name: (project.meta.workstreamOwners || {})[`${w.stage}:${w.id}`] || '' })).filter((o) => o.name),
-        ...(project.meta.approvers || []).map((a) => ({ area: `Approver: ${a.role}`, name: a.name })),
+        ...kb.workstreams.map((w) => {
+          const key = `${w.stage}:${w.id}`;
+          const others = ((project.meta.workstreamPeople || {})[key] || []).map((x) => (x.covers ? `${x.name} (${x.covers})` : x.name)).join(', ');
+          return { area: `${(kb.stages.find((s) => s.id === w.stage) || {}).short}: ${w.title}`, name: (project.meta.workstreamOwners || {})[key] || '', others };
+        }).filter((o) => o.name || o.others),
+        ...(project.meta.approvers || []).map((a) => ({ area: `Approver: ${a.role}`, name: a.name, others: '' })),
       ],
     },
     scope: kb.meta.scope,
