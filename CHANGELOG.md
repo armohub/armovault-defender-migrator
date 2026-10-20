@@ -7,7 +7,7 @@ The first public version, released as one final version. There are no release ca
 ### Name and build
 
 - New name: **ArMo MS Defender Migration Assistant** (brand ArMo). It was called "ArMoHub Defender Migration Assistant".
-- Knowledge base version `2026.10.19`.
+- Knowledge base version `2026.10.20` (the content changed after the review of 19 October; see below).
 - The build writes `dist/ArMo-MS-Defender-Migration-Assistant.html`, `dist/kb.json`, `dist/tools/Get-ArMoSentinelInventory.ps1`, `dist/licenses/MonaSans-OFL.txt` and `dist/SHA256SUMS.txt`.
 - Project packages are named `armo-dma-<project>-<date>.zip`. Exports and the preferences file use the same `armo-dma` prefix.
 - Internal schema identifiers (`armohub.dma.project`, `armohub.dma.settings`) are unchanged on purpose, for compatibility.
@@ -42,7 +42,7 @@ The first public version, released as one final version. There are no release ca
 
 ### A guided start
 
-- A first-run introduction of about four seconds. It shows six promises (no internet needed, processed on this device, your data stays with you, grounded in Microsoft Learn with 101 pages, built by practitioners, open for review) and closes with "Your data is yours." and the makers' quote, "Built to make your migration journey easy." It can be skipped, focus starts on **Skip intro**, and reduced motion shows everything at once. Replay it from About or Settings. Later starts show a short splash.
+- A first-run introduction of about four seconds. It shows six promises (no internet needed, processed on this device, your data stays with you, grounded in Microsoft Learn with 118 pages, built by practitioners, open for review) and closes with "Your data is yours." and the makers' quote, "Built to make your migration journey easy." It can be skipped, focus starts on **Skip intro**, and reduced motion shows everything at once. Replay it from About or Settings. Later starts show a short splash.
 - A welcome page, then a four-step new-project wizard.
 - The questionnaire now shows one question per screen:
   - six sections with section progress;
@@ -74,7 +74,7 @@ The first public version, released as one final version. There are no release ca
 
 - All guidance was rewritten in a human voice under [docs/content-style-guide.md](docs/content-style-guide.md).
 - `scripts/validate-kb.mjs` enforces the rules: no long dashes, no bare item codes, valid links and actions, and valid step shapes. The build fails on any violation.
-- The knowledge base has 109 steps, 35 questions, 101 Microsoft Learn sources verified on 2026-10-19, 32 read-only snippets, and 13 steps marked "Needs review".
+- The knowledge base has 109 steps, 35 questions, 118 Microsoft Learn sources (115 verified on 2026-10-19, 3 on 2026-10-20), 32 read-only snippets, and 13 steps marked "Needs review".
 
 ### Tests
 

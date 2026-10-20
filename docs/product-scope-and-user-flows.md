@@ -83,7 +83,7 @@ Sidebar: Overview, the four stages, Decisions and risks, Evidence, Reports, Proj
 ### Flow details
 
 1. **First start.**
-   - The introduction plays once, for about four seconds. It shows six promises: no internet needed, processed on this device, your data stays with you, grounded in Microsoft Learn (101 pages), built by practitioners, and open for review. It ends with "Your data is yours." and the makers' quote, "Built to make your migration journey easy."
+   - The introduction plays once, for about four seconds. It shows six promises: no internet needed, processed on this device, your data stays with you, grounded in Microsoft Learn (118 pages), built by practitioners, and open for review. It ends with "Your data is yours." and the makers' quote, "Built to make your migration journey easy."
    - Focus starts on **Skip intro**. Escape also closes it. With reduced motion, everything is shown at once.
    - You can replay it from **About** or **Settings and data**. Later starts show a short splash instead.
 2. **Welcome and new project.**

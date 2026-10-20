@@ -6,7 +6,7 @@ Three kinds of data, kept strictly apart:
 
 | Data | Where it lives | Format | Versioning |
 |---|---|---|---|
-| **Knowledge base** (guidance) | Bundled into the assistant at build time; also published as `dist/kb.json` | `content/*.mjs` to JS objects | `KB_META.version` (1.0 ships `2026.10.19`); each item has `version` and `lastVerified` |
+| **Knowledge base** (guidance) | Bundled into the assistant at build time; also published as `dist/kb.json` | `content/*.mjs` to JS objects | `KB_META.version` (1.0 ships `2026.10.20`); each item has `version` and `lastVerified` |
 | **Project** (your records) | In memory; in IndexedDB only with browser autosave; in project packages you save | JSON (`armohub.dma.project`) | `schemaVersion` (currently 1) with a migration hook |
 | **Settings** (preferences) | `localStorage` key `armohub.dma.settings.v1`; optional export file | JSON (`armohub.dma.settings`) | `schemaVersion` 1 |
 

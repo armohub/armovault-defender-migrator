@@ -8,9 +8,9 @@ Only results that were recorded in files are reported as results here. Where no 
 
 | Suite | Command | Recorded result |
 |---|---|---|
-| End-to-end, Edge | `npm run test:e2e` | ✔ **39 of 39 steps passed** on 2026-10-20 at 07:01 UTC, against the 1.0.0 build of `ArMo-MS-Defender-Migration-Assistant.html` with the 20 October changes (`test-results/e2e-results-msedge.json`) |
+| End-to-end, Edge | `npm run test:e2e` | ✔ **39 of 39 steps passed** on 2026-10-20 at 08:02 UTC, against the 1.0.0 build of `ArMo-MS-Defender-Migration-Assistant.html` with the 20 October changes (`test-results/e2e-results-msedge.json`) |
 | Network requests and console errors during those runs | recorded by the end-to-end runner (step 39) | ✔ **none**, in Edge and in Chrome |
-| End-to-end, Chrome | `npm run test:e2e:chrome` | ✔ **39 of 39 steps passed** on 2026-10-20 at 07:00 UTC, against the same build (`test-results/e2e-results-chrome.json`) |
+| End-to-end, Chrome | `npm run test:e2e:chrome` | ✔ **39 of 39 steps passed** on 2026-10-20 at 08:02 UTC, against the same build (`test-results/e2e-results-chrome.json`) |
 | Unit tests | `npm run test:unit` | ✔ **94 of 94 passed** on 2026-10-20 against the same source |
 | Knowledge base integrity and writing rules | `npm run validate-kb` (also runs in every build) | No stored result. Every build runs it and stops on any error. The knowledge base has 109 steps, 35 questions, 118 sources and 32 snippets. |
 | Inventory script parse and mock run | `powershell -File tests/tools/mock-inventory-run.ps1` (plus `-Fail automationRules`) | No stored result for 1.0. Run it before release (release checklist, B10). |

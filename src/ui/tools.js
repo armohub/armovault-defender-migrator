@@ -174,7 +174,7 @@ export function ownersTool() {
     const counts = () => [named ? `${named} more ${named === 1 ? 'person' : 'people'}` : '', ownSteps ? `${ownSteps} of ${steps.length} steps with their own owner` : ''].filter(Boolean).join(', ');
     const personRow = (x, i) => h('div', { class: 'person-row' },
       h('input', { type: 'text', list: 'people-list', maxlength: '200', placeholder: 'Name or team', 'aria-label': `${ws.title}: person ${i + 1}`, value: x.name, 'data-focus-key': `ppl-${key}-${i}`, oninput: (e) => { x.name = e.target.value; fillTeam(); refresh(); } }),
-      h('input', { type: 'text', maxlength: '200', placeholder: 'What they cover, for example: timeline', 'aria-label': `${ws.title}: what person ${i + 1} covers`, value: x.covers, oninput: (e) => { x.covers = e.target.value; refresh(); } }),
+      h('input', { type: 'text', maxlength: '200', placeholder: 'What they cover', 'aria-label': `${ws.title}: what person ${i + 1} covers`, value: x.covers, oninput: (e) => { x.covers = e.target.value; refresh(); } }),
       h('button', { type: 'button', class: 'btn-icon', 'aria-label': `Remove ${x.name || `person ${i + 1}`} from ${ws.title}`, onclick: () => { people.splice(i, 1); render(); } }, icon('trash', 'icon-sm')));
     const stepRow = (c) => h('div', { class: 'owner-row step-owner' },
       h('label', { for: `own-step-${c.id}` }, c.title),
@@ -186,7 +186,7 @@ export function ownersTool() {
       disclose(`ws:${key}`, 'ws-more', ['More people and step owners', h('span', { class: 'small muted' }, counts())],
         h('div', { class: 'ws-more-body' },
           team,
-          h('p', { class: 'small muted' }, 'Other people in this workstream, and what they cover.'),
+          h('p', { class: 'small muted' }, 'Other people in this workstream, and what they cover (for example: timeline).'),
           people.length ? h('div', { class: 'owner-grid' }, people.map(personRow)) : null,
           h('button', { type: 'button', class: 'btn btn-sm btn-ghost', 'data-focus-key': `ppl-add-${key}`, onclick: () => addAndFocus(() => people.push({ name: '', covers: '' }), `ppl-${key}-${people.length}`) }, icon('plus', 'icon-sm'), 'Add a person'),
           steps.length ? h('p', { class: 'small muted', style: { marginTop: '12px' } }, 'Owner per step. Leave a step blank and it shows the lead.') : null,

@@ -483,7 +483,7 @@ summary { cursor: pointer; font-weight: 600; color: var(--accent-strong); }
 .approver-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 8px; align-items: center; }
 .ws-owner { padding: 10px 0 4px; border-bottom: 1px dashed var(--border); }
 .ws-owner:last-child { border-bottom: 0; }
-.ws-owner .owner-row label .small { margin-left: 6px; font-weight: 400; }
+.ws-owner .owner-row label .small { margin-left: 6px; font-weight: 400; white-space: nowrap; }
 .ws-more { margin-top: 6px; }
 .ws-more > summary { font-size: .84rem; color: var(--text-2); flex-wrap: wrap; column-gap: 8px; row-gap: 2px; }
 .ws-more > summary .small { flex-basis: auto; }

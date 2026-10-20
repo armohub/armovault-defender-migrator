@@ -9,7 +9,7 @@ import { VALIDATE } from './stage-validate.mjs';
 
 export const KB_META = {
   id: 'armohub.dma.kb',
-  version: '2026.10.19',
+  version: '2026.10.20',
   lastReviewed: '2026-10-19',
   language: 'en',
   scope: 'Moving Microsoft Sentinel from the Azure portal to the Microsoft Defender portal. That means connecting your Sentinel workspaces to the Defender portal, and adapting access, data governance, connectors, detections, automation, integrations, content and SOC operations. Out of scope: migrating to Sentinel from another SIEM, deploying Sentinel from scratch, and detection engineering beyond what the transition requires.',
@@ -64,7 +64,7 @@ export const REFERENCE = {
   briefing: {
     audiences: [
       {
-        id: 'leadership', label: 'Security leadership', hint: 'CISO or security manager: impact, risk and the decisions needed.',
+        id: 'leadership', label: 'Security leadership', hint: 'CISO or manager: impact and decisions.',
         subject: 'Microsoft Sentinel moves to the Defender portal: what it means for us',
         asksTitle: 'What we need from you',
         asks: [
@@ -74,7 +74,7 @@ export const REFERENCE = {
         ],
       },
       {
-        id: 'soc', label: 'SOC team', hint: 'SOC lead and analysts: how daily work changes.',
+        id: 'soc', label: 'SOC team', hint: 'SOC lead and analysts: daily work.',
         subject: 'Microsoft Sentinel moves to the Defender portal: what changes for the SOC',
         asksTitle: 'What we need from you',
         asks: [
@@ -84,7 +84,7 @@ export const REFERENCE = {
         ],
       },
       {
-        id: 'client', label: 'A client we serve', hint: 'From a security service provider to a customer.',
+        id: 'client', label: 'A client we serve', hint: 'From a service provider to its customer.',
         subject: 'Microsoft Sentinel moves to the Defender portal: what it means for you',
         intro: 'As your security service provider, we plan and run this move with you.',
         asksTitle: 'What we need from you',

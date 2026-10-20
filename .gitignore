@@ -17,3 +17,6 @@ playwright-report/
 .impeccable/review/
 .impeccable/decision-*.json
 .impeccable/questions/
+
+# Local bundles (never commit)
+share/
