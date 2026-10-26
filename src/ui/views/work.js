@@ -6,7 +6,7 @@ import { applicabilityMap, evaluateApplicability, questionIndex, upfrontQuestion
 import { assessStage, summariseStage, dependencyStatus, CONCLUSION_CRITERIA, effectiveStatus } from '../../core/readiness.js';
 import { setTestAvailability, effectiveOwner, setGuidance } from '../../core/model.js';
 import { missionsForStage, nextMission } from '../../core/missions.js';
-import { statusPill, critBadge, kindChip, applicabilityChip, progressBar, conclusionBadge, callout, emptyState, btn, linkBtn, daysUntil } from '../components.js';
+import { statusPill, critBadge, kindChip, applicabilityChip, progressBar, conclusionBadge, callout, emptyState, btn, linkBtn, daysUntil, infoTip } from '../components.js';
 import { formatDate } from '../../core/util.js';
 import { importInventoryFlow } from '../inventory.js';
 import { routeView, routeModel } from '../route.js';
@@ -100,7 +100,9 @@ function missionRowView(m, next) {
 export function guidanceSwitch() {
   const p = state.project;
   const opt = (id, label) => h('button', { type: 'button', class: ['seg-btn', p.guidance === id && 'active'], 'aria-pressed': p.guidance === id ? 'true' : 'false', 'data-focus-key': `guidance-${id}`, onclick: () => { mutate((pr) => setGuidance(pr, id)); } }, label);
-  return h('div', { class: 'seg-group guidance-switch', role: 'group', 'aria-label': 'How the plan is shown' }, opt('simple', 'Simplified'), opt('detailed', 'Detailed'));
+  return h('div', { class: 'guidance-wrap' },
+    h('div', { class: 'seg-group guidance-switch', role: 'group', 'aria-label': 'How the plan is shown' }, opt('simple', 'Simplified'), opt('detailed', 'Detailed')),
+    infoTip({ key: 'guidance', title: 'Simplified or Detailed' }, h('p', null, 'Simplified shows missions with short checklists. Detailed shows every step in full, with background and sources. Your records, proofs and decisions are the same in both, and you can switch at any time.')));
 }
 
 // ───────────────────────────── Overview ─────────────────────────────
@@ -329,7 +331,7 @@ route('stage', ({ params }) => {
         h('p', { class: 'lede' }, stage.purpose),
         h('p', { class: 'small muted tnum', style: { marginTop: '8px' } }, `Stage ${stage.number}${stage.optional ? ', optional' : ''}. ${c.assessed} of ${c.inScope} steps checked.`)),
       h('div', { class: 'page-actions' },
-        stage.id === 'prepare' ? btn('Import inventory results', importInventoryFlow, { iconName: 'upload', small: true, title: 'Import the JSON file produced by the read-only inventory script' }) : null,
+        stage.id === 'prepare' ? btn('Import inventory results', importInventoryFlow, { iconName: 'upload', small: true, title: 'Import the JSON files produced by the read-only inventory script, one per workspace' }) : null,
         linkBtn(`Open the ${stage.deliverable.toLowerCase()}`, `#/report/${stage.reportKind}`, { iconName: 'reports', small: true }))),
     stage.id === 'test' ? testAvailabilityPanel(appMap) : null,
     conclusionPanel(a),

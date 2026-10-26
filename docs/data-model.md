@@ -6,7 +6,7 @@ Three kinds of data, kept strictly apart:
 
 | Data | Where it lives | Format | Versioning |
 |---|---|---|---|
-| **Knowledge base** (guidance) | Bundled into the assistant at build time; also published as `dist/kb.json` | `content/*.mjs` to JS objects | `KB_META.version` (1.0 ships `2026.10.20`); each item has `version` and `lastVerified` |
+| **Knowledge base** (guidance) | Bundled into the assistant at build time; also published as `dist/kb.json` | `content/*.mjs` to JS objects | `KB_META.version` (1.0 ships `2026.10.26`); each item has `version` and `lastVerified` |
 | **Project** (your records) | In memory; in IndexedDB only with browser autosave; in project packages you save | JSON (`armohub.dma.project`) | `schemaVersion` (currently 1) with a migration hook |
 | **Settings** (preferences) | `localStorage` key `armohub.dma.settings.v1`; optional export file | JSON (`armohub.dma.settings`) | `schemaVersion` 1 |
 
@@ -57,7 +57,7 @@ Three kinds of data, kept strictly apart:
 
 In full-checklist mode every step is `applies`. A reviewer override (`applies` or `not_applicable`) requires a reason and wins over answers.
 
-Simplified mode adds to the knowledge base: `check.scope` (`needed` or `extra`, the 10 good-practice checks), `check.short` (`{ title, do[], proof }`), `workstream.mission` (`{ title, purpose }`), `question.core` (the six up-front questions) and `reference.readyTexts`.
+Simplified mode adds to the knowledge base: `check.scope` (`needed` or `extra`, the 9 good-practice checks), `check.short` (`{ title, do[], proof, info? }`, where `info` is an optional explainer `{ title, lead?, points[], practice? }` opened from the ⓘ button; `practice: true` labels it as the makers' guidance, not Microsoft's), `workstream.mission` (`{ title, purpose }`), `question.core` (the six up-front questions) and `reference.readyTexts`. The window planner reads `reference.planning`: per phase, week ranges for `lean`, `smaller` and `larger` environments, the profile names and their explainer.
 
 ## Project (`armohub.dma.project`, schemaVersion 1)
 
@@ -69,6 +69,7 @@ Simplified mode adds to the knowledge base: `check.scope` (`needed` or `extra`, 
           workstreamOwners: { "<stage>:<workstream>": lead name }, workstreamPeople: { "<stage>:<workstream>": [{ name, covers }] },
           approvers: [{ role, name }], plannedPrimary (no tenants), plannedPrimaries: { "<tenant>": alias },
           showExtras: boolean (default true), ownersWanted: 'yes' | 'later' | '',
+          planProfile: 'auto' | 'lean' | 'smaller' | 'larger' (default 'auto': suggested from the answers and the workspace list; an unknown value on import becomes 'auto'),
           helpers: { mdc | urbac | tenants: { subjects: [{ label, answers: { [questionId]: optionId | [optionId] }, choice, person }], by, at } } },  // decision helpers; ids only, one subject per tenant for "tenants"
   mode: 'tailored' | 'full',
   guidance: 'simple' | 'detailed',   // how the plan is shown; a view only. Missing on import means 'detailed'.

@@ -5,7 +5,7 @@ import { state } from '../app/store.js';
 import { statusById } from '../core/model.js';
 import { generatedProof } from '../core/generated-proof.js';
 import { rich } from './rich.js';
-import { btn } from './components.js';
+import { btn, infoTip, stepExplainer } from './components.js';
 import { TOOLS } from './tools.js';
 import { attachFiles, addNoteEvidence, addLinkEvidence, addGeneratedProof } from './actions.js';
 import { setStatusFlow } from './step-actions.js';
@@ -37,11 +37,13 @@ export function checkRow(row, { open, onToggle, onDone, ctx }) {
     if (after && ['passed', 'not_verified'].includes(after.status) && onDone) onDone(c.id);
   };
   const body = h('div', { class: 'crow-body', id: `crow-${c.id}` },
+    stepExplainer(c.short.info, `row-${c.id}`),
     h('h4', null, 'Do this'),
     h('ul', { class: 'bullets' }, c.short.do.map((d) => h('li', null, rich(d, ctx)))),
     c.tool && TOOLS[c.tool] ? h('div', { class: 'crow-tool' }, TOOLS[c.tool](c, ctx)) : null,
     c.kind === 'gate' ? h('div', { class: 'crow-tool' }, gateForm(c)) : null,
-    h('p', { class: 'crow-proofline' }, h('strong', null, 'Proof: '), c.short.proof, h('span', { class: 'muted' }, ' Paste a screenshot here with Ctrl+V, or drop a file.')),
+    h('p', { class: 'crow-proofline' }, h('strong', null, 'Proof: '), c.short.proof, h('span', { class: 'muted' }, ' Paste a screenshot here with Ctrl+V, or drop a file.'),
+      infoTip({ key: `proof-${c.id}` , title: 'What counts as proof' }, h('p', null, 'Anything that shows the check was done: a screenshot, a short note, a link or a file. Paste a screenshot with Ctrl+V anywhere on this page, or drop a file on this check. If no proof is needed, choose Done and say why.'))),
     h('div', { class: 'row-actions' },
       btn('Screenshot or file', () => attachFiles(c), { small: true, iconName: 'image' }),
       btn('Note', () => addNoteEvidence(c), { small: true, iconName: 'note' }),

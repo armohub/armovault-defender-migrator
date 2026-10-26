@@ -796,6 +796,78 @@ await step('Simplified: six questions, missions with progress, a mission questio
   await c3.close();
 });
 
+await step('Several inventory files import together, one dialog per workspace, and Skip leaves a file out', async () => {
+  const sample = JSON.parse(fs.readFileSync(path.resolve('samples/sample-inventory.json'), 'utf8'));
+  const files = ['E2E-WS-A', 'E2E-WS-B', 'E2E-WS-C'].map((alias) => {
+    const f = path.join(work, `inventory-${alias}.json`);
+    fs.writeFileSync(f, JSON.stringify({ ...sample, workspace: { alias } }));
+    return f;
+  });
+  const c5 = await chromium.launch({ channel, headless });
+  const ctx5 = await c5.newContext({ viewport: { width: 1400, height: 900 } });
+  ctx5.on('request', (r) => { const u = r.url(); if (/^(https?|wss?):/i.test(u)) network.push(u); });
+  const pg = await ctx5.newPage();
+  watch(pg);
+  await pg.goto(`${appUrl}?demo=1`);
+  await pg.getByText('You are exploring a demo.').waitFor();
+  await go(pg, '#/evidence');
+  await chooseFile(pg, () => btn(pg, 'Import inventory results').click(), files);
+  await dlg(pg).getByRole('heading', { name: 'Import inventory results (1 of 3)' }).waitFor();
+  await dlg(pg).getByText('Workspace E2E-WS-A').waitFor();
+  await clickDlg(pg, 'Import selected');
+  await dlg(pg).getByRole('heading', { name: 'Import inventory results (2 of 3)' }).waitFor();
+  await clickDlg(pg, 'Skip this file');
+  await dlg(pg).getByRole('heading', { name: 'Import inventory results (3 of 3)' }).waitFor();
+  assert.equal(await dlg(pg).getByRole('button', { name: 'Skip this file' }).count(), 0, 'the last file has no Skip');
+  await clickDlg(pg, 'Import selected');
+  await pg.getByText('2 of 3 inventory files imported.').waitFor();
+  assert.ok(await pg.getByText(/Inventory file E2E-WS-A/).count() > 0, 'the first file is attached');
+  assert.equal(await pg.getByText(/Inventory file E2E-WS-B/).count(), 0, 'the skipped file is not attached');
+  assert.ok(await pg.getByText(/Inventory file E2E-WS-C/).count() > 0, 'the third file is attached');
+  await c5.close();
+});
+
+await step('Explainers: the Defender table review says first that nothing is lost; the planner offers a small-team profile', async () => {
+  const c4 = await chromium.launch({ channel, headless });
+  const ctx4 = await c4.newContext({ viewport: { width: 1440, height: 1000 } });
+  ctx4.on('request', (r) => { const u = r.url(); if (/^(https?|wss?):/i.test(u)) network.push(u); });
+  const pg = await ctx4.newPage();
+  watch(pg);
+  await pg.goto(`${appUrl}?demo=1`);
+  await pg.getByText('You are exploring a demo.').waitFor();
+  // The reassurance is in plain view before any instruction; the details open from the ⓘ.
+  await go(pg, '#/mission/prepare/connectors');
+  const row = pg.locator('.crow', { hasText: 'Review which Defender tables you stream into Sentinel' });
+  await row.locator('.crow-head').click();
+  const lead = row.locator('.explain-lead');
+  assert.match(await lead.textContent(), /^Nothing is deleted\./);
+  const firstChild = await row.locator('.crow-body').evaluate((el) => el.firstElementChild.className);
+  assert.match(firstChild, /explain-lead/, 'the reassurance comes before "Do this"');
+  await lead.locator('.info-btn').click();
+  const pop = lead.locator('.info-pop');
+  await pop.getByText('Will we lose any logs?').waitFor();
+  assert.match(await pop.textContent(), /stays in the workspace until the end of its retention period/);
+  await pg.keyboard.press('Escape');
+  assert.equal(await pop.isVisible(), false, 'Escape closes the explainer');
+  assert.equal(await lead.locator('.info-btn').getAttribute('aria-expanded'), 'false');
+  // The same explainer leads the full step page.
+  await go(pg, '#/item/PREP-CON-08');
+  assert.match(await pg.locator('.item-head .explain-lead').textContent(), /^Nothing is deleted\./);
+  // Practical tips say they are practice.
+  await go(pg, '#/item/TRN-10');
+  await pg.locator('.item-head .info-btn').click();
+  await pg.locator('.item-head .info-pop').getByText('Practical guidance from the makers, not Microsoft guidance.').waitFor();
+  await pg.mouse.click(5, 300);
+  assert.equal(await pg.locator('.item-head .info-pop').isVisible(), false, 'a click elsewhere closes it');
+  // The planner: suggested profile, a small-team choice with shorter ranges.
+  await go(pg, '#/item/PREP-SCOPE-03');
+  await pg.locator('[data-focus-key="plan-lean"]').click();
+  await pg.getByText('You chose the small team ranges.').waitFor();
+  assert.match(await pg.locator('#do-it-here tbody tr').first().textContent(), /1 to 2 weeks/);
+  await pg.locator('[data-focus-key="plan-auto"]').click();
+  await c4.close();
+});
+
 await step('No network request was made during the whole run, and no console errors occurred', async () => {
   assert.deepEqual(network, []);
   assert.deepEqual(consoleErrors.filter((e) => !/Failed to load resource: net::ERR_FILE_NOT_FOUND/.test(e)), []);

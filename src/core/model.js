@@ -51,6 +51,8 @@ export const GATE_DECISION_IDS = GATE_DECISIONS.map((g) => g.id);
 
 export const EVIDENCE_KINDS = ['image', 'note', 'link', 'file'];
 export const GUIDANCE = ['simple', 'detailed'];
+// Window planner ranges: 'auto' follows the answers; the others are the team's own choice.
+export const PLAN_PROFILES = ['auto', 'lean', 'smaller', 'larger'];
 export const MAX_TEXT = 20000; // generous upper bound for any free-text field
 export const MAX_EVIDENCE_ITEMS = 5000; // matches the import limit
 export const MAX_REGISTER_ITEMS = 5000;
@@ -86,6 +88,7 @@ export function createProject({ meta = {}, mode = 'tailored', guidance = 'simple
       helpers: {},
       showExtras: true,
       ownersWanted: '',
+      planProfile: 'auto',
       notes: '',
       ...meta,
     },
@@ -227,6 +230,13 @@ export function setGuidance(project, guidance) {
 export function setShowExtras(project, show) {
   project.meta.showExtras = show === true;
   addAudit(project, 'project.extras', project.meta.showExtras ? 'Recommended extras shown' : 'Recommended extras hidden');
+  return { ok: true };
+}
+
+export function setPlanProfile(project, value) {
+  if (!PLAN_PROFILES.includes(value)) return { ok: false, error: 'Unknown planning profile.' };
+  project.meta.planProfile = value;
+  addAudit(project, 'project.plan', `Planning profile: ${value}`);
   return { ok: true };
 }
 

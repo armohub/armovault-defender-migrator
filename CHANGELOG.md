@@ -7,7 +7,7 @@ The first public version, released as one final version. There are no release ca
 ### Name and build
 
 - New name: **ArMo MS Defender Migration Assistant** (brand ArMo). It was called "ArMoHub Defender Migration Assistant".
-- Knowledge base version `2026.10.20` (the content changed after the review of 19 October; see below).
+- Knowledge base version `2026.10.26` (the content changed after the reviews of 19, 20 and 26 October; see below).
 - The build writes `dist/ArMo-MS-Defender-Migration-Assistant.html`, `dist/kb.json`, `dist/tools/Get-ArMoSentinelInventory.ps1`, `dist/licenses/MonaSans-OFL.txt` and `dist/SHA256SUMS.txt`.
 - Project packages are named `armo-dma-<project>-<date>.zip`. Exports and the preferences file use the same `armo-dma` prefix.
 - Internal schema identifiers (`armohub.dma.project`, `armohub.dma.settings`) are unchanged on purpose, for compatibility.
@@ -35,10 +35,10 @@ The dry run found the assistant overwhelming: even a small organisation got 73 s
 
   A switch on the overview and in Project setup changes it any time. Records stay the same, and the audit log notes the switch. Projects saved before this change open in Detailed.
 - **Missions.** Each workstream is a mission with an action title, such as "Get automation ready", and a progress bar. The overview lists the missions of each stage and leads with **Continue** to the next one.
-- **Short checklists.** Every one of the 109 checks has a short form: an action title, at most three "do this" points and one line on what counts as proof. The full step stays one click away under **Details**.
+- **Short checklists.** Every one of the 110 checks has a short form: an action title, at most three "do this" points and one line on what counts as proof. The full step stays one click away under **Details**.
 - **Proof in one move.** Paste a screenshot (Ctrl+V) anywhere on a mission page, or drop a file on the open check. A copy that also carries text, from Excel or OneNote for example, still pastes as text into a field. The usual safety checks apply. Where a form in the assistant completes the check, **Use my entries as proof** attaches a note generated from those entries, labelled as such in the assistant and in reports.
 - **Fewer questions up front.** Simplified asks six questions before the plan exists. Every other question appears in the missions it affects; answering No there sets the related checks aside, with the reason.
-- **Good practice, apart.** Eight checks that Microsoft does not require for the move are now "recommended extras", for example the watchlist inventory and the post-transition review. They sit at the bottom of their mission, can be hidden, and never affect progress or readiness. This applies in both modes, so a stage whose only open items are extras now reaches its conclusion. Turning on auditing and health monitoring stays needed: the Validate checks for rules and automation use its data.
+- **Good practice, apart.** Nine checks that Microsoft does not require for the move are now "recommended extras", for example the watchlist inventory and the post-transition review. They sit at the bottom of their mission, can be hidden, and never affect progress or readiness. This applies in both modes, so a stage whose only open items are extras now reaches its conclusion. Turning on auditing and health monitoring stays needed: the Validate checks for rules and automation use its data.
 - **Ready texts** for the teams involved: a notice to analysts, a "we're live" note and a change request summary, next to the stakeholder briefing. Each can be copied for Outlook, downloaded as an Outlook draft (.eml) or opened in the email app.
 - **Owners, lighter.**
   - Simplified asks only who approves the change. Each mission has an optional owner field.
@@ -46,6 +46,18 @@ The dry run found the assistant overwhelming: even a small organisation got 73 s
 - **Stage pages** list their missions in Simplified, and show a progress bar per workstream in Detailed.
 - **Decisions from the row:** decision checks have a **Record decision** button that opens the register with the step filled in.
 - **Clearer question:** "Do any internal or company policies, or regulations, limit where security data may be stored or processed?"
+
+### From a comparison with public migration guides (26 October)
+
+We compared the assistant with four public resources on the same move (a field guide, a helper script, and two blog posts) and added what they cover that we did not. Every fact below comes from Microsoft Learn; the two practical tips are labelled as the makers' guidance.
+
+- **Will we lose any logs? No.** A new recommended extra, **Review which Defender XDR tables you stream into Sentinel**, opens with that answer before any instruction: reviewing changes nothing, and if you later stop streaming a table, the data already in Sentinel stays until its retention ends. The ⓘ explains the rest: Defender keeps its own data for 30 days in advanced hunting, alerts and incidents keep flowing to Sentinel at no cost, and Sentinel only sees what you stream, so keep any table that Sentinel rules, workbooks or hunting queries use. A read-only Usage query lists the billable Defender tables. Two new Microsoft Learn sources: data retention in a Log Analytics workspace, and the Entra roles with Defender XDR access.
+- **Fewer incidents is expected.** The validation and the after-connection checks say that the Defender portal merges related alerts into one incident, so you compare alerts per rule with your baseline, not the number of incidents. The tolerance step asks for the same measure.
+- **Default access.** Mapping access now includes a review of who holds the Entra roles that reach Defender data by default (Global Administrator, Security Administrator, Security Operator, Global Reader, Security Reader).
+- **Practical tips, labelled.** Connect on a Tuesday to Thursday morning, never on a Friday or before a holiday. Use the time until 31 March 2027 to let analysts practise in the Defender portal.
+- **Explainers.** An ⓘ button opens a short explainer where a reader could hesitate: on ten checks (for example "Do we lose multistage detection?"), on what counts as proof, on the recommended extras, on the Simplified or Detailed switch and on the window planner. On a check, a one-line answer stands in plain view before "Do this"; the details open on request, close with Escape or a click elsewhere, and stay inside the window on a small screen.
+- **A small-team plan.** The window planner suggests ranges from your answers and workspace list (small team, standard or larger), with an ⓘ on how it picks, and lets you choose another. Your choice travels with the project.
+- **Several workspaces in one run.** The inventory script takes a list of workspaces (`-WorkspacesFile`) and writes one file per workspace. A workspace that fails does not stop the others, and the list is checked before any request. **Import inventory results** takes several files at once, with one dialog per workspace and **Skip this file**. The script is now version 1.0.0 and still sends GET requests only.
 
 ### Changes from the review on 20 October
 

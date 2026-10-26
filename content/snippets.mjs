@@ -19,8 +19,8 @@ export const SNIPPETS = {
     purpose: 'Collects the names and transition-relevant flags of your analytics rules (both API versions), automation rules, data connectors and watchlists. It writes them to a JSON file that you import with "Import inventory results". It writes no rule queries, incident data or credentials.',
     notDo: 'Sends GET requests only, so it changes nothing. It does not read Defender portal settings, and it does not sign you in.',
     code: INVENTORY_SCRIPT,
-    expected: 'A JSON file (schema armohub.dma.inventory) and a summary line with counts. Review the file before you import or share it.',
-    caveats: ['Written for this project and tested against a mocked API only. It is not yet validated against a live tenant, so review it before you run it.', 'Rule and watchlist names can be sensitive. Handle the output under your data policy.', 'Run it once per workspace.'],
+    expected: 'A JSON file per workspace (schema armohub.dma.inventory) and a summary line with counts. Review the files before you import or share them.',
+    caveats: ['Written for this project and tested against a mocked API only. It is not yet validated against a live tenant, so review it before you run it.', 'Rule and watchlist names can be sensitive. Handle the output under your data policy.', 'For several workspaces, list them in a JSON file and pass -WorkspacesFile (see the examples at the top of the script). It writes one file per workspace, and a workspace that fails does not stop the others.'],
     sources: ['sialertrules', 'siautomation', 'siconnectors', 'siwatchlists', 'siversions', 'invokerest'],
   },
   K_USAGE_BY_TABLE: {
@@ -44,6 +44,29 @@ Usage
     expected: 'One row per table (DataType) with BillableGB, LastHourWithData, Solutions and Plans.',
     caveats: ['The Plan column was added in mid-May 2026, so older rows have it empty.', 'Results are to the hour only.'],
     sources: ['usage'],
+  },
+  K_DEFENDER_TABLE_INGESTION: {
+    title: 'Billable volume of Defender XDR tables streamed into this workspace (last 30 full days)', language: 'kql', status: 'composed', runIn: LA, permissions: READER, readOnly: true,
+    cost: 'Low. The Usage table is an hourly aggregate.',
+    purpose: 'Shows which raw Defender XDR tables this workspace receives through the Defender XDR connector, and how much billable data each one adds.',
+    notDo: 'Does not show whether a rule, workbook or hunting query uses a table, and does not change anything.',
+    code: `// Billable volume of the Defender XDR advanced hunting tables streamed into this workspace.
+// Table list: the "Connect events" tables of the Defender XDR connector. Usage.Quantity is in MB.
+let lookbackDays = 30;
+let defenderTables = dynamic(['DeviceInfo', 'DeviceNetworkInfo', 'DeviceProcessEvents', 'DeviceNetworkEvents',
+  'DeviceFileEvents', 'DeviceRegistryEvents', 'DeviceLogonEvents', 'DeviceImageLoadEvents', 'DeviceEvents',
+  'DeviceFileCertificateInfo', 'EmailAttachmentInfo', 'EmailEvents', 'EmailPostDeliveryEvents', 'EmailUrlInfo',
+  'UrlClickEvents', 'IdentityDirectoryEvents', 'IdentityLogonEvents', 'IdentityQueryEvents', 'CloudAppEvents',
+  'AlertInfo', 'AlertEvidence']);
+Usage
+| where TimeGenerated > ago(1d * (lookbackDays + 1))
+| where StartTime >= startofday(ago(1d * lookbackDays)) and EndTime < startofday(now())
+| where IsBillable == true and DataType in (defenderTables)
+| summarize BillableGB = round(sum(Quantity) / 1000., 3), LastHourWithData = max(EndTime) by DataType
+| order by BillableGB desc`,
+    expected: 'One row per streamed Defender table with BillableGB and LastHourWithData. No rows means no Defender tables are streamed.',
+    caveats: ['Results are to the hour only.', 'Defender Vulnerability Management (TVM) tables are never ingested into Sentinel, so they never appear here.'],
+    sources: ['usage', 'xdrconnector'],
   },
   K_USAGE_LASTSEEN: {
     title: 'Every table with ingestion, and the days since its last data (last 90 days)', language: 'kql', status: 'composed', runIn: LA, permissions: READER, readOnly: true,

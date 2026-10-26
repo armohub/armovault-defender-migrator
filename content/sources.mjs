@@ -19,6 +19,8 @@ export const SOURCES = [
   ms('crossws', 'Extend Microsoft Sentinel across workspaces and tenants', '/azure/sentinel/extend-sentinel-across-workspaces-tenants', '2025-06-10', '2026-05-14', { verified: '2026-10-20' }),
   ms('prepmultiws', 'Prepare for multiple workspaces and tenants in Microsoft Sentinel', '/azure/sentinel/prepare-multiple-workspaces', '2025-07-16', '2026-08-07', { verified: '2026-10-20' }),
   ms('roles', 'Roles and permissions in the Microsoft Sentinel platform', '/azure/sentinel/roles', '2026-01-07', '2026-09-10'),
+  ms('xdrroles', 'Manage access to Microsoft Defender XDR with Microsoft Entra global roles', '/defender-xdr/m365d-permissions', '2024-05-08', '2026-08-07', { verified: '2026-10-26' }),
+  ms('retention', 'Manage data retention in a Log Analytics workspace', '/azure/azure-monitor/logs/data-retention-configure', '2026-09-02', '2026-09-29', { verified: '2026-10-26' }),
   ms('xdrprivacy', 'Data retention and data security in Microsoft Defender XDR', '/defender-xdr/data-privacy', '2025-08-24', '2026-06-24'),
   ms('urbac', 'Microsoft Defender unified role-based access control (RBAC)', '/defender-xdr/manage-rbac', '2026-08-07', '2026-10-15'),
   ms('urbacmap', 'Map Microsoft Defender unified RBAC permissions', '/defender-xdr/compare-rbac-roles', '2026-07-30', '2026-09-08'),

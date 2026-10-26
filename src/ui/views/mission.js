@@ -6,7 +6,7 @@ import { applicabilityMap } from '../../core/applicability.js';
 import { effectiveStatus } from '../../core/readiness.js';
 import { missionOf, nextMission, firstOpenRow, DONE_STATUSES } from '../../core/missions.js';
 import { setWorkstreamOwners, setShowExtras, workstreamKey } from '../../core/model.js';
-import { btn, linkBtn, emptyState } from '../components.js';
+import { btn, linkBtn, emptyState, infoTip } from '../components.js';
 import { actionsFor } from '../step-actions.js';
 import { changeAnswer } from './questionnaire.js';
 import { checkRow } from '../checkrow.js';
@@ -63,7 +63,7 @@ route('mission', ({ params }) => {
     m.complete && m.total ? h('div', { class: 'mission-done', role: 'status' }, icon('check', 'icon-sm'), h('span', null, 'Mission done.'),
       next ? linkBtn(`Next: ${next.title}`, `#/mission/${next.stage}/${next.workstream}`, { kind: 'primary', iconName: 'arrow', small: true }) : linkBtn('Back to the overview', '#/overview', { small: true })) : null,
     m.extras.length ? h('section', { class: 'mission-extras' },
-      h('div', { class: 'row' }, h('h2', null, 'Recommended extras'), h('span', { class: 'small muted' }, 'Good practice, not needed for the move.'),
+      h('div', { class: 'row' }, h('h2', null, 'Recommended extras'), infoTip({ key: 'extras', title: 'Recommended extras' }, h('p', null, 'Good practice that Microsoft does not require for the move. They never count against your progress or readiness. Do them when they help you, or hide them with the switch.')), h('span', { class: 'small muted' }, 'Good practice, not needed for the move.'),
         h('label', { class: 'toggle small' }, h('input', { type: 'checkbox', checked: showExtras, 'data-focus-key': 'show-extras', onchange: (e) => mutate((pr) => setShowExtras(pr, e.target.checked)) }), 'Show')),
       showExtras ? h('ul', { class: 'crow-list' }, m.extras.map(rowFor)) : null) : null,
     m.setAside.length ? h('details', { class: 'disclose mission-aside' }, h('summary', null, icon('chevron', 'icon-sm'), `Set aside because of your answers (${m.setAside.length})`),

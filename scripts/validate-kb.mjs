@@ -229,6 +229,13 @@ export function validateKb(kb) {
     if (!Array.isArray(s.do) || s.do.length < 1 || s.do.length > 3) errors.push(`${c.id}: the short form needs one to three "do" points.`);
     else s.do.forEach((d, i) => { if (typeof d !== 'string' || !d.trim() || d.length > SHORT_LIMITS.do) errors.push(`${c.id}: do point ${i + 1} is empty or longer than ${SHORT_LIMITS.do} characters.`); });
     if (!s.proof || s.proof.length > SHORT_LIMITS.proof) errors.push(`${c.id}: short proof missing or longer than ${SHORT_LIMITS.proof} characters.`);
+    if (s.info !== undefined) {
+      const inf = s.info || {};
+      if (!inf.title || inf.title.length > 60) errors.push(`${c.id}: info explainer needs a title of at most 60 characters.`);
+      if (inf.lead !== undefined && (typeof inf.lead !== 'string' || !inf.lead.trim() || inf.lead.length > 200)) errors.push(`${c.id}: info lead must be text of at most 200 characters.`);
+      if (!Array.isArray(inf.points) || inf.points.length < 1 || inf.points.length > 6 || inf.points.some((x) => typeof x !== 'string' || !x.trim() || x.length > 220)) errors.push(`${c.id}: info explainer needs one to six points of at most 220 characters.`);
+      if (inf.practice !== undefined && typeof inf.practice !== 'boolean') errors.push(`${c.id}: info practice must be true or false.`);
+    }
   }
   for (const c of kb.checks.filter((x) => x.scope === 'needed')) {
     for (const d of c.dependsOn || []) {

@@ -100,3 +100,61 @@ export function daysUntil(dateIso) {
   const ms = new Date(`${dateIso}T00:00:00Z`).getTime() - Date.now();
   return Math.ceil(ms / 86400000);
 }
+
+// An ⓘ that opens a short explanation next to what it explains. A click, Enter or Space opens it;
+// Escape, a second click or a click elsewhere closes it. "key" keeps focus on it across redraws.
+const openTips = new Set();
+let tipsBound = false;
+function closeTip(tip) {
+  const b = tip.querySelector('.info-btn');
+  const panel = tip.querySelector('.info-pop');
+  if (b) b.setAttribute('aria-expanded', 'false');
+  if (panel) panel.hidden = true;
+  openTips.delete(tip);
+}
+function bindTips() {
+  if (tipsBound) return;
+  tipsBound = true;
+  document.addEventListener('click', (e) => { for (const t of [...openTips]) if (!t.isConnected || !t.contains(e.target)) closeTip(t); });
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape' || !openTips.size) return;
+    for (const t of [...openTips]) { closeTip(t); const b = t.querySelector('.info-btn'); if (b && b.isConnected) b.focus(); }
+  });
+}
+export function infoTip({ key, title, practice = false, label }, ...content) {
+  bindTips();
+  const id = `tip-${key}`;
+  const panel = h('div', { class: 'info-pop', id, role: 'note', hidden: true },
+    h('strong', { class: 'info-title' }, title),
+    ...content,
+    practice ? h('p', { class: 'info-practice' }, 'Practical guidance from the makers, not Microsoft guidance.') : null);
+  const wrap = h('span', { class: 'info-tip' });
+  const button = h('button', {
+    type: 'button', class: 'info-btn', 'aria-expanded': 'false', 'aria-controls': id, 'aria-label': label || `More about: ${title}`, title: label || title, 'data-focus-key': `info-${key}`,
+    onclick: (e) => {
+      e.stopPropagation();
+      if (button.getAttribute('aria-expanded') === 'true') { closeTip(wrap); return; }
+      for (const t of [...openTips]) closeTip(t);
+      // Keep the panel inside the window: as wide as fits, shifted left when the ⓘ is near the right edge.
+      const r = button.getBoundingClientRect();
+      const width = Math.min(360, window.innerWidth - 24);
+      panel.style.width = `${width}px`;
+      panel.style.left = `${Math.max(12, Math.min(r.left, window.innerWidth - width - 12)) - r.left}px`;
+      button.setAttribute('aria-expanded', 'true');
+      panel.hidden = false;
+      openTips.add(wrap);
+    },
+  }, icon('info', 'icon-sm'));
+  wrap.append(button, panel);
+  return wrap;
+}
+
+// A step's explainer from its short form: the lead in plain view (reassurance first), the rest behind an ⓘ.
+export function stepExplainer(info, key) {
+  if (!info) return null;
+  const tip = infoTip({ key, title: info.title, practice: !!info.practice }, h('ul', { class: 'bullets' }, info.points.map((x) => h('li', null, x))));
+  return info.lead
+    ? h('p', { class: 'explain-lead' }, icon('shield', 'icon-sm'), h('span', null, info.lead), tip)
+    : h('p', { class: 'explain-lead plain' }, h('span', { class: 'small muted' }, info.title), tip);
+}
+

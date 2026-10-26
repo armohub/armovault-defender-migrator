@@ -5,7 +5,7 @@ The ArMo MS Defender Migration Assistant is released as one final version, **1.0
 ## Versioning
 
 - **App:** semantic versioning in `src/brand.js` (`APP_VERSION`) and `package.json` (`version`). The two must match. Each published version is final.
-- **Knowledge base:** a date-based version in `content/kb.mjs` (`KB_META.version`, `2026.10.20` for 1.0), plus `lastReviewed`. Content-only updates bump the knowledge base version and the app patch version.
+- **Knowledge base:** a date-based version in `content/kb.mjs` (`KB_META.version`, `2026.10.26` for 1.0), plus `lastReviewed`. Content-only updates bump the knowledge base version and the app patch version.
 - **Project schema:** an integer `schemaVersion`. Bump it only with a migration in `src/core/schema.js`.
 - **Internal identifiers** (`armohub.dma.project`, `armohub.dma.settings` and the related keys) stay as they are, for compatibility. Do not rename them as part of a release.
 
@@ -34,7 +34,7 @@ The ArMo MS Defender Migration Assistant is released as one final version, **1.0
    - a Narrator walkthrough of the introduction, the questionnaire and one step page;
    - the introduction with Windows animation effects turned off, and with **Reduce motion** in Settings;
    - light and dark theme contrast.
-10. Run the inventory script mock test (`tests/tools/mock-inventory-run.ps1`). For releases that change the script, run it against a lab tenant.
+10. Run the inventory script mock tests (`tests/tools/mock-inventory-run.ps1`, with and without `-Fail automationRules`, and `tests/tools/mock-inventory-multi.ps1`). For releases that change the script, run it against a lab tenant.
 11. Update `CHANGELOG.md`, `docs/test-results.md` and the version numbers.
 12. Create the release archive `ArMo-MS-Defender-Migration-Assistant-<version>.zip` with the HTML file, `kb.json`, `tools/`, `licenses/`, `SHA256SUMS.txt`, `README.md` and, once chosen, `LICENSE`. Keep `licenses/MonaSans-OFL.txt` with every copy of the HTML file. Publish the SHA-256 checksums with the release notes.
 13. Hosted demo (optional): upload the same HTML file. Link to it with `?demo=1` to open the demo straight away.

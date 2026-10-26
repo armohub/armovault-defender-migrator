@@ -23,17 +23,35 @@
       Not yet validated against a live customer tenant by the authors. Review it before running.
     - Review the output file before importing or sharing it: rule and watchlist names can be sensitive.
 
+  SEVERAL WORKSPACES IN ONE RUN
+    - Pass -WorkspacesFile with a JSON list of workspaces, and optionally -OutFolder. The script writes one file per
+      workspace, named inventory-<alias>.json, which you can import into the app together.
+    - Each entry needs subscriptionId, resourceGroupName, workspaceName and alias. Aliases must be unique.
+    - The list holds resource names only. Do not put secrets, tokens or passwords in it.
+    - If one workspace fails, the others are still collected, and the run ends with a summary.
+
 .EXAMPLE
   Connect-AzAccount
   .\Get-ArMoSentinelInventory.ps1 -SubscriptionId '<id>' -ResourceGroupName '<rg>' -WorkspaceName '<ws>' -WorkspaceAlias 'SOC-PROD' -OutFile .\inventory-soc-prod.json
+
+.EXAMPLE
+  # workspaces.json:
+  # [
+  #   { "subscriptionId": "<id>", "resourceGroupName": "<rg>", "workspaceName": "<ws1>", "alias": "SOC-PROD-EU" },
+  #   { "subscriptionId": "<id>", "resourceGroupName": "<rg>", "workspaceName": "<ws2>", "alias": "SOC-PROD-US" }
+  # ]
+  Connect-AzAccount
+  .\Get-ArMoSentinelInventory.ps1 -WorkspacesFile .\workspaces.json -OutFolder .\inventory
 #>
-[CmdletBinding()]
+[CmdletBinding(DefaultParameterSetName = 'One')]
 param(
-  [Parameter(Mandatory = $true)][string] $SubscriptionId,
-  [Parameter(Mandatory = $true)][string] $ResourceGroupName,
-  [Parameter(Mandatory = $true)][string] $WorkspaceName,
-  [string] $WorkspaceAlias = '',
-  [string] $OutFile = '.\armohub-inventory.json'
+  [Parameter(Mandatory = $true, ParameterSetName = 'One')][string] $SubscriptionId,
+  [Parameter(Mandatory = $true, ParameterSetName = 'One')][string] $ResourceGroupName,
+  [Parameter(Mandatory = $true, ParameterSetName = 'One')][string] $WorkspaceName,
+  [Parameter(ParameterSetName = 'One')][string] $WorkspaceAlias = '',
+  [Parameter(ParameterSetName = 'One')][string] $OutFile = '.\armohub-inventory.json',
+  [Parameter(Mandatory = $true, ParameterSetName = 'List')][string] $WorkspacesFile,
+  [Parameter(ParameterSetName = 'List')][string] $OutFolder = '.'
 )
 
 Set-StrictMode -Version 2.0
@@ -43,8 +61,7 @@ if (-not (Get-Command Invoke-AzRestMethod -ErrorAction SilentlyContinue)) {
   throw 'Invoke-AzRestMethod was not found. Install the Az.Accounts module and run Connect-AzAccount first.'
 }
 
-$base = "/subscriptions/$SubscriptionId/resourceGroups/$ResourceGroupName/providers/Microsoft.OperationalInsights/workspaces/$WorkspaceName/providers/Microsoft.SecurityInsights"
-$errors = New-Object System.Collections.Generic.List[string]
+$script:errors = New-Object System.Collections.Generic.List[string]
 
 function Get-AllPages([string] $Path) {
   $items = @()
@@ -54,7 +71,7 @@ function Get-AllPages([string] $Path) {
     if ($resp.StatusCode -ne 200) {
       # Record only the resource type and status code - never the subscription, resource group or workspace path.
       $resourceType = ($Path.Split('?')[0]).Split('/')[-1]
-      $errors.Add("GET $resourceType returned HTTP $($resp.StatusCode)")
+      $script:errors.Add("GET $resourceType returned HTTP $($resp.StatusCode)")
       break
     }
     $body = $resp.Content | ConvertFrom-Json
@@ -76,67 +93,119 @@ function Get-Prop($Object, [string[]] $Path) {
   return $cur
 }
 
-# Analytics rules: query both API versions because the stable version enumerates fewer rule kinds.
-$rules = @{}
-foreach ($api in @('2025-09-01', '2025-07-01-preview')) {
-  foreach ($r in (Get-AllPages "$base/alertRules?api-version=$api")) {
-    $ruleId = [string](Get-Prop $r @('name'))
-    if (-not $ruleId -or $rules.ContainsKey($ruleId)) { continue }
-    $p = Get-Prop $r @('properties')
-    $query = [string](Get-Prop $p @('query'))
-    $description = [string](Get-Prop $p @('description'))
-    $tag = ''
-    if ($description -match '^\s*#(INC|DONT)_CORR#') { $tag = $Matches[0].Trim() }
-    $rules[$ruleId] = [ordered]@{
-      name             = [string](Get-Prop $p @('displayName'))
-      kind             = [string](Get-Prop $r @('kind'))
-      enabled          = [bool](Get-Prop $p @('enabled'))
-      createIncident   = Get-Prop $p @('incidentConfiguration', 'createIncident')
-      groupingEnabled  = Get-Prop $p @('incidentConfiguration', 'groupingConfiguration', 'enabled')
-      reopenClosed     = Get-Prop $p @('incidentConfiguration', 'groupingConfiguration', 'reopenClosedIncident')
-      correlationTag   = $tag
-      usesIdentityInfo = [bool]($query -match 'IdentityInfo')
-      usesLegacyTI     = [bool]($query -match 'ThreatIntelligenceIndicator')
-      productFilter    = [string](Get-Prop $p @('productFilter'))
-      apiVersion       = $api
+# Collects one workspace and writes its file. Returns the number of failed requests.
+function Invoke-WorkspaceInventory([string] $SubscriptionId, [string] $ResourceGroupName, [string] $WorkspaceName, [string] $WorkspaceAlias, [string] $OutFile) {
+  $script:errors = New-Object System.Collections.Generic.List[string]
+  $base = "/subscriptions/$SubscriptionId/resourceGroups/$ResourceGroupName/providers/Microsoft.OperationalInsights/workspaces/$WorkspaceName/providers/Microsoft.SecurityInsights"
+
+  # Analytics rules: query both API versions because the stable version enumerates fewer rule kinds.
+  $rules = @{}
+  foreach ($api in @('2025-09-01', '2025-07-01-preview')) {
+    foreach ($r in (Get-AllPages "$base/alertRules?api-version=$api")) {
+      $ruleId = [string](Get-Prop $r @('name'))
+      if (-not $ruleId -or $rules.ContainsKey($ruleId)) { continue }
+      $p = Get-Prop $r @('properties')
+      $query = [string](Get-Prop $p @('query'))
+      $description = [string](Get-Prop $p @('description'))
+      $tag = ''
+      if ($description -match '^\s*#(INC|DONT)_CORR#') { $tag = $Matches[0].Trim() }
+      $rules[$ruleId] = [ordered]@{
+        name             = [string](Get-Prop $p @('displayName'))
+        kind             = [string](Get-Prop $r @('kind'))
+        enabled          = [bool](Get-Prop $p @('enabled'))
+        createIncident   = Get-Prop $p @('incidentConfiguration', 'createIncident')
+        groupingEnabled  = Get-Prop $p @('incidentConfiguration', 'groupingConfiguration', 'enabled')
+        reopenClosed     = Get-Prop $p @('incidentConfiguration', 'groupingConfiguration', 'reopenClosedIncident')
+        correlationTag   = $tag
+        usesIdentityInfo = [bool]($query -match 'IdentityInfo')
+        usesLegacyTI     = [bool]($query -match 'ThreatIntelligenceIndicator')
+        productFilter    = [string](Get-Prop $p @('productFilter'))
+        apiVersion       = $api
+      }
     }
   }
+
+  # Automation rules
+  $risky = @('IncidentProviderName', 'IncidentTitle', 'IncidentDescription', 'IncidentUpdatedBySource')
+  $automation = foreach ($a in (Get-AllPages "$base/automationRules?api-version=2025-09-01")) {
+    $logic = Get-Prop $a @('properties', 'triggeringLogic')
+    $json = $logic | ConvertTo-Json -Depth 30
+    $actions = @(Get-Prop $a @('properties', 'actions'))
+    [ordered]@{
+      name            = [string](Get-Prop $a @('properties', 'displayName'))
+      enabled         = [bool](Get-Prop $logic @('isEnabled'))
+      triggersOn      = [string](Get-Prop $logic @('triggersOn'))
+      triggersWhen    = [string](Get-Prop $logic @('triggersWhen'))
+      riskyConditions = @($risky | Where-Object { $json -match [regex]::Escape($_) })
+      playbookActions = @($actions | Where-Object { (Get-Prop $_ @('actionType')) -eq 'RunPlaybook' }).Count
+      taskActions     = @($actions | Where-Object { (Get-Prop $_ @('actionType')) -eq 'AddIncidentTask' }).Count
+    }
+  }
+
+  $connectors = foreach ($c in (Get-AllPages "$base/dataConnectors?api-version=2025-09-01")) { [ordered]@{ kind = [string](Get-Prop $c @('kind')); name = [string](Get-Prop $c @('name')) } }
+  $watchlists = foreach ($w in (Get-AllPages "$base/watchlists?api-version=2025-09-01")) { [ordered]@{ alias = [string](Get-Prop $w @('properties', 'watchlistAlias')); name = [string](Get-Prop $w @('properties', 'displayName')) } }
+
+  $result = [ordered]@{
+    schema          = 'armohub.dma.inventory'
+    schemaVersion   = 1
+    tool            = [ordered]@{ name = 'Get-ArMoSentinelInventory.ps1'; version = '1.0.0' }
+    collectedAt     = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ', [System.Globalization.CultureInfo]::InvariantCulture)
+    workspace       = [ordered]@{ alias = $WorkspaceAlias }
+    analyticsRules  = @($rules.Values)
+    automationRules = @($automation)
+    dataConnectors  = @($connectors)
+    watchlists      = @($watchlists)
+    errors          = @($script:errors)
+  }
+
+  $result | ConvertTo-Json -Depth 8 | Out-File -FilePath $OutFile -Encoding utf8
+  Write-Host "Inventory written to $OutFile - $($rules.Count) analytics rules, $(@($automation).Count) automation rules, $(@($connectors).Count) connectors, $(@($watchlists).Count) watchlists."
+  if ($script:errors.Count) { Write-Warning ("Some requests failed: " + ($script:errors -join '; ')) }
+  return $script:errors.Count
 }
 
-# Automation rules
-$risky = @('IncidentProviderName', 'IncidentTitle', 'IncidentDescription', 'IncidentUpdatedBySource')
-$automation = foreach ($a in (Get-AllPages "$base/automationRules?api-version=2025-09-01")) {
-  $logic = Get-Prop $a @('properties', 'triggeringLogic')
-  $json = $logic | ConvertTo-Json -Depth 30
-  $actions = @(Get-Prop $a @('properties', 'actions'))
-  [ordered]@{
-    name            = [string](Get-Prop $a @('properties', 'displayName'))
-    enabled         = [bool](Get-Prop $logic @('isEnabled'))
-    triggersOn      = [string](Get-Prop $logic @('triggersOn'))
-    triggersWhen    = [string](Get-Prop $logic @('triggersWhen'))
-    riskyConditions = @($risky | Where-Object { $json -match [regex]::Escape($_) })
-    playbookActions = @($actions | Where-Object { (Get-Prop $_ @('actionType')) -eq 'RunPlaybook' }).Count
-    taskActions     = @($actions | Where-Object { (Get-Prop $_ @('actionType')) -eq 'AddIncidentTask' }).Count
+if ($PSCmdlet.ParameterSetName -eq 'One') {
+  [void](Invoke-WorkspaceInventory $SubscriptionId $ResourceGroupName $WorkspaceName $WorkspaceAlias $OutFile)
+  Write-Host 'Review the file before importing it into the app or sharing it.'
+  return
+}
+
+# Several workspaces from a list file: one inventory file per workspace.
+if (-not (Test-Path -LiteralPath $WorkspacesFile)) { throw "The workspaces file was not found: $WorkspacesFile" }
+# Windows PowerShell 5.1 passes a JSON array down the pipeline as one object, so enumerate it explicitly.
+$parsed = ConvertFrom-Json -InputObject (Get-Content -LiteralPath $WorkspacesFile -Raw)
+$list = @($parsed | ForEach-Object { $_ })
+if (-not $list.Count) { throw 'The workspaces file is empty. Add one entry per workspace.' }
+$names = @{}
+$n = 0
+foreach ($w in $list) {
+  $n += 1
+  foreach ($field in @('subscriptionId', 'resourceGroupName', 'workspaceName', 'alias')) {
+    if (-not [string](Get-Prop $w @($field))) { throw "Entry $n in the workspaces file has no $field." }
+  }
+  $safe = ([string]$w.alias -replace '[^A-Za-z0-9._-]+', '-').Trim('-')
+  if (-not $safe) { $safe = "workspace-$n" }
+  $key = $safe.ToLowerInvariant()
+  if ($names.ContainsKey($key)) { throw "Entry $n gives the same file name as an earlier entry (inventory-$safe.json). Make the aliases unique." }
+  $names[$key] = $true
+  $w | Add-Member -NotePropertyName fileName -NotePropertyValue "inventory-$safe.json" -Force
+}
+if (-not (Test-Path -LiteralPath $OutFolder)) { New-Item -ItemType Directory -Path $OutFolder | Out-Null }
+$done = New-Object System.Collections.Generic.List[string]
+$failed = New-Object System.Collections.Generic.List[string]
+foreach ($w in $list) {
+  $alias = [string]$w.alias
+  $file = Join-Path $OutFolder $w.fileName
+  Write-Host "Collecting $alias ..."
+  try {
+    $failedRequests = Invoke-WorkspaceInventory ([string]$w.subscriptionId) ([string]$w.resourceGroupName) ([string]$w.workspaceName) $alias $file
+    if ($failedRequests) { $failed.Add("$alias ($failedRequests request(s) failed, file written)") } else { $done.Add($alias) }
+  } catch {
+    # Record only the alias and the message type - never the subscription, resource group or workspace path.
+    $failed.Add("$alias (not collected: $($_.Exception.GetType().Name))")
+    Write-Warning "Could not collect $alias. The other workspaces continue."
   }
 }
-
-$connectors = foreach ($c in (Get-AllPages "$base/dataConnectors?api-version=2025-09-01")) { [ordered]@{ kind = [string](Get-Prop $c @('kind')); name = [string](Get-Prop $c @('name')) } }
-$watchlists = foreach ($w in (Get-AllPages "$base/watchlists?api-version=2025-09-01")) { [ordered]@{ alias = [string](Get-Prop $w @('properties', 'watchlistAlias')); name = [string](Get-Prop $w @('properties', 'displayName')) } }
-
-$result = [ordered]@{
-  schema          = 'armohub.dma.inventory'
-  schemaVersion   = 1
-  tool            = [ordered]@{ name = 'Get-ArMoSentinelInventory.ps1'; version = '0.9.0' }
-  collectedAt     = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ', [System.Globalization.CultureInfo]::InvariantCulture)
-  workspace       = [ordered]@{ alias = $WorkspaceAlias }
-  analyticsRules  = @($rules.Values)
-  automationRules = @($automation)
-  dataConnectors  = @($connectors)
-  watchlists      = @($watchlists)
-  errors          = @($errors)
-}
-
-$result | ConvertTo-Json -Depth 8 | Out-File -FilePath $OutFile -Encoding utf8
-Write-Host "Inventory written to $OutFile - $($rules.Count) analytics rules, $(@($automation).Count) automation rules, $(@($connectors).Count) connectors, $(@($watchlists).Count) watchlists."
-if ($errors.Count) { Write-Warning ("Some requests failed: " + ($errors -join '; ')) }
+Write-Host "Done: $($done.Count) of $($list.Count) workspace(s) collected without errors."
+if ($failed.Count) { Write-Warning ('Check these: ' + ($failed -join '; ')) }
 Write-Host 'Review the file before importing it into the app or sharing it.'

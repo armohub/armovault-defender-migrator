@@ -93,19 +93,24 @@ export const VALIDATE = [
       'Run the analytics rule health query and compare the results with [[PREP-DET-07|the Stage 1 baseline]].',
       'Run the incidents-by-rule query and compare it with [[PREP-CON-05|the baseline]] for representative rules.',
       'Confirm analytics rules appear in the Defender custom detection rules list.',
+      { text: 'Compare alerts per rule with the baseline, not the number of incidents.', tip: 'Fewer incidents than before is expected: the Defender portal merges related alerts into one incident, and the merged incident keeps all its alerts.' },
     ],
     portalWay: [
       "Open the **Analytics Health & Audit** workbook under **Microsoft Sentinel > Threat management > Workbooks**. The **Health** tab shows successful and failed rule runs and their reasons, to compare with your baseline.",
       "Select a representative rule on **Microsoft Sentinel > Configuration > Analytics** and open the **Insights** tab. **Alert graph** shows its alerts over the time frame you choose, and **Failed executions** lists its failed runs.",
     ],
     snippets: ['K_RULE_HEALTH', 'K_INCIDENTS_BY_RULE'],
+    interpret: [
+      outcome('Fewer incidents than in the baseline', 'Expected. Related alerts are merged into one incident. Check that each representative rule still raises alerts.'),
+      outcome('A rule raised alerts in the baseline but none now', 'Investigate: check the rule health, its data and its schedule.'),
+    ],
     expected: 'There are no new rule failures, and representative rules create incidents.',
     record: [
       `The health comparison, in ${NOTES}`,
       `The representative rules you confirmed, in ${NOTES}`,
     ],
     evidence: ['The CSV exports: [[do:add-file|attach them as files]]'],
-    sources: [src('rulehealth', 'Rule health; portal: Analytics Health & Audit workbook Health tab'), src('customdetmanage', 'Custom detection list includes analytics rules'), src('workbooks', 'Workbooks are under Threat management > Workbooks'), src('ruleinsights', 'Insights tab with alert graph and failed executions per rule')],
+    sources: [src('correlation', 'Merging moves all alerts into the remaining incident and closes the merged one with a Redirected tag'), src('rulehealth', 'Rule health; portal: Analytics Health & Audit workbook Health tab'), src('customdetmanage', 'Custom detection list includes analytics rules'), src('workbooks', 'Workbooks are under Threat management > Workbooks'), src('ruleinsights', 'Insights tab with alert graph and failed executions per rule')],
   }),
   k({
     id: 'VAL-05', stage: 'validate', workstream: 'detections', order: 50, kind: 'check', criticality: 'high', dependsOn: ['PREP-DET-05'],

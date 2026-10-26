@@ -2,11 +2,11 @@
 
 Generated from the knowledge base by `scripts/gen-research.mjs`. Do not edit by hand.
 
-Maps each knowledge object to its stage, workstream, applicability questions, provenance, validation status, sources and open gaps. Knowledge base **2026.10.20** (reviewed 2026-10-19).
+Maps each knowledge object to its stage, workstream, applicability questions, provenance, validation status, sources and open gaps. Knowledge base **2026.10.26** (reviewed 2026-10-19).
 
 Legend. Provenance: **official** = derived from current Microsoft Learn documentation; **practice** = practical guidance from the makers, not a Microsoft requirement. Validation: **docs-verified** = consistent with the cited current pages; **needs-review** = Microsoft sources conflict or are ambiguous (the gap is shown in the app).
 
-**Totals:** 109 items · 102 official · 7 practice · 13 needs-review · 32 snippets · 35 questions.
+**Totals:** 110 items · 103 official · 7 practice · 13 needs-review · 33 snippets · 35 questions.
 
 ## By workstream
 
@@ -16,7 +16,7 @@ Legend. Provenance: **official** = derived from current Microsoft Learn document
 | Prepare | Workspaces and tenants | 6 | 6 | 0 | 1 |
 | Prepare | Access and permissions | 6 | 6 | 0 | 2 |
 | Prepare | Data governance, compliance and cost | 5 | 4 | 1 | 2 |
-| Prepare | Data connectors and ingestion | 7 | 7 | 0 | 1 |
+| Prepare | Data connectors and ingestion | 8 | 8 | 0 | 1 |
 | Prepare | Analytics rules, correlation and incidents | 8 | 8 | 0 | 2 |
 | Prepare | Automation rules and playbooks | 6 | 6 | 0 | 0 |
 | Prepare | Integrations and APIs | 3 | 3 | 0 | 1 |
@@ -54,7 +54,7 @@ Legend. Provenance: **official** = derived from current Microsoft Learn document
 | **PREP-TOP-05** Define the multi-tenant access model | Prepare / Workspaces and tenants | high | multi_tenant | official | needs-review | `mto` `mtoreq` `govrel` `onboard` `move` `urbac` `urbacactivate` `overview` `mssp` | Microsoft pages conflict on GDAP (as of 2026-10-19). The onboarding page and the MTO requirements say "not supported". The transition guide says "in preview". Two unified RBAC pages say "supported in unified RBAC" and "not supported in unified RBAC". Treat GDAP support as unresolved. |
 | **PREP-TOP-06** Replace workspace manager | Prepare / Workspaces and tenants | high | workspace_manager | official | docs-verified | `move` `defportal` `wsmgr` `xdrwhatsnew` `cicd` |  |
 | **PREP-ACC-01** Confirm the person who will connect the workspace has the required roles | Prepare / Access and permissions | critical | always | official | docs-verified | `onboard` `multiws` `urbacmap` |  |
-| **PREP-ACC-02** Map analyst roles for working in the Defender portal | Prepare / Access and permissions | high | always | official | docs-verified | `onboard` `ah` `runplaybooks` `roles` `multiws` |  |
+| **PREP-ACC-02** Map analyst roles for working in the Defender portal | Prepare / Access and permissions | high | always | official | docs-verified | `xdrroles` `onboard` `ah` `runplaybooks` `roles` `multiws` |  |
 | **PREP-ACC-03** Decide whether and when to use Defender unified RBAC for Sentinel | Prepare / Access and permissions | high | always | official | needs-review | `urbac` `urbacmap` `urbacactivate` `scoping` `multiws` | No Microsoft page fetched on 2026-10-19 explicitly labels unified RBAC for Sentinel as generally available or preview. |
 | **PREP-ACC-04** Assess table-level and resource-context access restrictions | Prepare / Access and permissions | high | granular_rbac | official | needs-review | `move` `scoping` `resourcectx` | How table-level RBAC behaves for tables other than IdentityInfo, and how resource-context RBAC behaves in the Defender portal, is not documented. Validate it with a restricted test user. |
 | **PREP-ACC-05** Protect the role assignments that the connection creates | Prepare / Access and permissions | medium | always | official | docs-verified | `move` `urbac` `lakeonboard` |  |
@@ -71,6 +71,7 @@ Legend. Provenance: **official** = derived from current Microsoft Learn document
 | **PREP-CON-05** Capture an alert and incident baseline | Prepare / Data connectors and ingestion | high | always | official | docs-verified | `move` `schemadiff` `securityincidenttable` `triageincidents` `ruleinsights` |  |
 | **PREP-CON-06** Turn on auditing and health monitoring | Prepare / Data connectors and ingestion | high | always | official | docs-verified | `enablehealth` `healthaudit` `connectorhealth` `ruleinsights` `rulehealth` |  |
 | **PREP-CON-07** Review content affected by alert schema differences | Prepare / Data connectors and ingestion | medium | standalone_connectors | official | docs-verified | `schemadiff` `exportrules` `hunting` |  |
+| **PREP-CON-08** Review which Defender XDR tables you stream into Sentinel | Prepare / Data connectors and ingestion | medium | defender_xdr | official | docs-verified | `ah` `defportal` `retention` `xdrconnector` `billing` `usage` |  |
 | **PREP-DET-01** Inventory and export analytics rules | Prepare / Analytics rules, correlation and incidents | critical | always | official | docs-verified | `exportrules` `sialertrules` `siversions` `move` `azcli` `createrules` |  |
 | **PREP-DET-02** Plan for the Fusion rule being disabled | Prepare / Analytics rules, correlation and incidents | high | fusion | official | needs-review | `move` `fusion` `corrsettings` | The transition guide says the Defender XDR engine "fully controls" grouping, while the newer correlation settings page describes tenant-level exclusion by default. Read your tenant's actual setting after connection. |
 | **PREP-DET-03** Replace Microsoft security incident creation rules | Prepare / Analytics rules, correlation and incidents | critical | ms_incident_rules | official | docs-verified | `move` `xdrint` `migrategrouping` `createincidents` `fusionconfig` |  |
@@ -97,10 +98,10 @@ Legend. Provenance: **official** = derived from current Microsoft Learn document
 | **PREP-CNT-07** Check content-as-code pipelines and content hub use | Prepare / Hunting, workbooks, threat intelligence and content | medium | cicd | official | docs-verified | `cicd` `whatsnew` `contenthub` |  |
 | **PREP-OPS-01** Update SOC runbooks for Defender portal navigation | Prepare / SOC operations and training | high | always | official | docs-verified | `defportal` `socopt` |  |
 | **PREP-OPS-02** Adapt analyst workflows to feature differences | Prepare / SOC operations and training | medium | soc_workflows | official | docs-verified | `move` `tasksdefender` `automation` |  |
-| **PREP-OPS-03** Plan analyst training on the Defender portal | Prepare / SOC operations and training | high | always | official | docs-verified | `move` |  |
+| **PREP-OPS-03** Plan analyst training on the Defender portal | Prepare / SOC operations and training | high | always | official | docs-verified | `move` `defportal` |  |
 | **PREP-OPS-04** Prepare communications for affected teams | Prepare / SOC operations and training | low | always | practice | docs-verified | `move` |  |
 | **PREP-PLN-01** Back up configuration before the change | Prepare / Planning, backup and rollback | critical | always | official | docs-verified | `move` `onboard` `exportrules` `exportauto` `armexport` |  |
-| **PREP-PLN-02** Define acceptance criteria for validation | Prepare / Planning, backup and rollback | high | always | practice | docs-verified | `migrategrouping` |  |
+| **PREP-PLN-02** Define acceptance criteria for validation | Prepare / Planning, backup and rollback | high | always | practice | docs-verified | `correlation` `migrategrouping` |  |
 | **PREP-PLN-03** Prepare the rollback and contingency plan | Prepare / Planning, backup and rollback | critical | always | official | needs-review | `onboard` `offboard` `multiws` `lakeonboard` `defportal` | Microsoft does not document which onboarding changes are reversed by disconnecting. If you have a test environment, rehearse disconnection there and record what you observe (see [[TEST-10\|the disconnection rehearsal]]). |
 | **PREP-PLN-04** Decide the test approach | Prepare / Planning, backup and rollback | high | always | official | needs-review | `multiws` `onboard` | This recommendation is derived from documented primary-workspace behaviour. Microsoft does not publish a test-environment strategy for the transition. |
 | **PREP-PLN-05** Review Stage 1 readiness and record the gate decision | Prepare / Planning, backup and rollback | critical | always | official | docs-verified | `move` |  |
@@ -127,7 +128,7 @@ Legend. Provenance: **official** = derived from current Microsoft Learn document
 | **TRN-10** Connect the workspace(s) to the Defender portal | Transition / The change | critical | always | official | docs-verified | `onboard` `move` `migrategrouping` `automation` |  |
 | **TRN-11** Confirm the connection | Transition / The change | critical | always | official | docs-verified | `onboard` |  |
 | **TRN-12** Verify the expected automatic changes | Transition / Checks after the change | high | always | official | docs-verified | `move` `xdrint` `multiws` `fusionconfig` `createincidents` `xdrconnector` |  |
-| **TRN-13** Verify incidents flow into the Defender portal | Transition / Checks after the change | critical | always | official | docs-verified | `xdrconnector` `automation` `incidentqueue` |  |
+| **TRN-13** Verify incidents flow into the Defender portal | Transition / Checks after the change | critical | always | official | docs-verified | `correlation` `xdrconnector` `automation` `incidentqueue` |  |
 | **TRN-14** Apply post-connection configuration | Transition / Checks after the change | high | always | official | docs-verified | `corrsettings` `migrategrouping` `investigatealerts` |  |
 | **TRN-15** Apply integration changes | Transition / Checks after the change | high | itsm, api_consumers | official | docs-verified | `move` |  |
 | **TRN-16** Run hypercare monitoring | Transition / Checks after the change | high | always | practice | docs-verified | `autohealth` `rulehealth` `workbooks` `azworkbooks` `connectorhealth` `incidentqueue` |  |
@@ -135,7 +136,7 @@ Legend. Provenance: **official** = derived from current Microsoft Learn document
 | **VAL-01** Check the workspaces appear correctly in the Defender portal | Validate / Platform and access | critical | always | official | docs-verified | `multiws` `onboard` |  |
 | **VAL-02** Check each persona can do its job | Validate / Platform and access | critical | always | official | docs-verified | `onboard` `runplaybooks` `ah` |  |
 | **VAL-03** Check data ingestion matches the baseline | Validate / Data | critical | always | official | docs-verified | `usage` `move` `connectorhealth` `wsinsights` `azworkbooks` |  |
-| **VAL-04** Check analytics rules run and produce incidents | Validate / Detections and incidents | critical | always | official | docs-verified | `rulehealth` `customdetmanage` `workbooks` `ruleinsights` |  |
+| **VAL-04** Check analytics rules run and produce incidents | Validate / Detections and incidents | critical | always | official | docs-verified | `correlation` `rulehealth` `customdetmanage` `workbooks` `ruleinsights` |  |
 | **VAL-05** Check correlation, grouping and titles behave as decided | Validate / Detections and incidents | high | always | official | docs-verified | `corrsettings` `correlation` `migrategrouping` |  |
 | **VAL-06** Check automation rules execute as expected | Validate / Automation | critical | automation_rules | official | docs-verified | `automation` `autohealth` `workbooks` `azworkbooks` `investigateincidents` |  |
 | **VAL-07** Check playbooks run successfully | Validate / Automation | high | playbooks | official | docs-verified | `runplaybooks` `autohealth` `larunhistory` |  |
@@ -160,7 +161,7 @@ Legend. Provenance: **official** = derived from current Microsoft Learn document
 | `multi_workspace` Is more than one Sentinel-enabled workspace in scope in this tenant? | PREP-TOP-02, PREP-TOP-03, PREP-TOP-04, TRN-07, VAL-14 |
 | `multi_tenant` Do you run Sentinel across more than one tenant? | PREP-TOP-05 |
 | `sovereign_cloud` Is any in-scope tenant in a government or sovereign cloud? | PREP-SCOPE-05 |
-| `defender_xdr` Is Microsoft Defender XDR licensed and in use in this tenant? | PREP-CON-01, PREP-DET-08, VAL-10 |
+| `defender_xdr` Is Microsoft Defender XDR licensed and in use in this tenant? | PREP-CON-01, PREP-CON-08, PREP-DET-08, VAL-10 |
 | `test_env` Do you have a non-production Sentinel environment to test the transition first? | none (context only) |
 | `test_separate_tenant` Is that test environment in a separate tenant from production? | none (context only) |
 | `data_residency` Do any internal or company policies, or regulations, limit where security data may be stored or processed? | PREP-GOV-02 |

@@ -6,18 +6,33 @@ import { addEvidence, setAnswer, answerLabel, addAudit, setEnvironments } from '
 import { sha256Hex } from '../core/files.js';
 import { callout } from './components.js';
 
+// One file per workspace: the script writes inventory-<alias>.json for each workspace in its list, and you can
+// pick them all at once. Each file gets its own dialog, so you confirm findings and answers per workspace.
 export async function importInventoryFlow() {
-  const [file] = await pickFile({ accept: '.json,application/json' });
-  if (!file) return;
-  if (file.size > MAX_INVENTORY_BYTES) { toast('The file is larger than 5 MB and was not imported.', 'bad'); return; }
+  const files = await pickFile({ accept: '.json,application/json', multiple: true });
+  if (!files.length) return;
+  let imported = 0;
+  for (const [i, file] of files.entries()) {
+    const r = await importOneInventory(file, { n: i + 1, total: files.length });
+    if (r === 'stop') break;
+    if (r === 'imported') imported += 1;
+  }
+  if (files.length > 1) toast(`${imported} of ${files.length} inventory files imported.`, imported ? 'good' : 'info', 7000);
+}
+
+// Returns 'imported', 'skipped' or 'stop' (Cancel or close stops the remaining files too).
+async function importOneInventory(file, { n, total }) {
+  const many = total > 1;
+  const of = many ? ` (${n} of ${total})` : '';
+  if (file.size > MAX_INVENTORY_BYTES) { toast(`${many ? `${file.name}: ` : ''}The file is larger than 5 MB and was not imported.`, 'bad'); return 'skipped'; }
   let inv;
   let bytes;
   try {
     bytes = await readBlobBytes(file);
     inv = parseInventory(new TextDecoder('utf-8').decode(bytes));
   } catch (e) {
-    await modal({ title: 'Inventory not imported', body: h('p', null, e.message), actions: [{ label: 'OK', kind: 'primary', value: true }] });
-    return;
+    await modal({ title: `Inventory not imported${of}`, body: h('p', null, many ? `${file.name}: ${e.message}` : e.message), actions: [{ label: n < total ? 'Next file' : 'OK', kind: 'primary', value: true }] });
+    return 'skipped';
   }
   const kb = state.kb;
   const p = state.project;
@@ -43,8 +58,13 @@ export async function importInventoryFlow() {
         const cur = p.answers[s.questionId];
         return h('li', { class: 'list-row' }, h('label', { class: 'check-line' }, h('input', { type: 'checkbox', onchange: (e) => { sSel[i] = e.target.checked; } }), h('span', null, `${qText(s.questionId)} → ${answerLabel(s.value)}`, h('span', { class: 'small muted' }, ` (${s.reason}; currently: ${cur ? answerLabel(cur.value) : 'not answered'})`))));
       }))) : null);
-  const ok = await modal({ title: 'Import inventory results', wide: true, body, actions: [{ label: 'Cancel', value: false }, { label: 'Import selected', kind: 'primary', value: true }] });
-  if (!ok) return;
+  const ok = await modal({ title: `Import inventory results${of}`, wide: true, body, actions: [
+    { label: 'Cancel', value: false },
+    n < total ? { label: 'Skip this file', value: 'skip' } : null,
+    { label: 'Import selected', kind: 'primary', value: true },
+  ].filter(Boolean) });
+  if (ok === 'skip') return 'skipped';
+  if (ok !== true) return 'stop';
   let nEv = 0;
   let nAns = 0;
   const v = kb.meta.version;
@@ -67,5 +87,6 @@ export async function importInventoryFlow() {
     if (addAlias) setEnvironments(pr, [...(pr.meta.environments || []), { alias: newAlias, kind: 'production', defender: 'unknown' }]);
     addAudit(pr, 'inventory.imported', `Inventory imported for ${res.label}: ${nEv} evidence note(s), ${nAns} answer(s) applied`);
   });
-  toast(`Imported ${nEv} evidence note(s)${attachFile ? ' and the inventory file' : ''}; ${nAns} answer(s) applied.`, 'good', 7000);
+  if (!many) toast(`Imported ${nEv} evidence note(s)${attachFile ? ' and the inventory file' : ''}; ${nAns} answer(s) applied.`, 'good', 7000);
+  return 'imported';
 }

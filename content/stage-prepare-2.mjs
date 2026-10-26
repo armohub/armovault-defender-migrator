@@ -293,6 +293,42 @@ export const PREPARE_2 = [
     sources: [src('schemadiff', 'Schema differences'), src('exportrules', 'Export from the Analytics page; the file includes the query of scheduled rules; one page of rules at a time'), src('hunting', 'Queries tab lists installed and custom hunting queries; the query is shown in the details pane')],
   }),
 
+  k({
+    id: 'PREP-CON-08', stage: 'prepare', workstream: 'connectors', order: 80, kind: 'decision', criticality: 'medium', applicability: q('defender_xdr'),
+    title: 'Review which Defender XDR tables you stream into Sentinel',
+    objective: 'Decide, table by table, whether you still need to stream raw Defender XDR data into Sentinel, or whether advanced hunting in the Defender portal already covers it. This is an optional cost review, separate from the move.',
+    why: [
+      'Raw Defender advanced hunting tables ingested into Sentinel are charged, while Defender XDR alerts and incidents synced to Sentinel are free.',
+      'In the Defender portal, advanced hunting queries native Defender data for 30 days without ingestion.',
+      'When you stop sending data to a table, the data already in it stays in the workspace until the end of the table\'s retention period.',
+      'Sentinel can only query Defender data that you ingest: workspace analytics rules, workbooks and hunting queries that use these tables need the data streamed.',
+    ],
+    roles: [
+      'The SOC lead and the detection owner decide which tables to keep',
+      'Changing the Defender XDR connector needs Security Administrator on the tenant, and read and write permissions on the workspace',
+    ],
+    where: [at(AP, 'Microsoft Sentinel > Configuration > Data connectors > Microsoft Defender XDR > Open connector page > Connect events'), at(DP, 'Investigation & response > Hunting > Advanced hunting')],
+    steps: [
+      'List the Defender tables you stream today: on the connector page under **Connect events**, or with the ingestion query below, which also shows the volume of each table.',
+      { text: 'For each table, check whether you need it in the workspace:', bullets: ['for longer than 30 days, for compliance or investigations', 'in Sentinel analytics rules, workbooks or hunting queries: search [[PREP-DET-01|your rule export]] and your workbooks for the table name'] },
+      { text: 'Decide per table:', bullets: ['keep streaming it', 'stop streaming it, and query it in advanced hunting or with custom detections in the Defender portal, which reach 30 days of native Defender data'], tip: 'Change nothing on the day you connect. Make any change later, as its own change, after the rules and workbooks that use the table are updated.' },
+      '[[do:add-decision|Record the decision]] for each table, with its reason.',
+    ],
+    snippets: ['K_DEFENDER_TABLE_INGESTION'],
+    expected: 'Each streamed Defender table has a recorded decision: keep it, or stop streaming it once nothing in Sentinel depends on it.',
+    record: [
+      'The tables you stream and their volume, in [[do:write-notes|this step\'s notes]]',
+      'The decision for each table: [[do:add-decision|add it to the register]]',
+    ],
+    evidence: ['The query result: [[do:add-file|attach the CSV]], or a screenshot of the connector page: [[do:add-screenshot|attach it]]'],
+    caveats: [
+      'Custom detection rules are provided by Microsoft Defender: without Defender capabilities they are limited or unavailable.',
+      'Defender Vulnerability Management (TVM) tables are never ingested into Sentinel. Query them in advanced hunting.',
+    ],
+    practiceNotes: ['Start with the largest tables in the query result: they decide most of the cost.'],
+    sources: [src('ah', 'Advanced hunting follows the retention you set for streamed Defender tables; Sentinel needs raw ingestion to query Defender data'), src('defportal', 'Advanced hunting raw logs free for 30 days without ingestion; custom detection rules limited without Defender'), src('retention', 'When you stop sending data, it remains in the workspace until the end of the table retention period'), src('xdrconnector', 'Connect events lists the Defender tables that can be streamed; TVM tables are not ingested; connector permissions'), src('billing', 'Defender XDR alerts and incidents are free; raw Defender tables ingested into Sentinel are charged'), src('usage', 'Usage table for billable volume per table')],
+  }),
+
   // ───────────────────────── Analytics rules, correlation and incidents ─────────────────────────
   k({
     id: 'PREP-DET-01', stage: 'prepare', workstream: 'detections', order: 10, kind: 'task', criticality: 'critical',
@@ -328,6 +364,7 @@ export const PREPARE_2 = [
         bullets: [
           'Run the analytics rule scan.',
           'Or [[do:download-inventory-script|download the read-only inventory script]], run it, and [[do:import-inventory|import the inventory results]]. The import turns its output into evidence for this step and related steps.',
+          'For several workspaces, run the script once with a list of workspaces. It writes one file per workspace, and you can import all the files together.',
         ],
         tip: 'The **Import inventory results** button is also on the [[go:stage:prepare|Stage 1 page]].',
       },

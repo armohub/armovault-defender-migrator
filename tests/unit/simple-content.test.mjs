@@ -7,9 +7,10 @@ import { validateKb } from '../../scripts/validate-kb.mjs';
 
 const CORE = ['multi_workspace', 'multi_tenant', 'defender_xdr', 'test_env', 'data_residency', 'sovereign_cloud'];
 
-test('exactly the eight good-practice checks are extras, every other check is needed', () => {
+test('exactly the nine good-practice checks are extras, every other check is needed', () => {
   // Health monitoring and the rule health baseline are needed: Validate checks query SentinelHealth.
-  assert.deepEqual([...EXTRAS].sort(), ['PREP-AUT-06', 'PREP-CNT-04', 'PREP-CNT-06', 'PREP-DET-08', 'PREP-GOV-04', 'PREP-GOV-05', 'TEST-10', 'VAL-19']);
+  // The Defender table review (PREP-CON-08) is an optional cost review, so it is an extra.
+  assert.deepEqual([...EXTRAS].sort(), ['PREP-AUT-06', 'PREP-CNT-04', 'PREP-CNT-06', 'PREP-CON-08', 'PREP-DET-08', 'PREP-GOV-04', 'PREP-GOV-05', 'TEST-10', 'VAL-19']);
   for (const c of KB.checks) assert.equal(c.scope, EXTRAS.includes(c.id) ? 'extra' : 'needed', c.id);
 });
 

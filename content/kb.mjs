@@ -10,7 +10,7 @@ import { SHORT, EXTRAS } from './short-forms.mjs';
 
 export const KB_META = {
   id: 'armohub.dma.kb',
-  version: '2026.10.20',
+  version: '2026.10.26',
   lastReviewed: '2026-10-19',
   language: 'en',
   scope: 'Moving Microsoft Sentinel from the Azure portal to the Microsoft Defender portal. That means connecting your Sentinel workspaces to the Defender portal, and adapting access, data governance, connectors, detections, automation, integrations, content and SOC operations. Out of scope: migrating to Sentinel from another SIEM, deploying Sentinel from scratch, and detection engineering beyond what the transition requires.',
@@ -231,14 +231,31 @@ export const REFERENCE = {
   planning: {
     note: 'Typical ranges from practice, not Microsoft guidance. Your timeline depends on the number of workspaces, tenants, automation rules, playbooks and integrations. Adjust them to your organisation.',
     phases: [
-      { id: 'prepare', label: 'Prepare: find what changes, fix or accept it', smaller: [2, 4], larger: [4, 8] },
-      { id: 'test', label: 'Test run (optional, if you have a test environment)', smaller: [1, 2], larger: [2, 3] },
-      { id: 'approval', label: 'Change approval lead time', smaller: [1, 2], larger: [1, 3] },
-      { id: 'hypercare', label: 'Watch closely after the change, then validate and sign off', smaller: [1, 2], larger: [2, 4] },
+      { id: 'prepare', label: 'Prepare: find what changes, fix or accept it', lean: [1, 2], smaller: [2, 4], larger: [4, 8] },
+      { id: 'test', label: 'Test run (optional, if you have a test environment)', lean: [1, 1], smaller: [1, 2], larger: [2, 3] },
+      { id: 'approval', label: 'Change approval lead time', lean: [1, 1], smaller: [1, 2], larger: [1, 3] },
+      { id: 'hypercare', label: 'Watch closely after the change, then validate and sign off', lean: [1, 1], smaller: [1, 2], larger: [2, 4] },
     ],
+    changeDay: 'Pick a Tuesday to Thursday morning for the change, never a Friday or the day before a holiday, so the team that made it is there for the first days.',
     change: 'The change itself: plan one attended working day. Connecting a workspace takes minutes; the rest of the day is for checks.',
     larger: 'Your answers suggest a larger environment (several workspaces or tenants, or playbooks), so the planner uses the longer ranges.',
-    smaller: 'Your answers suggest a smaller environment, so the planner uses the shorter ranges.',
+    smaller: 'Your answers suggest a standard environment, so the planner uses the middle ranges.',
+    lean: 'Your answers suggest one workspace with few dependencies, so the planner uses the shortest ranges. A small team working on this part-time can often prepare in one to two weeks.',
+    profiles: [
+      { id: 'auto', label: 'Suggested' },
+      { id: 'lean', label: 'Small team' },
+      { id: 'smaller', label: 'Standard' },
+      { id: 'larger', label: 'Larger' },
+    ],
+    profileInfo: {
+      title: 'How the planner picks its ranges',
+      points: [
+        'Small team: one workspace, one tenant, no playbooks and no ticketing integration.',
+        'Larger: several workspaces or tenants, playbooks, a ticketing integration, or more than two workspaces in your list.',
+        'Standard: everything in between, including answers you have not given yet.',
+        'Pick another profile if your team knows better. These are practical estimates from the makers, not Microsoft guidance.',
+      ],
+    },
   },
   terminology: [
     { term: 'Transition (in this assistant)', meaning: 'Moving your SOC\'s day-to-day Microsoft Sentinel experience from the Azure portal to the Microsoft Defender portal, with the configuration and process changes that this requires.', sources: ['move'] },

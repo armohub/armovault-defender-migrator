@@ -3,7 +3,7 @@
 // EXTRAS: checks that are good practice, not needed for the move (shown as recommended extras).
 // Health monitoring (PREP-CON-06) and the rule health baseline (PREP-DET-07) are needed, not extras:
 // Validate checks query SentinelHealth, which exists only once monitoring is on.
-export const EXTRAS = ['PREP-AUT-06', 'PREP-DET-08', 'PREP-GOV-04', 'PREP-GOV-05', 'PREP-CNT-04', 'PREP-CNT-06', 'TEST-10', 'VAL-19'];
+export const EXTRAS = ['PREP-CON-08', 'PREP-AUT-06', 'PREP-DET-08', 'PREP-GOV-04', 'PREP-GOV-05', 'PREP-CNT-04', 'PREP-CNT-06', 'TEST-10', 'VAL-19'];
 
 export const SHORT = {
   // ───── Prepare: scope, governance and timeline ─────
@@ -117,8 +117,17 @@ export const SHORT = {
     do: [
       'List your SOC personas, for example triage, investigation, detection engineering and read-only auditors.',
       'For each, note the Sentinel roles and the Defender XDR permissions it needs. Prefer resource-group scope.',
+      'Review who holds Entra roles with default Defender portal access, such as Global and Security Administrator, and keep them to the fewest needed.',
     ],
     proof: 'Your role matrix, attached or linked.',
+    info: {
+      title: 'Who can see Defender data by default?',
+      points: [
+        'Accounts with Global Administrator, Security Administrator, Security Operator, Global Reader or Security Reader can access Defender XDR functionality and data.',
+        'Microsoft recommends the roles with the fewest permissions, and Global Administrator only for emergencies.',
+        'Review these accounts in the Defender portal under System > Permissions.',
+      ],
+    },
   },
   'PREP-ACC-03': {
     title: 'Decide on unified RBAC for Sentinel',
@@ -247,6 +256,14 @@ export const SHORT = {
       'Later checks use this data to show that rules and automation still run after the move.',
     ],
     proof: 'A screenshot of the auditing and health monitoring settings turned on.',
+    info: {
+      title: 'Why this step is needed',
+      points: [
+        'Validation later checks that analytics rules and automation still run, using the SentinelHealth table.',
+        'That table exists only once health monitoring is on, so turn it on before the move.',
+        'SentinelHealth is not billable; SentinelAudit is.',
+      ],
+    },
   },
   'PREP-CON-07': {
     title: 'Find content affected by alert schema changes',
@@ -255,6 +272,26 @@ export const SHORT = {
       'Search your rule export, workbooks and saved searches for SecurityAlert queries that use the listed fields, and add an action per update.',
     ],
     proof: 'The list of affected items, as a note or a file.',
+  },
+  'PREP-CON-08': {
+    title: 'Review which Defender tables you stream into Sentinel',
+    do: [
+      'List the Defender tables you stream, on the Defender XDR connector page or with the query below.',
+      'For each, check whether you need it beyond 30 days, or in Sentinel rules, workbooks or hunting queries.',
+      'Record per table: keep streaming it, or stop after the move once nothing in Sentinel uses it.',
+    ],
+    proof: 'The recorded decision for each table, with its reason.',
+    info: {
+      title: 'Will we lose any logs?',
+      lead: 'Nothing is deleted. Reviewing changes nothing, and if you later stop streaming a table, the data already in Sentinel stays until its retention ends.',
+      points: [
+        'No data is deleted: when you stop sending data to a table, what is already there stays in the workspace until the end of its retention period.',
+        'Defender keeps its own copy: advanced hunting in the Defender portal can query native Defender data for 30 days, with no ingestion.',
+        'Alerts and incidents keep flowing: Defender XDR alerts and incidents sync to Sentinel at no cost, whatever you decide about the raw tables.',
+        'Sentinel only sees what you stream: keep any table that Sentinel rules, workbooks or hunting queries use, or that you need for longer than 30 days.',
+        'It is optional and separate from the move: change nothing on the day you connect.',
+      ],
+    },
   },
 
   // ───── Prepare: analytics rules, correlation and incidents ─────
@@ -265,6 +302,14 @@ export const SHORT = {
       'Store the exports in secure, versioned storage, and note where they are and the rule counts per kind.',
     ],
     proof: 'The scan CSV, or a note with the export location.',
+    info: {
+      title: 'Several workspaces?',
+      points: [
+        'Run the inventory script once with a list of workspaces (-WorkspacesFile). It writes one file per workspace, named after its alias.',
+        'Pick all the files at once in Import inventory results. Each workspace gets its own dialog, so you confirm what applies to each one, or skip it.',
+        'The list holds resource names only: no passwords, secrets or tokens. A workspace that fails does not stop the others.',
+      ],
+    },
   },
   'PREP-DET-02': {
     title: 'Plan for the Fusion rule being turned off',
@@ -274,6 +319,15 @@ export const SHORT = {
       '[[do:add-decision|Record the acknowledgement]] as a decision.',
     ],
     proof: 'A screenshot of the Fusion rule state, and the recorded acknowledgement.',
+    info: {
+      title: 'Do we lose multistage detection?',
+      lead: 'No. The Defender XDR correlation engine takes over the work Fusion did, and your analytics rules keep running.',
+      points: [
+        'Fusion is turned off when you connect, and the Defender XDR correlation engine replaces it.',
+        'Analytics rules keep running and raising alerts as they do today.',
+        'Plan a correlation test, so you see it working with your own scenarios.',
+      ],
+    },
   },
   'PREP-DET-03': {
     title: 'Replace Microsoft incident creation rules',
@@ -283,6 +337,15 @@ export const SHORT = {
       'Decide whether to select "Retain Sentinel incident creation behavior for XDR alerts" when you connect, and record it as a decision.',
     ],
     proof: 'Your list of these rules, each with its replacement.',
+    info: {
+      title: 'Will we miss any detections?',
+      lead: 'No detection is lost. These rules only turned Microsoft product alerts into incidents; the Defender portal now does that itself.',
+      points: [
+        'They are turned off when you connect, to avoid duplicate incidents.',
+        'Other analytics rules are not affected.',
+        'Only their filters need a new home: alert tuning or automation rules.',
+      ],
+    },
   },
   'PREP-DET-04': {
     title: 'Decide what happens to alert-only rules',
@@ -488,6 +551,14 @@ export const SHORT = {
       "Use Microsoft's training videos from the transition guide plus hands-on walkthroughs, and schedule them before the change.",
     ],
     proof: 'The training plan, and the attendance record.',
+    info: {
+      title: 'Use the time before the deadline',
+      practice: true,
+      points: [
+        'Microsoft supports Sentinel in the Azure portal until 31 March 2027.',
+        'Until then, analysts can practise in the Defender portal while the Azure portal is still there for the few tasks that need it.',
+      ],
+    },
   },
   'PREP-OPS-04': {
     title: 'Tell the teams involved',
@@ -512,6 +583,7 @@ export const SHORT = {
     do: [
       'Set a measurable criterion per area, for example critical tables fresh within your agreed delay and named rules creating incidents in the Defender portal.',
       'Agree the tolerances with the SOC lead, and record who approved them.',
+      'For detections, measure alerts per rule, not incident counts: merging lowers the count.',
     ],
     proof: 'The criteria document, and the approval recorded as a decision.',
   },
@@ -713,6 +785,14 @@ export const SHORT = {
       'Select Connect, note the exact time (UTC), and make no other changes for the first few minutes.',
     ],
     proof: 'Screenshots of the product-change screen and of the Workspaces page after connecting.',
+    info: {
+      title: 'When to connect',
+      practice: true,
+      points: [
+        'Connect on a Tuesday to Thursday morning, never on a Friday or the day before a holiday, so the team that made the change is there for the first days.',
+        'Connecting takes minutes. Plan the rest of the day for the checks after connecting.',
+      ],
+    },
   },
   'TRN-11': {
     title: 'Confirm the connection',
@@ -735,9 +815,17 @@ export const SHORT = {
     title: 'Check incidents reach the Defender portal',
     do: [
       'Watch the incident queue for new incidents from known rules, or trigger a safe test detection.',
-      'Compare the volume with your pre-change snapshot, and note the first incident you see (time and rule).',
+      'Compare alerts per rule with your pre-change snapshot (expect fewer incidents), and note the first incident you see.',
     ],
     proof: 'A screenshot of the incident queue, or the query output.',
+    info: {
+      title: 'Why are there fewer incidents?',
+      lead: 'Fewer incidents than before is expected: related alerts are merged into one incident.',
+      points: [
+        'Merged incidents keep all their alerts, in the incident that remains.',
+        'Compare alerts per rule with your snapshot. If no incidents arrive at all after the expected time, check the connector and rule health.',
+      ],
+    },
   },
   'TRN-14': {
     title: 'Apply the settings that come after connecting',
@@ -802,8 +890,18 @@ export const SHORT = {
     do: [
       'Run the rule health and incidents-by-rule queries, and compare them with your baselines for representative rules.',
       'Confirm analytics rules appear in the Defender custom detection rules list.',
+      'Compare alerts per rule with your baseline, not incident counts: related alerts are now merged into one incident.',
     ],
     proof: 'The CSV exports.',
+    info: {
+      title: 'Why are there fewer incidents?',
+      lead: 'Fewer incidents than before is expected. The Defender portal merges related alerts into one incident, and no alert is lost.',
+      points: [
+        'When incidents merge, all alerts move into the remaining incident, and the merged one is closed with a Redirected tag.',
+        'So compare alerts per analytics rule with your baseline, not the number of incidents.',
+        'Investigate a rule whose alerts stop or drop sharply; fewer incidents on its own is not a problem.',
+      ],
+    },
   },
   'VAL-05': {
     title: 'Check correlation, grouping and titles',

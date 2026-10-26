@@ -4,11 +4,12 @@ import { h, icon, toast, field, copyText, savedPulse, externalLink } from './dom
 import { state, mutate } from '../app/store.js';
 import { render } from './shell.js';
 import { readyText, emailActions } from './templates.js';
-import { setOwnersWanted, setEnvironments, setPlannedPrimary, plannedPrimaryOf, plannedRole, setWorkstreamOwners, setWorkstreamPeople, cleanWorkstreamPeople, setApprovers, setCheckField, DEFENDER_STATES, ENV_KINDS, workstreamKey, knownPeople, addAudit, setHelper, MAX_HELPER_SUBJECTS } from '../core/model.js';
+import { setPlanProfile, setOwnersWanted, setEnvironments, setPlannedPrimary, plannedPrimaryOf, plannedRole, setWorkstreamOwners, setWorkstreamPeople, cleanWorkstreamPeople, setApprovers, setCheckField, DEFENDER_STATES, ENV_KINDS, workstreamKey, knownPeople, addAudit, setHelper, MAX_HELPER_SUBJECTS } from '../core/model.js';
 import { applicabilityMap } from '../core/applicability.js';
 import { evaluateHelper, decisionDraft } from '../core/decision-helper.js';
 import { formatDate } from '../core/util.js';
-import { btn, callout } from './components.js';
+import { btn, callout, infoTip } from './components.js';
+import { planProfile, suggestedProfile } from '../core/planning.js';
 import { rich, renderList } from './rich.js';
 import { editRegisterItem } from './views/records.js';
 
@@ -379,10 +380,7 @@ export function briefingTool() {
 }
 
 // ───────── Transition window planner ─────────
-function isLarger(p) {
-  const yes = (id) => p.answers[id] && p.answers[id].value === 'yes';
-  return yes('multi_workspace') || yes('multi_tenant') || yes('playbooks') || yes('itsm') || (p.meta.environments || []).length > 2;
-}
+const weeksText = ([a, b]) => (a === b ? `${a} week${a === 1 ? '' : 's'}` : `${a} to ${b} weeks`);
 const addDays = (iso, days) => { const d = new Date(`${iso}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + days); return d.toISOString().slice(0, 10); };
 const winDraft = { id: '', base: '', v: {} };
 
@@ -393,9 +391,11 @@ export function windowTool() {
   const dirtyNow = winDraft.id === p.id && JSON.stringify([winDraft.v.startDate, winDraft.v.windowStart, winDraft.v.windowEnd]) !== winDraft.base;
   if (winDraft.id !== p.id || (!dirtyNow && winDraft.base !== base)) { winDraft.id = p.id; winDraft.v = { startDate: p.meta.startDate || '', windowStart: p.meta.windowStart || '', windowEnd: p.meta.windowEnd || '' }; winDraft.base = base; }
   const v = winDraft.v;
-  const larger = isLarger(p);
+  const profile = planProfile(p);
+  const chosenProfile = p.meta.planProfile || 'auto';
+  const profileLabel = (id) => (plan.profiles.find((x) => x.id === id) || { label: id }).label;
   const testUsed = p.stages.test.availability === 'available' || (p.answers.test_env && p.answers.test_env.value === 'yes');
-  const phases = plan.phases.filter((ph) => ph.id !== 'test' || testUsed).map((ph) => ({ ...ph, range: larger ? ph.larger : ph.smaller }));
+  const phases = plan.phases.filter((ph) => ph.id !== 'test' || testUsed).map((ph) => ({ ...ph, range: ph[profile] }));
   const before = phases.filter((ph) => ph.id !== 'hypercare');
   const weeksBefore = before.reduce((n, ph) => n + ph.range[1], 0);
   const after = phases.find((ph) => ph.id === 'hypercare');
@@ -424,17 +424,24 @@ export function windowTool() {
     const doneBy = (v.windowEnd || v.windowStart) ? addDays(v.windowEnd || v.windowStart, 7 * after.range[1]) : '';
     return [
       h('h3', null, 'How much time to plan'),
-      h('p', { class: 'small muted' }, larger ? plan.larger : plan.smaller),
+      h('div', { class: 'plan-profile' },
+        h('span', { class: 'small' }, 'Ranges for', infoTip({ key: 'plan-profile', title: plan.profileInfo.title, practice: true }, h('ul', { class: 'bullets' }, plan.profileInfo.points.map((x) => h('li', null, x))))),
+        h('div', { class: 'seg-group', role: 'group', 'aria-label': 'Planning profile' }, plan.profiles.map((x) => h('button', {
+          type: 'button', class: ['seg-btn', chosenProfile === x.id && 'active'], 'aria-pressed': chosenProfile === x.id ? 'true' : 'false', 'data-focus-key': `plan-${x.id}`,
+          onclick: () => mutate((pr) => setPlanProfile(pr, x.id)),
+        }, x.id === 'auto' ? `${x.label}: ${profileLabel(suggestedProfile(p))}` : x.label)))),
+      h('p', { class: 'small muted' }, chosenProfile === 'auto' ? plan[profile] : `You chose the ${profileLabel(profile).toLowerCase()} ranges.`),
       h('div', { class: 'table-wrap' }, h('table', { class: 'table' },
         h('thead', null, h('tr', null, h('th', { scope: 'col' }, 'Phase'), h('th', { scope: 'col', class: 'num' }, 'Typical time'))),
         h('tbody', null,
-          ...before.map((ph) => h('tr', null, h('td', null, ph.label), h('td', { class: 'num' }, `${ph.range[0]} to ${ph.range[1]} weeks`))),
+          ...before.map((ph) => h('tr', null, h('td', null, ph.label), h('td', { class: 'num' }, weeksText(ph.range)))),
           h('tr', null, h('td', null, plan.change), h('td', { class: 'num' }, '1 day')),
-          h('tr', null, h('td', null, after.label), h('td', { class: 'num' }, `${after.range[0]} to ${after.range[1]} weeks`))))),
+          h('tr', null, h('td', null, after.label), h('td', { class: 'num' }, weeksText(after.range)))))),
       v.windowStart && !invalid() ? h('ul', { class: 'bullets', style: { marginTop: '12px' } },
         h('li', null, 'To reach your window with time to spare, start Prepare by ', h('strong', { class: 'tnum' }, startBy), startBy < today ? '. That date has passed: start now, or consider a later window.' : '.'),
         h('li', null, 'Expect to sign off around ', h('strong', { class: 'tnum' }, doneBy), doneBy > '2027-03-31' ? '. That is after 31 March 2027: consider an earlier window.' : ', comfortably before 31 March 2027.'))
         : h('p', { class: 'small' }, invalid() ? 'Fix the dates above to see when to start each phase.' : 'Enter your window above to see when to start each phase.'),
+      h('p', { class: 'small' }, plan.changeDay),
       h('p', { class: 'small muted' }, plan.note),
     ];
   }

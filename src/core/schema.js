@@ -85,6 +85,7 @@ export function validateProject(input, { kb } = {}) {
     helpers: {},
     showExtras: m.showExtras !== false,
     ownersWanted: oneOf(m.ownersWanted, ['yes', 'later', ''], ''),
+    planProfile: oneOf(m.planProfile, ['auto', 'lean', 'smaller', 'larger'], 'auto'),
   };
   // Decision helpers: known helpers only; answers and choices are short identifiers, never text.
   if (isPlainObject(m.helpers)) {

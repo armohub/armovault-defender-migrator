@@ -233,6 +233,7 @@ export const TRANSITION = [
       'A screenshot of the product-change screen: [[do:add-screenshot|attach a screenshot]]',
       'A screenshot of the Workspaces page after connection: [[do:add-screenshot|attach a screenshot]]',
     ],
+    practiceNotes: ['Connect on a Tuesday to Thursday morning, never on a Friday or the day before a holiday, so the people who made the change are there for the first days of hypercare.'],
     rollback: ['If a rollback trigger is met, follow [[PREP-PLN-03|the rollback plan]]. Use Disconnect workspace, never "Remove Microsoft Sentinel".'],
     sources: [src('onboard', 'Connection procedure'), src('move', 'Changes applied on onboarding'), src('migrategrouping', 'Retain option'), src('automation', 'Up to 5 minutes for Defender incidents')],
   }),
@@ -293,7 +294,7 @@ export const TRANSITION = [
     steps: [
       'Watch the incident queue for new incidents from known analytics rules, or trigger a safe representative detection.',
       'Run the Microsoft XDR incidents query in the workspace.',
-      'Compare the volume with [[TRN-09|the pre-change snapshot]].',
+      { text: 'Compare the volume with [[TRN-09|the pre-change snapshot]].', tip: 'Expect fewer incidents than before: the Defender portal merges related alerts into one incident. Compare alerts per rule, not incident counts.' },
     ],
     portalWay: [
       "Open **Investigation & response > Incidents & alerts > Incidents** in the Defender portal and add the **Service/detection sources** filter for **Microsoft Sentinel**. Set the same time range as your snapshot; the total number of incidents shows next to the time selector. Select **Most recent incidents and alerts** for a chart of the last 24 hours.",
@@ -307,7 +308,7 @@ export const TRANSITION = [
       'A screenshot of the incident queue: [[do:add-screenshot|attach a screenshot]]',
       'The query output: [[do:add-file|attach it as a file]]',
     ],
-    sources: [src('xdrconnector', 'Microsoft XDR incidents query; portal: connector page data graph with one line each for incidents, alerts and events'), src('automation', 'Sync delay message'), src('incidentqueue', 'Incident queue filters, time range, total count and the Most recent incidents and alerts chart')],
+    sources: [src('correlation', 'Merging moves all alerts into the remaining incident and closes the merged one with a Redirected tag'), src('xdrconnector', 'Microsoft XDR incidents query; portal: connector page data graph with one line each for incidents, alerts and events'), src('automation', 'Sync delay message'), src('incidentqueue', 'Incident queue filters, time range, total count and the Most recent incidents and alerts chart')],
   }),
   k({
     id: 'TRN-14', stage: 'transition', workstream: 'post-change', phase: 'post', order: 140, kind: 'task', criticality: 'high', changesState: true, dependsOn: ['PREP-DET-05'],

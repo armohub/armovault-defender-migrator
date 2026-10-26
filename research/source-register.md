@@ -2,14 +2,14 @@
 
 Generated from the knowledge base by `scripts/gen-research.mjs`. Do not edit by hand.
 
-Knowledge base **2026.10.20**, reviewed **2026-10-19**. 118 sources, all Microsoft Learn. "Page date" is the ms.date shown in the page metadata; "Updated" is the page's last-publish timestamp; "Verified" is when this project last fetched and read the page.
+Knowledge base **2026.10.26**, reviewed **2026-10-19**. 120 sources, all Microsoft Learn. "Page date" is the ms.date shown in the page metadata; "Updated" is the page's last-publish timestamp; "Verified" is when this project last fetched and read the page.
 
 Detailed research notes with verbatim quotes, confidence levels and gaps: [notes/](notes/).
 
 | ID | Title | Page date | Updated | Verified | Cited by items | Cited by snippets |
 |---|---|---|---|---|---|---|
 | `move` | [Transition your Microsoft Sentinel environment to the Defender portal](https://learn.microsoft.com/en-us/azure/sentinel/move-to-defender) | 2026-09-10 | 2026-09-24 | 2026-10-19 | PREP-SCOPE-01, PREP-SCOPE-02, PREP-TOP-03, PREP-TOP-05, PREP-TOP-06, PREP-ACC-04, PREP-ACC-05, PREP-GOV-01, PREP-GOV-02, PREP-GOV-03, PREP-GOV-05, PREP-CON-01, PREP-CON-02, PREP-CON-04, PREP-CON-05, PREP-DET-01, PREP-DET-02, PREP-DET-03, PREP-DET-04, PREP-DET-05, PREP-DET-06, PREP-DET-08, PREP-AUT-03, PREP-AUT-04, PREP-AUT-05, PREP-INT-01, PREP-INT-02, PREP-INT-03, PREP-CNT-01, PREP-CNT-02, PREP-CNT-05, PREP-CNT-06, PREP-OPS-02, PREP-OPS-03, PREP-OPS-04, PREP-PLN-01, PREP-PLN-05, TEST-05, TEST-07, TEST-08, TRN-01, TRN-02, TRN-10, TRN-12, TRN-15, VAL-03, VAL-08, VAL-09, VAL-10, VAL-15, VAL-16, VAL-17, VAL-18, VAL-19 | K_INCIDENTS_BY_PROVIDER, K_XDR_INCIDENTS |
-| `defportal` | [Microsoft Sentinel in the Microsoft Defender portal](https://learn.microsoft.com/en-us/azure/sentinel/microsoft-sentinel-defender-portal) | 2026-06-18 | 2026-09-23 | 2026-10-19 | PREP-SCOPE-01, PREP-SCOPE-03, PREP-TOP-06, PREP-GOV-05, PREP-DET-08, PREP-AUT-04, PREP-CNT-03, PREP-OPS-01, PREP-PLN-03, VAL-17 |  |
+| `defportal` | [Microsoft Sentinel in the Microsoft Defender portal](https://learn.microsoft.com/en-us/azure/sentinel/microsoft-sentinel-defender-portal) | 2026-06-18 | 2026-09-23 | 2026-10-19 | PREP-SCOPE-01, PREP-SCOPE-03, PREP-TOP-06, PREP-GOV-05, PREP-CON-08, PREP-DET-08, PREP-AUT-04, PREP-CNT-03, PREP-OPS-01, PREP-OPS-03, PREP-PLN-03, VAL-17 |  |
 | `onboard` | [Connect Microsoft Sentinel to the Microsoft Defender portal](https://learn.microsoft.com/en-us/azure/sentinel/microsoft-sentinel-onboard) | 2026-09-10 | 2026-09-23 | 2026-10-19 | PREP-SCOPE-04, PREP-TOP-02, PREP-TOP-05, PREP-ACC-01, PREP-ACC-02, PREP-CON-02, PREP-CON-03, PREP-PLN-01, PREP-PLN-03, PREP-PLN-04, TEST-01, TEST-04, TEST-08, TEST-10, TRN-05, TRN-06, TRN-08, TRN-10, TRN-11, TRN-17, VAL-01, VAL-02 |  |
 | `overview` | [What is Microsoft Sentinel SIEM? (Azure portal retirement timeline)](https://learn.microsoft.com/en-us/azure/sentinel/overview) | 2026-01-28 | 2026-05-14 | 2026-10-19 | PREP-SCOPE-01, PREP-SCOPE-03, PREP-SCOPE-04, PREP-TOP-05 |  |
 | `whatsnew` | [What's new in Microsoft Sentinel](https://learn.microsoft.com/en-us/azure/sentinel/whats-new) | 2026-08-24 | 2026-09-23 | 2026-10-19 | PREP-SCOPE-03, PREP-SCOPE-05, PREP-GOV-04, PREP-CNT-07 |  |
@@ -20,6 +20,8 @@ Detailed research notes with verbatim quotes, confidence levels and gaps: [notes
 | `crossws` | [Extend Microsoft Sentinel across workspaces and tenants](https://learn.microsoft.com/en-us/azure/sentinel/extend-sentinel-across-workspaces-tenants) | 2025-06-10 | 2026-05-14 | 2026-10-20 | PREP-TOP-02 |  |
 | `prepmultiws` | [Prepare for multiple workspaces and tenants in Microsoft Sentinel](https://learn.microsoft.com/en-us/azure/sentinel/prepare-multiple-workspaces) | 2025-07-16 | 2026-08-07 | 2026-10-20 | PREP-TOP-02 |  |
 | `roles` | [Roles and permissions in the Microsoft Sentinel platform](https://learn.microsoft.com/en-us/azure/sentinel/roles) | 2026-01-07 | 2026-09-10 | 2026-10-19 | PREP-TOP-01, PREP-ACC-02 | ARG_SENTINEL_WORKSPACES |
+| `xdrroles` | [Manage access to Microsoft Defender XDR with Microsoft Entra global roles](https://learn.microsoft.com/en-us/defender-xdr/m365d-permissions) | 2024-05-08 | 2026-08-07 | 2026-10-26 | PREP-ACC-02 |  |
+| `retention` | [Manage data retention in a Log Analytics workspace](https://learn.microsoft.com/en-us/azure/azure-monitor/logs/data-retention-configure) | 2026-09-02 | 2026-09-29 | 2026-10-26 | PREP-CON-08 |  |
 | `xdrprivacy` | [Data retention and data security in Microsoft Defender XDR](https://learn.microsoft.com/en-us/defender-xdr/data-privacy) | 2025-08-24 | 2026-06-24 | 2026-10-19 | PREP-GOV-01, PREP-GOV-02 |  |
 | `urbac` | [Microsoft Defender unified role-based access control (RBAC)](https://learn.microsoft.com/en-us/defender-xdr/manage-rbac) | 2026-08-07 | 2026-10-15 | 2026-10-19 | PREP-TOP-05, PREP-ACC-03, PREP-ACC-05, PREP-ACC-06 |  |
 | `urbacmap` | [Map Microsoft Defender unified RBAC permissions](https://learn.microsoft.com/en-us/defender-xdr/compare-rbac-roles) | 2026-07-30 | 2026-09-08 | 2026-10-19 | PREP-ACC-01, PREP-ACC-03 |  |
@@ -28,7 +30,7 @@ Detailed research notes with verbatim quotes, confidence levels and gaps: [notes
 | `cmk` | [Set up customer-managed keys in Microsoft Sentinel](https://learn.microsoft.com/en-us/azure/sentinel/customer-managed-keys) | 2026-07-12 | 2026-08-16 | 2026-10-19 | PREP-GOV-03 |  |
 | `residency` | [Geographical availability and data residency in Microsoft Sentinel](https://learn.microsoft.com/en-us/azure/sentinel/geographical-availability-data-residency) | 2026-08-18 | 2026-09-08 | 2026-10-19 | PREP-SCOPE-05, PREP-GOV-01, PREP-GOV-02 |  |
 | `xdrint` | [Microsoft Defender XDR integration with Microsoft Sentinel](https://learn.microsoft.com/en-us/azure/sentinel/microsoft-365-defender-sentinel-integration) | 2026-06-17 | 2026-09-24 | 2026-10-19 | PREP-GOV-05, PREP-CON-01, PREP-DET-03, PREP-AUT-01, TRN-12 |  |
-| `xdrconnector` | [Stream data from Microsoft Defender XDR to Microsoft Sentinel](https://learn.microsoft.com/en-us/azure/sentinel/connect-microsoft-365-defender) | 2026-07-02 | 2026-09-10 | 2026-10-19 | PREP-TOP-03, PREP-CON-01, TRN-12, TRN-13 | K_XDR_INCIDENTS, K_XDR_TREND |
+| `xdrconnector` | [Stream data from Microsoft Defender XDR to Microsoft Sentinel](https://learn.microsoft.com/en-us/azure/sentinel/connect-microsoft-365-defender) | 2026-07-02 | 2026-09-10 | 2026-10-19 | PREP-TOP-03, PREP-CON-01, PREP-CON-08, TRN-12, TRN-13 | K_DEFENDER_TABLE_INGESTION, K_XDR_INCIDENTS, K_XDR_TREND |
 | `mtoreq` | [Set up Microsoft Defender multitenant management](https://learn.microsoft.com/en-us/defender-xdr/mto-requirements) | 2026-07-02 | 2026-09-10 | 2026-10-19 | PREP-TOP-05 |  |
 | `mto` | [Microsoft Defender multitenant management](https://learn.microsoft.com/en-us/defender-xdr/mto-overview) | 2026-05-27 | 2026-09-23 | 2026-10-19 | PREP-TOP-05 |  |
 | `govrel` | [Configure delegated access with governance relationships for multitenant organizations](https://learn.microsoft.com/en-us/defender-xdr/governance-relationships) | 2026-08-07 | 2026-10-15 | 2026-10-19 | PREP-TOP-05 |  |
@@ -36,7 +38,7 @@ Detailed research notes with verbatim quotes, confidence levels and gaps: [notes
 | `wsmgr` | [Manage multiple Microsoft Sentinel workspaces with workspace manager](https://learn.microsoft.com/en-us/azure/sentinel/workspace-manager) | 2026-07-01 | 2026-08-08 | 2026-10-19 | PREP-TOP-06 |  |
 | `lake` | [Microsoft Sentinel data lake overview](https://learn.microsoft.com/en-us/azure/sentinel/datalake/sentinel-lake-overview) | 2025-08-11 | 2026-05-14 | 2026-10-19 | PREP-GOV-04 |  |
 | `lakeonboard` | [Onboard to Microsoft Sentinel data lake and graph](https://learn.microsoft.com/en-us/azure/sentinel/datalake/sentinel-lake-onboarding) | 2026-07-01 | 2026-09-10 | 2026-10-19 | PREP-TOP-02, PREP-ACC-05, PREP-GOV-03, PREP-GOV-04, PREP-PLN-03 |  |
-| `billing` | [Plan costs and understand pricing and billing, Microsoft Sentinel](https://learn.microsoft.com/en-us/azure/sentinel/billing) | 2026-04-01 | 2026-06-03 | 2026-10-19 | PREP-GOV-04, PREP-GOV-05 |  |
+| `billing` | [Plan costs and understand pricing and billing, Microsoft Sentinel](https://learn.microsoft.com/en-us/azure/sentinel/billing) | 2026-04-01 | 2026-06-03 | 2026-10-19 | PREP-GOV-04, PREP-GOV-05, PREP-CON-08 |  |
 | `tiers` | [Manage data tiers and retention in Microsoft Sentinel](https://learn.microsoft.com/en-us/azure/sentinel/manage-data-overview) | 2026-07-02 | 2026-08-08 | 2026-10-19 | PREP-GOV-05 |  |
 | `offboard` | [Remove Microsoft Sentinel from your workspace](https://learn.microsoft.com/en-us/azure/sentinel/offboard) | 2026-07-01 | 2026-09-10 | 2026-10-19 | PREP-PLN-03, TEST-10 |  |
 | `schemadiff` | [Microsoft Sentinel alert schema differences between standalone and XDR connectors](https://learn.microsoft.com/en-us/azure/sentinel/security-alert-schema-differences) | 2026-06-17 | 2026-06-24 | 2026-10-19 | PREP-TOP-03, PREP-CON-01, PREP-CON-05, PREP-CON-07 | K_ALERTS_BY_PRODUCT |
@@ -47,7 +49,7 @@ Detailed research notes with verbatim quotes, confidence levels and gaps: [notes
 | `playbooks` | [Automate threat response with playbooks in Microsoft Sentinel](https://learn.microsoft.com/en-us/azure/sentinel/automation/automate-responses-with-playbooks) | 2026-06-12 | 2026-06-23 | 2026-10-19 | PREP-AUT-03 |  |
 | `runplaybooks` | [Automate and run Microsoft Sentinel playbooks](https://learn.microsoft.com/en-us/azure/sentinel/automation/run-playbooks) | 2026-07-01 | 2026-08-19 | 2026-10-19 | PREP-ACC-02, PREP-AUT-03, PREP-AUT-04, TEST-06, VAL-02, VAL-07 |  |
 | `genplaybook` | [Generate playbooks using AI in Microsoft Sentinel (Enhanced Alert Trigger)](https://learn.microsoft.com/en-us/azure/sentinel/automation/generate-playbook) | 2026-08-07 | 2026-08-08 | 2026-10-19 | PREP-AUT-02 |  |
-| `correlation` | [Alert correlation and incident merging in the Microsoft Defender portal](https://learn.microsoft.com/en-us/defender-xdr/alerts-incidents-correlation) | 2026-10-04 | 2026-10-13 | 2026-10-19 | PREP-TOP-02, PREP-DET-05, VAL-05 |  |
+| `correlation` | [Alert correlation and incident merging in the Microsoft Defender portal](https://learn.microsoft.com/en-us/defender-xdr/alerts-incidents-correlation) | 2026-10-04 | 2026-10-13 | 2026-10-19 | PREP-TOP-02, PREP-DET-05, PREP-PLN-02, TRN-13, VAL-04, VAL-05 |  |
 | `corrsettings` | [Manage detection rule correlation settings in Microsoft Defender XDR](https://learn.microsoft.com/en-us/defender-xdr/exclude-analytics-rules-correlation) | 2026-10-04 | 2026-10-13 | 2026-10-19 | PREP-DET-02, PREP-DET-05, TEST-05, TRN-14, VAL-05 | PS_ANALYTICS_SCAN |
 | `investigatealerts` | [Investigate alerts in Microsoft Defender XDR (alert tuning)](https://learn.microsoft.com/en-us/defender-xdr/investigate-alerts) | 2026-09-10 | 2026-10-19 | 2026-10-19 | PREP-DET-06, TRN-14, VAL-10 |  |
 | `customdet` | [Create custom detection rules in Microsoft Defender XDR](https://learn.microsoft.com/en-us/defender-xdr/custom-detection-rules) | 2026-09-02 | 2026-10-04 | 2026-10-19 | PREP-DET-08 |  |
@@ -78,7 +80,7 @@ Detailed research notes with verbatim quotes, confidence levels and gaps: [notes
 | `securityalerttable` | [Azure Monitor Logs reference: SecurityAlert](https://learn.microsoft.com/en-us/azure/azure-monitor/reference/tables/securityalert) | 2026-07-27 | 2026-07-28 | 2026-10-19 |  | K_ALERTS_BY_PRODUCT |
 | `tasksdefender` | [Streamline incident response using tasks in the Microsoft Defender portal](https://learn.microsoft.com/en-us/defender-xdr/split-incidents-into-tasks) | 2026-06-15 | 2026-09-23 | 2026-10-19 | PREP-OPS-02 |  |
 | `manualincidents` | [Create your own incidents manually in Microsoft Sentinel in the Azure portal](https://learn.microsoft.com/en-us/azure/sentinel/create-incident-manually) | 2026-07-02 | 2026-08-11 | 2026-10-19 | PREP-INT-03 | K_MANUAL_INCIDENTS |
-| `ah` | [Advanced hunting with Microsoft Sentinel data in Microsoft Defender](https://learn.microsoft.com/en-us/defender-xdr/advanced-hunting-microsoft-defender) | 2026-06-09 | 2026-09-23 | 2026-10-19 | PREP-SCOPE-05, PREP-ACC-02, PREP-CNT-03, TEST-09, VAL-02, VAL-12 |  |
+| `ah` | [Advanced hunting with Microsoft Sentinel data in Microsoft Defender](https://learn.microsoft.com/en-us/defender-xdr/advanced-hunting-microsoft-defender) | 2026-06-09 | 2026-09-23 | 2026-10-19 | PREP-SCOPE-05, PREP-ACC-02, PREP-CON-08, PREP-CNT-03, TEST-09, VAL-02, VAL-12 |  |
 | `ahoverview` | [Advanced hunting overview in Microsoft Defender XDR](https://learn.microsoft.com/en-us/defender-xdr/advanced-hunting-overview) | 2026-08-07 | 2026-09-10 | 2026-10-19 | PREP-GOV-01, PREP-CNT-03 |  |
 | `customfunctions` | [Use Microsoft Sentinel custom functions in advanced hunting in Microsoft Defender](https://learn.microsoft.com/en-us/defender-xdr/advanced-hunting-defender-use-custom-rules) | 2026-07-02 | 2026-08-11 | 2026-10-19 | PREP-TOP-02, PREP-DET-08 |  |
 | `ueba` | [Microsoft Sentinel UEBA reference](https://learn.microsoft.com/en-us/azure/sentinel/ueba-reference) | 2025-08-28 | 2026-08-05 | 2026-10-19 | PREP-CNT-02, PREP-CNT-06, VAL-12 | K_UEBA_TABLES |
@@ -94,7 +96,7 @@ Detailed research notes with verbatim quotes, confidence levels and gaps: [notes
 | `mdtieol` | [July 2026 announcements, Partner Center (MDTI end of life)](https://learn.microsoft.com/en-us/partner-center/announcements/2026-july) | 2026-07-29 | 2026-07-31 | 2026-10-19 | PREP-CNT-05 |  |
 | `stix` | [Work with STIX objects and indicators](https://learn.microsoft.com/en-us/azure/sentinel/work-with-stix-objects-indicators) | 2026-07-02 | 2026-08-08 | 2026-10-19 | PREP-CNT-05 | K_TI_CURRENT |
 | `watchlists` | [Build queries or rules with watchlists](https://learn.microsoft.com/en-us/azure/sentinel/watchlists-queries) | 2026-07-01 | 2026-08-08 | 2026-10-19 | PREP-CNT-04, VAL-13 | K_WATCHLISTS |
-| `usage` | [Analyze usage in a Log Analytics workspace](https://learn.microsoft.com/en-us/azure/azure-monitor/logs/analyze-usage) | 2026-05-08 | 2026-08-25 | 2026-10-19 | PREP-CON-04, TEST-03, TRN-09, VAL-03 | K_USAGE_BY_TABLE, K_USAGE_LASTSEEN, K_UNION_LASTRECORD, K_UEBA_TABLES |
+| `usage` | [Analyze usage in a Log Analytics workspace](https://learn.microsoft.com/en-us/azure/azure-monitor/logs/analyze-usage) | 2026-05-08 | 2026-08-25 | 2026-10-19 | PREP-CON-04, PREP-CON-08, TEST-03, TRN-09, VAL-03 | K_USAGE_BY_TABLE, K_DEFENDER_TABLE_INGESTION, K_USAGE_LASTSEEN, K_UNION_LASTRECORD, K_UEBA_TABLES |
 | `union` | [union operator (Kusto)](https://learn.microsoft.com/en-us/kusto/query/union-operator?view=microsoft-sentinel) | 2024-08-11 | 2024-08-20 | 2026-10-19 | PREP-CON-04 | K_UNION_LASTRECORD |
 | `exportrules` | [Import and export Microsoft Sentinel analytics rules](https://learn.microsoft.com/en-us/azure/sentinel/import-export-analytics-rules) | 2026-07-02 | 2026-08-08 | 2026-10-19 | PREP-TOP-03, PREP-CON-02, PREP-CON-07, PREP-DET-01, PREP-DET-04, PREP-DET-05, PREP-DET-06, PREP-CNT-05, PREP-PLN-01, TRN-03 |  |
 | `exportauto` | [Import and export Microsoft Sentinel automation rules](https://learn.microsoft.com/en-us/azure/sentinel/import-export-automation-rules) | 2026-07-02 | 2026-08-08 | 2026-10-19 | PREP-TOP-04, PREP-AUT-01, PREP-PLN-01, TRN-03 |  |
@@ -196,10 +198,12 @@ https://learn.microsoft.com/en-us/azure/sentinel/microsoft-sentinel-defender-por
 - **PREP-SCOPE-03**: Azure portal support until March 31, 2027; remaining customers redirected
 - **PREP-TOP-06**: Quick reference: Workspace manager not available
 - **PREP-GOV-05**: Advanced hunting raw logs free for 30 days without ingestion; no E5 required
+- **PREP-CON-08**: Advanced hunting raw logs free for 30 days without ingestion; custom detection rules limited without Defender
 - **PREP-DET-08**: Limited or unavailable without Defender services
 - **PREP-AUT-04**: Azure portal support ends March 31, 2027
 - **PREP-CNT-03**: Navigation
 - **PREP-OPS-01**: Quick reference: Azure portal to Defender portal mapping
+- **PREP-OPS-03**: The Azure portal experience is supported until March 31, 2027
 - **PREP-PLN-03**: Azure portal support ends March 31, 2027
 - **VAL-17**: Azure portal support ends March 31, 2027
 
@@ -308,6 +312,18 @@ https://learn.microsoft.com/en-us/azure/sentinel/roles
 - **PREP-TOP-01**: The SecurityInsights solution resource exists on Sentinel workspaces
 - **PREP-ACC-02**: Role definitions; resource-group scope and SecurityInsights solution note
 
+### Manage access to Microsoft Defender XDR with Microsoft Entra global roles
+
+https://learn.microsoft.com/en-us/defender-xdr/m365d-permissions
+
+- **PREP-ACC-02**: Entra roles with access to Defender XDR functionality and data; fewest permissions; review under Permissions
+
+### Manage data retention in a Log Analytics workspace
+
+https://learn.microsoft.com/en-us/azure/azure-monitor/logs/data-retention-configure
+
+- **PREP-CON-08**: When you stop sending data, it remains in the workspace until the end of the table retention period
+
 ### Data retention and data security in Microsoft Defender XDR
 
 https://learn.microsoft.com/en-us/defender-xdr/data-privacy
@@ -376,6 +392,7 @@ https://learn.microsoft.com/en-us/azure/sentinel/connect-microsoft-365-defender
 
 - **PREP-TOP-03**: Component connectors can still appear connected after the Defender XDR connector is enabled, with no data flowing through them
 - **PREP-CON-01**: Connector sections; automatic enablement on onboarding; checkbox behaviour; portal: connector page Configuration sections and the data graph with one line each for incidents, alerts and events
+- **PREP-CON-08**: Connect events lists the Defender tables that can be streamed; TVM tables are not ingested; connector permissions
 - **TRN-12**: Connector page data graph with one line each for incidents, alerts and events
 - **TRN-13**: Microsoft XDR incidents query; portal: connector page data graph with one line each for incidents, alerts and events
 
@@ -432,6 +449,7 @@ https://learn.microsoft.com/en-us/azure/sentinel/billing
 
 - **PREP-GOV-04**: Data lake billing meters
 - **PREP-GOV-05**: Sentinel pricing
+- **PREP-CON-08**: Defender XDR alerts and incidents are free; raw Defender tables ingested into Sentinel are charged
 
 ### Manage data tiers and retention in Microsoft Sentinel
 
@@ -535,6 +553,9 @@ https://learn.microsoft.com/en-us/defender-xdr/alerts-incidents-correlation
 
 - **PREP-TOP-02**: Alerts from secondary workspaces are not correlated with Defender XDR or other workspaces
 - **PREP-DET-05**: Correlation and merging behaviour
+- **PREP-PLN-02**: Merging moves all alerts into the remaining incident and closes the merged one with a Redirected tag
+- **TRN-13**: Merging moves all alerts into the remaining incident and closes the merged one with a Redirected tag
+- **VAL-04**: Merging moves all alerts into the remaining incident and closes the merged one with a Redirected tag
 - **VAL-05**: Merging and Redirected tag
 
 ### Manage detection rule correlation settings in Microsoft Defender XDR
@@ -752,6 +773,7 @@ https://learn.microsoft.com/en-us/defender-xdr/advanced-hunting-microsoft-defend
 
 - **PREP-SCOPE-05**: GCC-M: queries mixing Sentinel and Defender tables are not supported
 - **PREP-ACC-02**: Unified advanced hunting needs at least Microsoft Sentinel Reader
+- **PREP-CON-08**: Advanced hunting follows the retention you set for streamed Defender tables; Sentinel needs raw ingestion to query Defender data
 - **PREP-CNT-03**: Bookmarks; Sentinel query folders; functions; portal: Sentinel functions on the Functions tab and Sentinel folders on the Queries tab
 - **TEST-09**: Advanced hunting with Sentinel data
 - **VAL-02**: Advanced hunting role requirement
@@ -871,6 +893,7 @@ https://learn.microsoft.com/en-us/azure/sentinel/watchlists-queries
 https://learn.microsoft.com/en-us/azure/azure-monitor/logs/analyze-usage
 
 - **PREP-CON-04**: Usage table analysis; portal: Workspace Insights Usage tab and the Usage and estimated costs page
+- **PREP-CON-08**: Usage table for billable volume per table
 - **TEST-03**: Usage analysis; portal: Workspace Insights Usage tab
 - **TRN-09**: Usage
 - **VAL-03**: Usage analysis; portal: Workspace Insights Usage tab
