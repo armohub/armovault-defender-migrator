@@ -142,6 +142,7 @@ export function renderReport(m, { live, snapshot, includeImages }) {
     n += 1;
     return sec(n, `Findings: ${s.title}`,
       s.groups.length ? s.groups.map((g) => h('div', { class: 'r-group' }, h('h3', null, g.title),
+        g.workstream === 'extras' ? h('p', { class: 'small' }, 'Useful, but not needed for the move. These never affect the conclusion.') : null,
         table(['Step', 'Criticality', 'Result', 'Owner', 'Evidence', 'Reason and notes'], g.items.map((i) => h('tr', { class: 'r-row' },
           h('td', null, i.title, i.applicability === 'unknown' ? h('div', { class: 'small' }, 'Applicability uncertain') : null, i.applicabilitySource === 'override' ? h('div', { class: 'small' }, 'Applicability set by reviewer') : null, i.validation === 'needs-review' ? h('div', { class: 'small' }, 'Microsoft sources differ here') : null),
           h('td', null, i.criticality),
@@ -166,7 +167,7 @@ export function renderReport(m, { live, snapshot, includeImages }) {
     m.gates.length ? table(['Gate', 'Decision', 'Decided by', 'Date', 'Rationale'], m.gates.map((g) => h('tr', null, h('td', null, g.title), h('td', null, g.decision ? decisionLabel(g.decision) : 'Not recorded'), h('td', null, g.decidedBy ? `${g.decidedBy}${g.decidedRole ? ` (${g.decidedRole})` : ''}` : ''), h('td', null, g.at ? formatDate(g.at, true) : ''), h('td', { class: 'small' }, g.rationale || '')))) : h('p', null, 'No gates in this report.'));
   n += 1;
   const evidence = sec(n, 'Evidence index',
-    m.evidenceIndex.length ? table(['Step', 'Kind', 'Title and file', 'Recorded', 'SHA-256 (files)'], m.evidenceIndex.map((e) => h('tr', null, h('td', null, stepTitle(e.checkId)), h('td', null, `${e.kind}${e.origin === 'import' ? ' (imported)' : ''}`), h('td', null, e.title || '', e.fileName ? h('div', { class: 'small' }, e.fileName) : null, e.url ? h('div', { class: 'small' }, e.url) : null), h('td', { class: 'small' }, `${formatDate(e.createdAt, true)}, ${e.createdBy}`), h('td', { class: 'mono small' }, e.sha256 ? `${e.sha256.slice(0, 20)}…` : ''))), 'r-compact') : h('p', null, 'No evidence recorded.'),
+    m.evidenceIndex.length ? table(['Step', 'Kind', 'Title and file', 'Recorded', 'SHA-256 (files)'], m.evidenceIndex.map((e) => h('tr', null, h('td', null, stepTitle(e.checkId)), h('td', null, `${e.kind}${e.origin === 'import' ? ' (imported)' : ''}${e.generated ? ' (generated from your entries)' : ''}`), h('td', null, e.title || '', e.fileName ? h('div', { class: 'small' }, e.fileName) : null, e.url ? h('div', { class: 'small' }, e.url) : null), h('td', { class: 'small' }, `${formatDate(e.createdAt, true)}, ${e.createdBy}`), h('td', { class: 'mono small' }, e.sha256 ? `${e.sha256.slice(0, 20)}…` : ''))), 'r-compact') : h('p', null, 'No evidence recorded.'),
     h('p', { class: 'small' }, 'Evidence files are held in the project package, not in this document. Observation notes are user-recorded text.'));
 
   let appendix = null;

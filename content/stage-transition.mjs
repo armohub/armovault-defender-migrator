@@ -11,6 +11,7 @@ const NOTES = '[[do:write-notes|this step\'s notes]]';
 export const TRANSITION = [
   // Pre-change
   k({
+    tool: 'change',
     id: 'TRN-01', stage: 'transition', workstream: 'pre-change', phase: 'pre', order: 10, kind: 'gate', criticality: 'critical', dependsOn: ['PREP-PLN-05', 'TEST-11'],
     title: 'Decide go or no-go: approvals, change record and participants',
     objective: 'Confirm the change is approved, the window is open and the right people are present. Then record the go/no-go decision.',

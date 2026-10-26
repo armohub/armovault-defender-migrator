@@ -3,7 +3,8 @@
 import { h, icon, toast, field, copyText, savedPulse, externalLink } from './dom.js';
 import { state, mutate } from '../app/store.js';
 import { render } from './shell.js';
-import { setEnvironments, setPlannedPrimary, plannedPrimaryOf, plannedRole, setWorkstreamOwners, setWorkstreamPeople, cleanWorkstreamPeople, setApprovers, setCheckField, DEFENDER_STATES, ENV_KINDS, workstreamKey, knownPeople, addAudit, setHelper, MAX_HELPER_SUBJECTS } from '../core/model.js';
+import { readyText, emailActions } from './templates.js';
+import { setOwnersWanted, setEnvironments, setPlannedPrimary, plannedPrimaryOf, plannedRole, setWorkstreamOwners, setWorkstreamPeople, cleanWorkstreamPeople, setApprovers, setCheckField, DEFENDER_STATES, ENV_KINDS, workstreamKey, knownPeople, addAudit, setHelper, MAX_HELPER_SUBJECTS } from '../core/model.js';
 import { applicabilityMap } from '../core/applicability.js';
 import { evaluateHelper, decisionDraft } from '../core/decision-helper.js';
 import { formatDate } from '../core/util.js';
@@ -150,7 +151,18 @@ function ownersDraft() {
   return ownDraft;
 }
 
-export function ownersTool() {
+// simple: only "who approves the change" (Simplified, or Detailed after "Later").
+// setupPage: Project setup always shows the full form, without the question.
+export function ownersTool({ simple, setupPage = false } = {}) {
+  const p0 = state.project;
+  if (simple === undefined) simple = p0.guidance === 'simple';
+  if (!setupPage && !simple && !p0.meta.ownersWanted) {
+    return h('div', { class: 'tool stack' },
+      h('p', null, 'Do you want to record owners for this project? Most teams start with who approves the change, and add owners per workstream later.'),
+      h('div', { class: 'row-actions' },
+        btn('Yes, record owners', () => mutate((pr) => setOwnersWanted(pr, 'yes')), { kind: 'primary', small: true }),
+        btn('Later', () => mutate((pr) => setOwnersWanted(pr, 'later')), { small: true })));
+  }
   const kb = state.kb;
   const p = state.project;
   const d = ownersDraft();
@@ -234,6 +246,16 @@ export function ownersTool() {
   function discard() { ownDraft.id = ''; render(); }
   const stages = kb.stages.filter((st) => st.id !== 'test' || testUsed);
   refresh();
+  if (!setupPage && (simple || p0.meta.ownersWanted === 'later')) {
+    return h('div', { class: 'tool' },
+      h('datalist', { id: 'role-list' }, APPROVER_ROLES.map((r) => h('option', { value: r }))),
+      h('h3', null, 'Who approves the change'),
+      h('p', { class: 'small muted' }, 'One or two names is enough. They are suggested wherever the assistant asks who decided or approved something.'),
+      approvers,
+      h('button', { type: 'button', class: 'btn btn-sm', 'data-focus-key': 'appr-add', onclick: () => addAndFocus(() => d.approvers.push({ role: '', name: '' }), `appr-${d.approvers.length}`) }, icon('plus', 'icon-sm'), 'Add an approver'),
+      barSlot,
+      h('p', { class: 'small' }, h('a', { href: '#/project/owners' }, 'Record owners per workstream too'), simple ? ' (in Project setup)' : '', '.'));
+  }
   return h('div', { class: 'tool' },
     h('datalist', { id: 'role-list' }, APPROVER_ROLES.map((r) => h('option', { value: r }))),
     h('h3', null, 'Who owns each workstream'),
@@ -318,30 +340,10 @@ function briefingEmail(m, { level = 0 } = {}) {
   return { subject: m.subject, text, html };
 }
 
-async function copyRich(text, html) {
-  try {
-    if (navigator.clipboard && window.ClipboardItem) {
-      await navigator.clipboard.write([new ClipboardItem({ 'text/html': new Blob([html], { type: 'text/html' }), 'text/plain': new Blob([text], { type: 'text/plain' }) })]);
-      return true;
-    }
-  } catch { /* fall back to plain text */ }
-  return copyText(text);
-}
-
-// Email apps cut long mailto links, so a long briefing opens as a shorter version (headlines only).
-const MAILTO_LIMIT = 2000;
-function mailtoFor(m) {
-  const link = (mail) => `mailto:?subject=${encodeURIComponent(mail.subject)}&body=${encodeURIComponent(mail.text)}`;
-  const links = [0, 1, 2].map((level) => link(briefingEmail(m, { level })));
-  const level = links.findIndex((x) => x.length <= MAILTO_LIMIT);
-  return level === 0 ? { href: links[0], short: false } : { href: links[level < 0 ? 2 : level], short: true };
-}
-
 export function briefingTool() {
   const kb = state.kb;
   const m = briefingModel();
   const mail = briefingEmail(m);
-  const mailto = mailtoFor(m);
   const cite = (ids) => (ids || []).map((id) => kb.sources.find((x) => x.id === id)).filter(Boolean);
   const sourceLine = (ids) => (briefSources ? h('span', { class: 'brief-src' }, 'Source: ', ...cite(ids).flatMap((src, i) => [i ? ', ' : '', externalLink(src.url, src.title)])) : null);
   const point = (x) => h('li', null, h('strong', null, x.what), ' ', x.meaning, sourceLine(x.sources));
@@ -372,11 +374,8 @@ export function briefingTool() {
       h('p', null, m.closing),
       h('p', null, 'Kind regards,', h('br'), m.sign || h('span', { class: 'muted' }, 'Your name, from Project setup'))),
     m.left.length ? h('p', { class: 'small muted' }, `Left out because you answered No in the questions: ${m.left.map((x) => `"${x.what.replace(/\.$/, '')}"`).join(', ')}.`) : null,
-    h('div', { class: 'row-actions' },
-      h('button', { type: 'button', class: 'btn btn-primary btn-sm', onclick: async () => { const ok = await copyRich(mail.text, mail.html); if (ok) savedPulse('Email copied. Paste it into Outlook.'); else toast('Copy failed. Select the text and copy it by hand.', 'bad'); } }, icon('copy', 'icon-sm'), 'Copy email'),
-      h('button', { type: 'button', class: 'btn btn-sm', onclick: async () => { const ok = await copyText(mail.subject); if (ok) savedPulse('Subject copied'); } }, 'Copy subject'),
-      h('a', { class: 'btn btn-sm', href: mailto.href }, icon('external', 'icon-sm'), 'Open in email app')),
-    h('p', { class: 'small muted' }, 'Copy email keeps the formatting and links for Outlook. ', mailto.short ? 'Open in email app starts a shorter version with the headlines only, because email apps limit how long a link can be. ' : '', 'The email uses your project name, window, workspaces and signature from Project setup. Edit it as you like before sending. The full list of changes is in ', h('a', { href: '#/knowledge/changes' }, 'Feature changes'), '.'));
+    emailActions(mail, { audit: 'briefing.copied', label: `Briefing for ${m.audience.label}`, short: [briefingEmail(m, { level: 1 }).text, briefingEmail(m, { level: 2 }).text] }),
+    h('p', { class: 'small muted' }, 'The email uses your project name, window, workspaces and signature from Project setup. Edit it as you like before sending. The full list of changes is in ', h('a', { href: '#/knowledge/changes' }, 'Feature changes'), '.'));
 }
 
 // ───────── Transition window planner ─────────
@@ -579,12 +578,29 @@ export function decisionHelperTool(key, c, ctx = { kb: state.kb }) {
     barSlot);
 }
 
+// Ready texts for the teams involved: preview, then copy, download as an Outlook draft or open in the email app.
+function readyTextBlock(key, audit) {
+  const t = readyText(key);
+  return h('div', { class: 'ready-text stack' },
+    h('h3', null, t.label),
+    h('article', { class: 'email-preview brief-email', 'aria-label': t.label },
+      h('div', { class: 'email-subject' }, h('span', { class: 'muted' }, 'Subject: '), t.subject),
+      h('p', null, 'Hello,'),
+      ...t.sections.map((s) => h('div', null, h('h3', null, s.title), s.text ? h('p', null, s.text) : null, s.points.length ? h('ul', { class: 'bullets' }, s.points.map((x) => h('li', null, x))) : null)),
+      t.closing ? h('p', null, t.closing) : null),
+    emailActions(t, { audit, label: t.label }));
+}
+export function commsTool() { return h('div', { class: 'tool stack' }, readyTextBlock('analystNotice', 'comms.copied'), readyTextBlock('liveNote', 'comms.copied')); }
+export function changeTool() { return h('div', { class: 'tool stack' }, readyTextBlock('changeSummary', 'change.copied')); }
+
 export const TOOLS = {
   workspaces: () => workspaceTool(), connection: () => workspaceTool({ show: 'connection' }), primary: () => primaryTool(), owners: () => ownersTool(), briefing: () => briefingTool(), window: () => windowTool(),
   mdc: (c, ctx) => decisionHelperTool('mdc', c, ctx), urbac: (c, ctx) => decisionHelperTool('urbac', c, ctx), tenants: (c, ctx) => decisionHelperTool('tenants', c, ctx),
+  comms: () => commsTool(), change: () => changeTool(),
 };
 export const TOOL_TITLES = {
   workspaces: 'Your workspaces', connection: 'Connection state of your workspaces', primary: 'Choose the primary workspace', owners: 'Owners and approvers', briefing: 'Brief your stakeholders', window: 'Plan your window',
   mdc: 'Choose your connector approach', urbac: 'Decide on unified RBAC', tenants: 'Access model per tenant',
+  comms: 'Ready texts for your teams', change: 'Change request summary',
 };
 export { same };

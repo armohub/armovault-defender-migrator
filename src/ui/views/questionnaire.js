@@ -4,7 +4,7 @@ import { h, icon, modal, confirmDialog, toast, showSequence, savedPulse } from '
 import { state, mutate, updateSettings } from '../../app/store.js';
 import { go, route, render, freshRoute } from '../shell.js';
 import { setAnswer, ANSWERS, addAudit, addRegisterItem, setTestAvailability } from '../../core/model.js';
-import { applicabilityMap, diffApplicability, evaluateApplicability, questionIndex } from '../../core/applicability.js';
+import { applicabilityMap, diffApplicability, evaluateApplicability, questionIndex, visibleQuestions, upfrontQuestions } from '../../core/applicability.js';
 import { btn, linkBtn, callout } from '../components.js';
 import { formatDate } from '../../core/util.js';
 import { rich } from '../rich.js';
@@ -28,11 +28,6 @@ const ANSWER_TEXT = {
   na: ['Not applicable', 'Doesn\'t fit us. Counts as No'],
 };
 
-function visibleQuestions(kb, p) {
-  const qIdx = questionIndex(kb);
-  const shown = (q) => !q.showIf || evaluateApplicability({ id: '_', applicability: q.showIf }, { ...p, mode: 'tailored', checks: {} }, kb, qIdx).value !== 'not_applicable';
-  return kb.questions.filter(shown);
-}
 
 let direction = 'forward';
 let advanceTimer = null;
@@ -56,7 +51,9 @@ route('questionnaire', ({ params }) => {
         }
       }, { kind: 'primary' }), linkBtn('Back to the overview', '#/overview', { kind: 'ghost' })));
   }
-  const qs = visibleQuestions(kb, p);
+  let qs = upfrontQuestions(kb, p);
+  // A question asked in a mission can still be reopened here, from "Your answers".
+  if (params[0] === 'q' && !qs.some((x) => x.id === params[1]) && visibleQuestions(kb, p).some((x) => x.id === params[1])) qs = visibleQuestions(kb, p);
   const sections = kb.questionSections;
   if (params[0] === 'done') return doneScreen(qs);
   let q = params[0] === 'q' ? qs.find((x) => x.id === params[1]) : null;
@@ -208,6 +205,7 @@ function doneScreen(qs) {
         h('span', null, h('b', null, String(c.uncertain)), ' to look into'),
         h('span', null, h('b', null, String(c.na)), ' set aside'),
         unknown ? h('span', null, h('b', null, String(unknown)), ' answered "I don\'t know yet"') : null),
+      state.project.guidance === 'simple' ? h('p', { class: 'small muted' }, 'More questions come up in the missions they affect, when you get there.') : null,
       h('div', { class: 'hero-actions', style: { justifyContent: 'center' } },
         h('button', { type: 'button', class: 'btn btn-primary btn-lg', 'data-focus-key': 'q-build', onclick: build }, 'Build my plan', icon('arrow', 'icon-sm')),
         open ? linkBtn('Answer the skipped questions', `#/questionnaire/q/${qs.find((q) => !p.answers[q.id]).id}`) : null,

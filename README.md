@@ -13,6 +13,7 @@ Microsoft states that *"After March 31, 2027, Microsoft Sentinel will no longer 
   - **Test:** optional, 11 steps.
   - **Transition:** a 17-step runbook in order, with go or no-go gates.
   - **Validate:** 19 steps, including residual risk and sign-off.
+- **Two ways to work.** **Simplified** (the default) shows the plan as missions with short checklists: each check says what to do and what counts as proof, a pasted screenshot is enough, and only six questions come first. **Detailed** shows every step in full. Both keep the same records, proofs and decisions, and you can switch at any time.
 - **A plan that fits your environment.** Answer 35 questions in six short sections, or skip them and see the full checklist. Each answer is Yes, No, "I don't know yet" or Not applicable. "I don't know yet" never hides work. Every decision about what applies is explained, and a reviewer can override it with a reason.
 - **Guidance you can act on.** Each step has:
   - what you do and why it matters, the roles you need and the exact portal locations;
@@ -34,7 +35,7 @@ Microsoft states that *"After March 31, 2027, Microsoft Sentinel will no longer 
 
 - **A short introduction on first start.** About four seconds, with six promises: no internet needed, processed on this device, your data stays with you, grounded in Microsoft Learn (118 pages), built by practitioners, open for review. It closes with "Your data is yours." and the makers' words, "Built to make your migration journey easy." Focus starts on **Skip intro**, and Escape closes it too. With reduced motion, everything appears at once. Replay it from **About** or **Settings and data**. Later starts show a short splash.
 - **A welcome page** with three ways in: **Start my project**, **Open a saved project** and **Try the demo**.
-- **A new project in four steps:** about the project, timing and scope, where to keep your work, and how to start (tailored or full checklist).
+- **A new project in four steps:** about the project, timing and scope, where to keep your work, and how to work (Simplified or Detailed, tailored or full checklist).
 - **One question per screen.** Section progress across six sections, answers by click or keys 1 to 4, and Enter for the next question. After Yes or No you can move on by yourself (a setting you can turn off). Every question has "Why we ask" and "Where to find the answer". "I don't know yet" keeps the steps in your plan and can add a "find out" action to the register. The end screen shows real counts, then a short "Building your plan" sequence takes you to the overview. **Your answers** shows every answer on one page for review.
 - **A guided overview.** Your next step is the headline, with **Start this step** and **Why this one?**. Below it: the route, a **Start here** checklist from setup to the final report, **Needs your attention**, and key dates.
 - **The route.** One line from "Azure portal" to "Defender portal" with a stop for each of the four stages and a **You are here** marker.

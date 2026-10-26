@@ -4,7 +4,8 @@
 import { h, icon, toast, field, reducedMotion, savedPulse } from '../dom.js';
 import { state, mutate } from '../../app/store.js';
 import { route, render, freshRoute } from '../shell.js';
-import { addAudit } from '../../core/model.js';
+import { addAudit, setShowExtras } from '../../core/model.js';
+import { guidanceSwitch } from './work.js';
 import { btn, linkBtn, callout } from '../components.js';
 import { windowTool, workspaceTool, ownersTool, peopleList } from '../tools.js';
 
@@ -54,11 +55,13 @@ route('project', ({ params }) => {
       field('Project or customer label', inp('name', { maxlength: '200' }), { required: true, hint: 'Printed on your reports.' }),
       field('Organisation', inp('organisation', { maxlength: '200' })),
       h('div', { class: 'grid-2' }, field('Your name', inp('operatorName', { maxlength: '200' }), { required: true, hint: 'Used for new records from now on. Earlier records keep the name they were recorded with.' }), field('Your role', inp('operatorRole', { maxlength: '200' }))),
+      h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'How the plan is shown'), guidanceSwitch(), h('p', { class: 'hint' }, 'Simplified: missions with short checklists. Detailed: every step in full. Your records stay the same.')),
+      h('label', { class: 'check-line' }, h('input', { type: 'checkbox', checked: state.project.meta.showExtras !== false, onchange: (e) => mutate((pr) => setShowExtras(pr, e.target.checked)) }), ' Show recommended extras (good practice, not needed for the move)'),
       field('Project notes', (() => { const t = h('textarea', { rows: '3', maxlength: '20000', 'data-focus-key': 'proj-notes', oninput: (e) => { m.notes = e.target.value; refreshBar(); } }); t.value = m.notes || ''; return t; })()),
       bar),
     h('section', { class: 'card form-section stack', id: 'sec-window' }, h('h2', { class: 'card-title' }, icon('calendar', 'icon-sm'), 'Planned transition window'), windowTool()),
     h('section', { class: 'card form-section stack', id: 'sec-environments' }, h('h2', { class: 'card-title' }, 'Workspaces in scope'), workspaceTool()),
-    h('section', { class: 'card form-section stack', id: 'sec-owners' }, h('h2', { class: 'card-title' }, icon('users', 'icon-sm'), 'Owners and approvers'), ownersTool()));
+    h('section', { class: 'card form-section stack', id: 'sec-owners' }, h('h2', { class: 'card-title' }, icon('users', 'icon-sm'), 'Owners and approvers'), ownersTool({ simple: false, setupPage: true })));
 
   if (freshRoute && anchor && anchor !== 'project') {
     // Arriving from a link such as "Project setup > Planned transition window": go to that section.

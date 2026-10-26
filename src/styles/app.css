@@ -242,7 +242,7 @@ strong { font-weight: 640; }
 
 /* ───────── Forms ───────── */
 .field { display: flex; flex-direction: column; gap: 6px; }
-.field label { font-weight: 600; font-size: .88rem; color: var(--text); }
+.field label, .field .field-label { font-weight: 600; font-size: .88rem; color: var(--text); }
 .req { color: var(--bad); }
 .hint { font-size: .8rem; color: var(--muted); }
 .field-error { margin: 6px 0 0; font-size: .86rem; font-weight: 600; color: var(--bad); }
@@ -886,3 +886,58 @@ body[data-motion="reduced"] .route-marker .pulse { animation: none !important; }
   .route-done, .route-marker .core { stroke: Highlight; fill: Highlight; }
   .btn-primary { border: 2px solid ButtonText; }
 }
+
+/* ───── Simplified mode: missions and check rows ───── */
+.mission-head { display: flex; justify-content: space-between; gap: 24px; align-items: flex-end; margin-bottom: 18px; }
+.mission-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; min-width: 200px; }
+.mission-count { color: var(--text-2); }
+.mission-count strong { font-size: 1.6rem; color: var(--text); }
+.mission-bar { width: 200px; height: 6px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
+.mission-bar > span { display: block; height: 100%; background: var(--accent); transition: width var(--t-state) var(--ease-out); }
+.owner-chip-input { width: 200px; font-size: .86rem; padding: 4px 10px; border-radius: 999px; }
+.mission-questions { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.mq { border: 1px solid var(--accent); background: color-mix(in srgb, var(--accent-soft) 40%, var(--surface)); border-radius: var(--radius-md); padding: 12px 14px; }
+.mq-text { margin: 0 0 8px; font-weight: 600; color: var(--text); }
+.crow-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.crow { border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface); }
+.crow.open { border-color: var(--accent); }
+.crow.drop-ready { outline: 2px dashed var(--accent); outline-offset: 2px; }
+.crow-head { width: 100%; display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: none; border: 0; color: var(--text); text-align: left; cursor: pointer; font: inherit; }
+.crow-title { flex: 1; font-weight: 560; }
+.crow.st-passed .crow-title, .crow.st-not_applicable .crow-title { color: var(--text-2); }
+.crow-proof { font-size: .78rem; color: var(--muted); white-space: nowrap; }
+.crow-proof.yes { color: var(--good); }
+.crow-head > .icon-sm:last-child { transition: transform var(--t-state) var(--ease-out); }
+.crow.open .crow-head > .icon-sm:last-child { transform: rotate(90deg); }
+.crow-body { padding: 0 14px 14px 44px; display: flex; flex-direction: column; gap: 10px; }
+.crow-body h4 { margin: 0; font-size: .82rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.crow-body .row-actions { align-items: center; }
+.crow-body .grow { flex: 1; }
+.crow-tool { border-top: 1px solid var(--border); padding-top: 10px; }
+.crow-proofline { margin: 0; font-size: .9rem; }
+.mission-done { display: flex; align-items: center; gap: 12px; margin: 14px 0; padding: 12px 14px; border-radius: var(--radius-md); background: color-mix(in srgb, var(--good) 12%, var(--surface)); color: var(--text); }
+.mission-extras { margin-top: 26px; }
+.mission-extras h2 { font-size: 1rem; margin: 0; }
+.mission-extras .row { gap: 12px; align-items: center; margin-bottom: 8px; }
+.mission-empty { color: var(--text-2); }
+.mission-aside { margin-top: 18px; }
+@media (max-width: 900px) {
+  .mission-head { flex-direction: column; align-items: stretch; }
+  .mission-meta { align-items: stretch; }
+  .mission-bar, .owner-chip-input { width: 100%; }
+  .crow-body { padding-left: 14px; }
+}
+@media (prefers-reduced-motion: reduce) { .mission-bar > span, .crow-head > .icon-sm:last-child { transition: none; } }
+
+.view-switch-row { display: flex; justify-content: flex-end; margin-bottom: 10px; }
+.stage-missions { padding: 14px 18px; margin-top: 14px; }
+.stage-missions > summary { display: flex; align-items: center; gap: 10px; }
+.mission-list { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.mission-row a { display: grid; grid-template-columns: auto 1fr auto auto 140px; align-items: center; gap: 12px; padding: 10px 12px; border-radius: var(--radius-md); color: var(--text); text-decoration: none; }
+.mission-row a:hover { background: var(--surface-2); }
+.mission-row.current a { background: color-mix(in srgb, var(--accent-soft) 50%, var(--surface)); }
+.mission-row.done .mission-row-title { color: var(--text-2); }
+.mission-row-count { color: var(--text-2); font-size: .86rem; }
+.mission-row .mission-bar { width: 140px; }
+.ws-title .ws-bar { width: 120px; margin-left: 12px; display: inline-block; vertical-align: middle; }
+@media (max-width: 900px) { .mission-row a { grid-template-columns: auto 1fr auto; } .mission-row .mission-bar { grid-column: 1 / -1; width: 100%; } }

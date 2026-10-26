@@ -8,10 +8,10 @@ Only results that were recorded in files are reported as results here. Where no 
 
 | Suite | Command | Recorded result |
 |---|---|---|
-| End-to-end, Edge | `npm run test:e2e` | ✔ **39 of 39 steps passed** on 2026-10-20 at 08:02 UTC, against the 1.0.0 build of `ArMo-MS-Defender-Migration-Assistant.html` with the 20 October changes (`test-results/e2e-results-msedge.json`) |
-| Network requests and console errors during those runs | recorded by the end-to-end runner (step 39) | ✔ **none**, in Edge and in Chrome |
-| End-to-end, Chrome | `npm run test:e2e:chrome` | ✔ **39 of 39 steps passed** on 2026-10-20 at 08:02 UTC, against the same build (`test-results/e2e-results-chrome.json`) |
-| Unit tests | `npm run test:unit` | ✔ **94 of 94 passed** on 2026-10-20 against the same source |
+| End-to-end, Edge | `npm run test:e2e` | ✔ **40 of 40 steps passed** on 2026-10-26 at 15:20 UTC, against the 1.0.0 build with Simplified mode (`test-results/e2e-results-msedge.json`) |
+| Network requests and console errors during those runs | recorded by the end-to-end runner (step 40) | ✔ **none**, in Edge and in Chrome |
+| End-to-end, Chrome | `npm run test:e2e:chrome` | ✔ **40 of 40 steps passed** on 2026-10-26 at 15:20 UTC, against the same build (`test-results/e2e-results-chrome.json`) |
+| Unit tests | `npm run test:unit` | ✔ **129 of 129 passed** on 2026-10-26 against the same source |
 | Knowledge base integrity and writing rules | `npm run validate-kb` (also runs in every build) | No stored result. Every build runs it and stops on any error. The knowledge base has 109 steps, 35 questions, 118 sources and 32 snippets. |
 | Inventory script parse and mock run | `powershell -File tests/tools/mock-inventory-run.ps1` (plus `-Fail automationRules`) | No stored result for 1.0. Run it before release (release checklist, B10). |
 | Platform prototypes P1 to P3 | `node prototypes/run-p1-platform.mjs` and the others | Stored results in `prototypes/*.json`. See [prototypes/README.md](../prototypes/README.md). |
@@ -58,7 +58,8 @@ The Edge run also generated `test-results/report-prepare-msedge.pdf` and `test-r
 36. A full-checklist project without autosave warns about unsaved work.
 37. The demo opens by link with fictional data, and the final report renders.
 38. Reduced motion: the introduction shows everything at once, and the assistant stays usable.
-39. No network request was made during the whole run, and no console errors occurred.
+39. Simplified: six questions, missions with progress, a real Ctrl+V screenshot as proof right after arriving, Done opening the next row with no Detailed-only hint, a text-and-image paste staying text in a field, recording a decision from its row, proof from a copied ready text, a mission question that sets checks aside, hiding extras, the gate inside its mission, the Simplified and Detailed stage pages, reopening a mission question from "Your answers", and good practice reported apart.
+40. No network request was made during the whole run, and no console errors occurred.
 
 ## What the unit tests cover
 
@@ -101,6 +102,11 @@ There is no stored result for the unit tests, so this lists what they check, by 
 - **`decision-helpers.test.mjs`:** the three decision helpers, their verdict rules, per-tenant subjects and the decision record they fill in.
 - **`workstream-people.test.mjs`:** a lead and other people per workstream with what they cover, step owners that differ from the lead, the report rows, and import safety.
 - **`primary-per-tenant.test.mjs`:** several production workspaces in one tenant (one primary, the rest secondary), one primary per tenant, a primary chosen before tenants were entered, report roles and import safety.
+- **`simple-content.test.mjs`:** the 8 good-practice checks, Validate checks depending on health monitoring, short forms on all 109 checks within their limits and pointing only to what a mission row offers, mission titles, the six core questions, the data residency wording, and the ready texts.
+- **`simple-model.test.mjs`:** Simplified is the default for new projects and Detailed for older ones; switching changes no record; the new fields survive import; good-practice checks never block readiness or count in progress; reports list them apart.
+- **`missions.test.mjs`:** missions hold their checks in order, count done and attention, ask the questions their checks depend on (once each), skip missions with nothing to do and an unused Test stage, and Simplified asks six questions up front.
+- **`eml.test.mjs`:** Outlook drafts open unsent, keep non-ASCII text intact, cannot gain headers from a line break, and get safe file names.
+- **`proof.test.mjs`:** only pastes with files become proof, and a copy with text into a field stays text; proof generated from your entries comes only from what the forms hold, and reports label it.
 - **`review-fixes.test.mjs`: regression tests for the findings of the independent review** (see the history below).
 - **`contrast.test.mjs`:** WCAG AA (4.5:1) for 14 text and background token pairs, in the light and the dark theme.
 - **`static.test.mjs`: static safety.**

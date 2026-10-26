@@ -82,19 +82,21 @@ export function stageItems(kb, project, stageId, appMap = applicabilityMap(kb, p
 
 export function summariseStage(kb, project, stageId, appMap) {
   const items = stageItems(kb, project, stageId, appMap);
-  const inScope = items.filter((i) => i.inScope);
-  const counts = { total: items.length, inScope: inScope.length, outOfScope: items.length - inScope.length, uncertain: 0 };
+  // Good-practice checks (scope 'extra') are listed, but never count toward progress or readiness.
+  const inScope = items.filter((i) => i.inScope && i.check.scope !== 'extra');
+  const extras = items.filter((i) => i.inScope && i.check.scope === 'extra');
+  const counts = { total: items.length, inScope: inScope.length, outOfScope: items.filter((i) => !i.inScope).length, uncertain: 0 };
   for (const s of ['not_started', 'in_progress', 'passed', 'not_verified', 'failed', 'blocked', 'needs_review', 'not_applicable']) counts[s] = 0;
   // Status counts cover in-scope items only; items marked "not applicable" are counted as out of scope.
   for (const i of items) {
-    if (i.inScope) counts[i.status] += 1;
+    if (i.inScope && i.check.scope !== 'extra') counts[i.status] += 1;
     else if (i.status === 'not_applicable') counts.not_applicable += 1;
   }
   counts.uncertain = inScope.filter((i) => i.app.value === 'unknown' && UNASSESSED.has(i.status)).length;
   const assessed = inScope.filter((i) => ASSESSED.has(i.status)).length;
   counts.assessed = assessed;
   counts.progress = inScope.length ? Math.round((assessed / inScope.length) * 100) : 0;
-  return { stageId, items, inScope, counts };
+  return { stageId, items, inScope, extras, counts };
 }
 
 // Core conclusion algorithm (shared by all stages).

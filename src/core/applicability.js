@@ -131,3 +131,15 @@ export function diffApplicability(before, after) {
   }
   return { appeared, removed, uncertain };
 }
+
+// Questions shown in this project: follow-ups appear only when their parent answer asks for them.
+export function visibleQuestions(kb, project) {
+  const qIdx = questionIndex(kb);
+  return kb.questions.filter((q) => !q.showIf || evaluateApplicability({ id: '_', applicability: q.showIf }, { ...project, mode: 'tailored', checks: {} }, kb, qIdx).value !== 'not_applicable');
+}
+
+// Simplified mode asks only the core questions up front; the others come up in the missions they affect.
+export function upfrontQuestions(kb, project) {
+  const qs = visibleQuestions(kb, project);
+  return project.guidance === 'simple' ? qs.filter((q) => q.core) : qs;
+}

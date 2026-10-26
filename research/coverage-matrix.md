@@ -163,7 +163,7 @@ Legend. Provenance: **official** = derived from current Microsoft Learn document
 | `defender_xdr` Is Microsoft Defender XDR licensed and in use in this tenant? | PREP-CON-01, PREP-DET-08, VAL-10 |
 | `test_env` Do you have a non-production Sentinel environment to test the transition first? | none (context only) |
 | `test_separate_tenant` Is that test environment in a separate tenant from production? | none (context only) |
-| `data_residency` Do any policies restrict where security data may be stored or processed? | PREP-GOV-02 |
+| `data_residency` Do any internal or company policies, or regulations, limit where security data may be stored or processed? | PREP-GOV-02 |
 | `cmk` Is any in-scope workspace protected with customer-managed keys? | PREP-GOV-03 |
 | `data_lake` Do you use, or plan to onboard, the Microsoft Sentinel data lake? | PREP-GOV-04 |
 | `mdc` Do you bring Microsoft Defender for Cloud alerts or incidents into Sentinel? | PREP-CON-02, TRN-05, VAL-10 |

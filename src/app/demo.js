@@ -36,7 +36,7 @@ function mockScreenshot(title, rows) {
 }
 
 export function buildDemoProject(kb) {
-  const p = createProject({ mode: 'tailored', appVersion: APP_VERSION, kbVersion: kb.meta.version });
+  const p = createProject({ mode: 'tailored', guidance: 'simple', appVersion: APP_VERSION, kbVersion: kb.meta.version });
   p.isDemo = true;
   Object.assign(p.meta, {
     name: 'Sentinel → Defender portal transition (DEMO)', organisation: 'Lakeview Logistics (fictional)', operatorName: 'Alex Example', operatorRole: 'Security architect (fictional)',

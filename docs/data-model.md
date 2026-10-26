@@ -57,6 +57,8 @@ Three kinds of data, kept strictly apart:
 
 In full-checklist mode every step is `applies`. A reviewer override (`applies` or `not_applicable`) requires a reason and wins over answers.
 
+Simplified mode adds to the knowledge base: `check.scope` (`needed` or `extra`, the 10 good-practice checks), `check.short` (`{ title, do[], proof }`), `workstream.mission` (`{ title, purpose }`), `question.core` (the six up-front questions) and `reference.readyTexts`.
+
 ## Project (`armohub.dma.project`, schemaVersion 1)
 
 ```js
@@ -66,11 +68,13 @@ In full-checklist mode every step is `applies`. A reviewer override (`applies` o
           environments: [{ alias, kind, tenant, subscription, resourceGroup, region, owner, defender, notes }],  // defender: unknown | not_connected | primary | secondary; one primary per tenant
           workstreamOwners: { "<stage>:<workstream>": lead name }, workstreamPeople: { "<stage>:<workstream>": [{ name, covers }] },
           approvers: [{ role, name }], plannedPrimary (no tenants), plannedPrimaries: { "<tenant>": alias },
+          showExtras: boolean (default true), ownersWanted: 'yes' | 'later' | '',
           helpers: { mdc | urbac | tenants: { subjects: [{ label, answers: { [questionId]: optionId | [optionId] }, choice, person }], by, at } } },  // decision helpers; ids only, one subject per tenant for "tenants"
   mode: 'tailored' | 'full',
+  guidance: 'simple' | 'detailed',   // how the plan is shown; a view only. Missing on import means 'detailed'.
   answers: { [questionId]: { value, reason, by, at } },
   checks: { [itemId]: { status, statusReason, owner, due, notes, evidenceIds, evidenceWaiver: { reason, by, at } | null, updatedAt, updatedBy, kbVersion, override, history: [...] } },  // "passed" needs evidence or an evidenceWaiver
-  evidence: { [evidenceId]: { id, checkId, kind: 'image'|'note'|'link'|'file', origin: 'user'|'import', title, text, url, fileName, mime, size, sha256, redactionConfirmed, createdAt, createdBy, stage } },
+  evidence: { [evidenceId]: { id, checkId, kind: 'image'|'note'|'link'|'file', origin: 'user'|'import', generated: boolean (notes built from your entries), title, text, url, fileName, mime, size, sha256, redactionConfirmed, createdAt, createdBy, stage } },
   register: [{ id, type: 'action'|'issue'|'risk'|'exception'|'decision', title, description, owner, due, severity, status, checkId, acceptedBy, acceptedRole, acceptedAt, rationale, createdAt, createdBy, updatedAt }],
   stages: { test: { availability: 'undecided'|'available'|'unavailable', reason, decidedBy, decidedAt } },
   gates: { [gateItemId]: { decision, decidedBy, decidedRole, rationale, at, history } },

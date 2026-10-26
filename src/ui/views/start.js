@@ -97,7 +97,7 @@ const draft = {
 };
 
 function resetDraft() {
-  Object.assign(draft, { name: '', organisation: '', operatorName: state.settings.operatorName || '', operatorRole: state.settings.operatorRole || '', startDate: new Date().toISOString().slice(0, 10), windowStart: '', windowEnd: '', environments: [{ alias: '', kind: 'production', notes: '' }], storageMode: state.settings.storageMode, mode: 'tailored', disclaimer: false });
+  Object.assign(draft, { guidance: 'simple', name: '', organisation: '', operatorName: state.settings.operatorName || '', operatorRole: state.settings.operatorRole || '', startDate: new Date().toISOString().slice(0, 10), windowStart: '', windowEnd: '', environments: [{ alias: '', kind: 'production', notes: '' }], storageMode: state.settings.storageMode, mode: 'tailored', disclaimer: false });
 }
 resetDraft();
 
@@ -175,12 +175,18 @@ route('setup', ({ params }) => {
       h('p', { class: 'small muted' }, 'Your preferences (theme, saving choice, your name) are remembered in this browser\'s local storage. They contain no project data, and you can reset them in Settings.'));
     next = () => { if (!draft.storageMode) { toast('Choose how to save your work.', 'bad'); return false; } return true; };
   } else {
+    const guideChoice = (value, title, desc) => h('label', { class: ['choice', draft.guidance === value && 'selected'] },
+      h('input', { type: 'radio', name: 'guidance', value, checked: draft.guidance === value, onchange: () => { draft.guidance = value; go('#/setup/4'); } }),
+      h('div', null, h('strong', null, title), h('p', { class: 'small' }, desc)));
     const pathChoice = (value, title, desc) => h('label', { class: ['choice', draft.mode === value && 'selected'] },
       h('input', { type: 'radio', name: 'mode', value, checked: draft.mode === value, onchange: () => { draft.mode = value; go('#/setup/4'); } }),
       h('div', null, h('strong', null, title), h('p', { class: 'small' }, desc)));
     body = h('div', { class: 'stack' },
-      h('fieldset', { class: 'choices' }, h('legend', { class: 'sr-only' }, 'How to start'),
-        pathChoice('tailored', 'Tailor the plan to my environment (recommended)', `Answer up to ${state.kb.questions.length} short questions, one per screen. Steps that do not apply are set aside with a reason, never deleted, and "I don't know" keeps them in your plan.`),
+      h('fieldset', { class: 'choices' }, h('legend', { class: 'small muted' }, 'How do you want to work?'),
+        guideChoice('simple', 'Simplified (recommended)', 'Missions with short checklists. Each check says what to do and what counts as proof. Same proofs and decisions as Detailed.'),
+        guideChoice('detailed', 'Detailed', 'Every step in full, with background, sources and all the questions up front. For consultants and audit-heavy projects.')),
+      h('fieldset', { class: 'choices' }, h('legend', { class: 'small muted' }, 'How to start'),
+        pathChoice('tailored', 'Tailor the plan to my environment (recommended)', draft.guidance === 'simple' ? 'Answer 6 short questions now. The rest come up in the missions they affect. Steps that do not apply are set aside with a reason, never deleted.' : `Answer up to ${state.kb.questions.length} short questions, one per screen. Steps that do not apply are set aside with a reason, never deleted, and "I don't know" keeps them in your plan.`),
         pathChoice('full', 'Show me the full checklist', `See all ${state.kb.checks.length} steps without tailoring. You decide what applies as you go.`)),
       h('div', { class: 'card card-muted' }, h('h2', { class: 'card-title' }, 'Before you start'), h('p', null, DISCLAIMER_SHORT),
         h('label', { class: 'check-line' }, h('input', { type: 'checkbox', checked: draft.disclaimer, onchange: (e) => { draft.disclaimer = e.target.checked; } }), ' I understand this assistant gives guidance only, and my organisation stays responsible for checking instructions, approvals and change decisions.')));
@@ -189,7 +195,7 @@ route('setup', ({ params }) => {
 
   const finish = async () => {
     if (!(await confirmLeaveProject())) return;
-    const p = createProject({ mode: draft.mode, appVersion: APP_VERSION, kbVersion: state.kb.meta.version });
+    const p = createProject({ mode: draft.mode, guidance: draft.guidance, appVersion: APP_VERSION, kbVersion: state.kb.meta.version });
     Object.assign(p.meta, {
       name: draft.name.trim(), organisation: draft.organisation.trim(), operatorName: draft.operatorName.trim(), operatorRole: draft.operatorRole.trim(),
       startDate: draft.startDate, windowStart: draft.windowStart, windowEnd: draft.windowEnd,

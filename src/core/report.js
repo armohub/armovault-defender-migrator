@@ -40,7 +40,7 @@ function itemRow(kb, project, item, excMap) {
   const c = item.check;
   const st = project.checks[c.id] || {};
   const evidence = (st.evidenceIds || []).map((id) => project.evidence[id]).filter(Boolean).map((e) => ({
-    id: e.id, kind: e.kind, origin: e.origin || 'user', title: e.title, fileName: e.fileName, createdAt: e.createdAt, createdBy: e.createdBy, sha256: e.sha256, url: e.url, text: e.kind === 'note' ? e.text : '',
+    id: e.id, kind: e.kind, origin: e.origin || 'user', generated: !!e.generated, title: e.title, fileName: e.fileName, createdAt: e.createdAt, createdBy: e.createdBy, sha256: e.sha256, url: e.url, text: e.kind === 'note' ? e.text : '',
   }));
   return {
     id: c.id,
@@ -82,12 +82,15 @@ export function buildReportModel(kind, kb, project, { appVersion }) {
     const assessment = assessStage(kb, project, stageId, appMap);
     const summary = summariseStage(kb, project, stageId, appMap);
     const groups = [];
+    const extras = { workstream: 'extras', title: 'Good practice (optional)', items: [] };
     for (const item of summary.items) {
       if (!item.inScope) continue;
+      if (item.check.scope === 'extra') { extras.items.push(itemRow(kb, project, item, excMap)); continue; }
       let g = groups.find((x) => x.workstream === item.check.workstream);
       if (!g) { g = { workstream: item.check.workstream, title: wsTitle(stageId, item.check.workstream), items: [] }; groups.push(g); }
       g.items.push(itemRow(kb, project, item, excMap));
     }
+    if (extras.items.length) groups.push(extras);
     const outOfScope = summary.items.filter((i) => !i.inScope).map((i) => ({
       id: i.check.id, title: i.check.title, criticality: i.check.criticality,
       reason: i.status === 'not_applicable' ? `Marked not applicable: ${(project.checks[i.check.id] || {}).statusReason || 'no rationale recorded'}` : i.app.reasons.join(' '),

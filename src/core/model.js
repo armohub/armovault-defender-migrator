@@ -50,6 +50,7 @@ export const GATE_DECISIONS = [
 export const GATE_DECISION_IDS = GATE_DECISIONS.map((g) => g.id);
 
 export const EVIDENCE_KINDS = ['image', 'note', 'link', 'file'];
+export const GUIDANCE = ['simple', 'detailed'];
 export const MAX_TEXT = 20000; // generous upper bound for any free-text field
 export const MAX_EVIDENCE_ITEMS = 5000; // matches the import limit
 export const MAX_REGISTER_ITEMS = 5000;
@@ -58,7 +59,7 @@ export const MAX_EVIDENCE_BYTES = 15 * 1024 * 1024; // per attachment
 export const ALLOWED_IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
 export const ALLOWED_FILE_TYPES = ['text/plain', 'text/csv', 'application/json', 'application/pdf'];
 
-export function createProject({ meta = {}, mode = 'tailored', appVersion, kbVersion, operator } = {}) {
+export function createProject({ meta = {}, mode = 'tailored', guidance = 'simple', appVersion, kbVersion, operator } = {}) {
   const at = nowIso();
   const p = {
     schema: PROJECT_SCHEMA,
@@ -83,10 +84,13 @@ export function createProject({ meta = {}, mode = 'tailored', appVersion, kbVers
       plannedPrimary: '',
       plannedPrimaries: {},
       helpers: {},
+      showExtras: true,
+      ownersWanted: '',
       notes: '',
       ...meta,
     },
     mode, // 'tailored' | 'full'
+    guidance: GUIDANCE.includes(guidance) ? guidance : 'simple', // how the plan is shown; records are the same in both
     answers: {},
     checks: {},
     evidence: {},
@@ -210,6 +214,29 @@ export function setAnswer(project, questionId, value, reason = '') {
   return { ok: true, changed: prev !== value, previous: prev };
 }
 
+// How the plan is shown: Simplified (missions with short checklists) or Detailed (full step pages).
+// A view only: checks, evidence, answers and decisions are the same in both.
+export function setGuidance(project, guidance) {
+  if (!GUIDANCE.includes(guidance)) return { ok: false, error: 'Unknown guidance mode.' };
+  if (project.guidance === guidance) return { ok: true, changed: false };
+  project.guidance = guidance;
+  addAudit(project, 'project.guidance', guidance === 'simple' ? 'Switched to Simplified mode' : 'Switched to Detailed mode');
+  return { ok: true, changed: true };
+}
+
+export function setShowExtras(project, show) {
+  project.meta.showExtras = show === true;
+  addAudit(project, 'project.extras', project.meta.showExtras ? 'Recommended extras shown' : 'Recommended extras hidden');
+  return { ok: true };
+}
+
+// Detailed mode asks once whether the team wants to record owners: 'yes' shows the form, 'later' folds it.
+export function setOwnersWanted(project, value) {
+  if (!['yes', 'later', ''].includes(value)) return { ok: false, error: 'Invalid choice.' };
+  project.meta.ownersWanted = value;
+  return { ok: true };
+}
+
 export function addEvidence(project, checkId, item, kbVersion) {
   const st = ensureCheckState(project, checkId, kbVersion);
   const id = uid('ev');
@@ -229,6 +256,7 @@ export function addEvidence(project, checkId, item, kbVersion) {
     createdBy: actor(project),
     stage: String(item.stage || ''),
     origin: item.origin === 'import' ? 'import' : 'user', // 'import' = created from an imported export file, not typed by the user
+    generated: item.kind === 'note' && item.generated === true, // an observation note built from the user's own entries
   };
   project.evidence[id] = ev;
   st.evidenceIds.push(id);

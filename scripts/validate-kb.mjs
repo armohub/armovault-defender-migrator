@@ -15,7 +15,7 @@ const NOT_TEXT = new Set(['tool', 'id', 'dependsOn', 'snippets', 'code', 'url', 
 const BANNED_WORDS = /\b(seamless(?:ly)?|leverag(?:e|es|ed|ing)|utili[sz](?:e|es|ed|ing|ation)|delve|robust|streamlin(?:e|ed|es|ing)|cutting-edge|game-?changer|empower(?:s|ed|ing)?|holistic|synerg(?:y|ies)|paradigm|in order to)\b/i;
 const STEP_KEYS = new Set(['text', 'bullets', 'tip']);
 // Interactive tools a step can show under "Do it here" (src/ui/tools.js).
-const TOOLS = ['workspaces', 'connection', 'primary', 'owners', 'briefing', 'window', 'mdc', 'urbac', 'tenants'];
+const TOOLS = ['workspaces', 'connection', 'primary', 'owners', 'briefing', 'window', 'mdc', 'urbac', 'tenants', 'comms', 'change'];
 // Tools that are decision helpers: they render the step's `helper` (src/core/decision-helper.js).
 const HELPER_TOOLS = ['mdc', 'urbac', 'tenants'];
 const HELPER_ID = /^[a-z][a-z0-9_-]{0,39}$/;
@@ -219,6 +219,30 @@ export function validateKb(kb) {
   }
   for (const id of snippetIds) if (!usedSnippets.has(id)) warnings.push(`Snippet ${id} is not used by any check.`);
   for (const id of sourceIds) if (!usedSources.has(id)) warnings.push(`Source ${id} is not cited by any check or snippet.`);
+  // Simplified mode: short forms, good-practice tags, missions and core questions.
+  const SHORT_LIMITS = { title: 70, do: 160, proof: 140 };
+  for (const c of kb.checks) {
+    if (!['needed', 'extra'].includes(c.scope)) errors.push(`${c.id}: scope must be "needed" or "extra".`);
+    const s = c.short;
+    if (!s) { errors.push(`${c.id}: short form missing (Simplified mode).`); continue; }
+    if (!s.title || s.title.length > SHORT_LIMITS.title) errors.push(`${c.id}: short title missing or longer than ${SHORT_LIMITS.title} characters.`);
+    if (!Array.isArray(s.do) || s.do.length < 1 || s.do.length > 3) errors.push(`${c.id}: the short form needs one to three "do" points.`);
+    else s.do.forEach((d, i) => { if (typeof d !== 'string' || !d.trim() || d.length > SHORT_LIMITS.do) errors.push(`${c.id}: do point ${i + 1} is empty or longer than ${SHORT_LIMITS.do} characters.`); });
+    if (!s.proof || s.proof.length > SHORT_LIMITS.proof) errors.push(`${c.id}: short proof missing or longer than ${SHORT_LIMITS.proof} characters.`);
+  }
+  for (const c of kb.checks.filter((x) => x.scope === 'needed')) {
+    for (const d of c.dependsOn || []) {
+      const id = typeof d === 'string' ? d : d.id;
+      const dep = kb.checks.find((x) => x.id === id);
+      if (dep && dep.scope === 'extra') errors.push(`${c.id} is needed but depends on good-practice check ${id}.`);
+    }
+  }
+  for (const w of kb.workstreams) {
+    const m = w.mission;
+    if (!m || !m.title || m.title.length > 60 || !m.purpose || m.purpose.length > 120) errors.push(`Workstream ${w.stage}:${w.id}: mission title (at most 60) and purpose (at most 120) are required.`);
+  }
+  if (kb.questions.filter((q) => q.core).length !== 6) errors.push('Exactly six questions must be marked core (asked up front in Simplified mode).');
+
   return { errors, warnings, stats: { checks: kb.checks.length, questions: kb.questions.length, sources: kb.sources.length, snippets: snippetIds.size } };
 }
 

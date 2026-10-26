@@ -6,6 +6,7 @@ import { PREPARE } from './stage-prepare.mjs';
 import { TEST } from './stage-test.mjs';
 import { TRANSITION } from './stage-transition.mjs';
 import { VALIDATE } from './stage-validate.mjs';
+import { SHORT, EXTRAS } from './short-forms.mjs';
 
 export const KB_META = {
   id: 'armohub.dma.kb',
@@ -29,31 +30,31 @@ export const STAGES = [
 ];
 
 export const WORKSTREAMS = [
-  { id: 'scope', stage: 'prepare', title: 'Scope, governance and timeline' },
-  { id: 'topology', stage: 'prepare', title: 'Workspaces and tenants' },
-  { id: 'access', stage: 'prepare', title: 'Access and permissions' },
-  { id: 'governance', stage: 'prepare', title: 'Data governance, compliance and cost' },
-  { id: 'connectors', stage: 'prepare', title: 'Data connectors and ingestion' },
-  { id: 'detections', stage: 'prepare', title: 'Analytics rules, correlation and incidents' },
-  { id: 'automation', stage: 'prepare', title: 'Automation rules and playbooks' },
-  { id: 'integrations', stage: 'prepare', title: 'Integrations and APIs' },
-  { id: 'content', stage: 'prepare', title: 'Hunting, workbooks, threat intelligence and content' },
-  { id: 'operations', stage: 'prepare', title: 'SOC operations and training' },
-  { id: 'planning', stage: 'prepare', title: 'Planning, backup and rollback' },
-  { id: 'test-setup', stage: 'test', title: 'Setting up the test' },
-  { id: 'test-execution', stage: 'test', title: 'Running the tests' },
-  { id: 'test-outcome', stage: 'test', title: 'Test outcome' },
-  { id: 'pre-change', stage: 'transition', title: 'Checks before the change' },
-  { id: 'change', stage: 'transition', title: 'The change' },
-  { id: 'post-change', stage: 'transition', title: 'Checks after the change' },
-  { id: 'platform', stage: 'validate', title: 'Platform and access' },
-  { id: 'data', stage: 'validate', title: 'Data' },
-  { id: 'detections', stage: 'validate', title: 'Detections and incidents' },
-  { id: 'automation', stage: 'validate', title: 'Automation' },
-  { id: 'integrations', stage: 'validate', title: 'Integrations' },
-  { id: 'content', stage: 'validate', title: 'Content' },
-  { id: 'operations', stage: 'validate', title: 'Operations' },
-  { id: 'closure', stage: 'validate', title: 'Closure' },
+  { id: 'scope', stage: 'prepare', title: 'Scope, governance and timeline', mission: { title: 'Agree scope, timing and approvals', purpose: 'Tell people what changes, pick the window and name who approves.' } },
+  { id: 'topology', stage: 'prepare', title: 'Workspaces and tenants', mission: { title: 'Map your workspaces and tenants', purpose: 'List every workspace and decide which one becomes primary.' } },
+  { id: 'access', stage: 'prepare', title: 'Access and permissions', mission: { title: 'Check access and permissions', purpose: 'Make sure the right people can connect and work in the Defender portal.' } },
+  { id: 'governance', stage: 'prepare', title: 'Data governance, compliance and cost', mission: { title: 'Clear data protection and compliance', purpose: 'Know which data policies apply, and get compliance sign-off.' } },
+  { id: 'connectors', stage: 'prepare', title: 'Data connectors and ingestion', mission: { title: 'Check data connectors and baselines', purpose: 'Review the connectors that change, and record today\'s numbers to compare later.' } },
+  { id: 'detections', stage: 'prepare', title: 'Analytics rules, correlation and incidents', mission: { title: 'Get detections and incidents ready', purpose: 'Prepare for the new incident engine: Fusion, incident creation rules and grouping.' } },
+  { id: 'automation', stage: 'prepare', title: 'Automation rules and playbooks', mission: { title: 'Get automation ready', purpose: 'Rules and playbooks behave differently after the move. Find and fix what breaks.' } },
+  { id: 'integrations', stage: 'prepare', title: 'Integrations and APIs', mission: { title: 'Check integrations and APIs', purpose: 'Make sure ticketing, scripts and reports keep working.' } },
+  { id: 'content', stage: 'prepare', title: 'Hunting, workbooks, threat intelligence and content', mission: { title: 'Check hunting, workbooks and threat intelligence', purpose: 'Find what works differently in the Defender portal.' } },
+  { id: 'operations', stage: 'prepare', title: 'SOC operations and training', mission: { title: 'Prepare the SOC team', purpose: 'Update runbooks, plan training and tell the teams involved.' } },
+  { id: 'planning', stage: 'prepare', title: 'Planning, backup and rollback', mission: { title: 'Back up, plan rollback and decide', purpose: 'Back up, agree how you will know it worked, and decide whether you are ready.' } },
+  { id: 'test-setup', stage: 'test', title: 'Setting up the test', mission: { title: 'Set up the test', purpose: 'Confirm the test environment fits, and record a starting point.' } },
+  { id: 'test-execution', stage: 'test', title: 'Running the tests', mission: { title: 'Run the tests', purpose: 'Connect the test workspace and check what matters most.' } },
+  { id: 'test-outcome', stage: 'test', title: 'Test outcome', mission: { title: 'Record the test outcome', purpose: 'Write down what you found, and whether production can go ahead.' } },
+  { id: 'pre-change', stage: 'transition', title: 'Checks before the change', mission: { title: 'Get ready on the day', purpose: 'Decide go or no-go, refresh the backup and make the safe changes first.' } },
+  { id: 'change', stage: 'transition', title: 'The change', mission: { title: 'Connect to the Defender portal', purpose: 'Connect the workspaces and confirm the connection.' } },
+  { id: 'post-change', stage: 'transition', title: 'Checks after the change', mission: { title: 'Check everything after connecting', purpose: 'Verify the automatic changes, the incident flow and your integrations.' } },
+  { id: 'platform', stage: 'validate', title: 'Platform and access', mission: { title: 'Check the platform and access', purpose: 'Workspaces show correctly, and every role can do its job.' } },
+  { id: 'data', stage: 'validate', title: 'Data', mission: { title: 'Check your data', purpose: 'Ingestion matches what you recorded before the move.' } },
+  { id: 'detections', stage: 'validate', title: 'Detections and incidents', mission: { title: 'Check detections and incidents', purpose: 'Rules run, incidents appear, and grouping behaves as decided.' } },
+  { id: 'automation', stage: 'validate', title: 'Automation', mission: { title: 'Check automation', purpose: 'Automation rules and playbooks run as expected.' } },
+  { id: 'integrations', stage: 'validate', title: 'Integrations', mission: { title: 'Check integrations', purpose: 'Ticketing, scripts and reports work end to end.' } },
+  { id: 'content', stage: 'validate', title: 'Content', mission: { title: 'Check content', purpose: 'Workbooks, hunting, threat intelligence, watchlists and UEBA work.' } },
+  { id: 'operations', stage: 'validate', title: 'Operations', mission: { title: 'Check SOC operations', purpose: 'Procedures are updated, analysts are trained, and limits are written down.' } },
+  { id: 'closure', stage: 'validate', title: 'Closure', mission: { title: 'Sign off', purpose: 'Review what is left, sign off and plan a review.' } },
 ];
 
 // Reference material shown under Knowledge. Every entry cites sources.
@@ -149,6 +150,64 @@ export const REFERENCE = {
     deadline: 'After 31 March 2027, Microsoft Sentinel is no longer supported in the Azure portal and is available only in the Defender portal.',
     closing: 'Questions, or something that depends on Sentinel that we should know about? Reply to this email.',
     sources: ['defportal', 'move', 'xdrint', 'overview'],
+  },
+  // Ready texts for the teams involved: before the switch, on the day, and for the change board.
+  // {window} {workspaces} {primary} {approvers} {lead} are filled in from the project; empty ones are left out.
+  readyTexts: {
+    analystNotice: {
+      label: 'Notice to analysts, before the switch',
+      subject: 'Sentinel moves to the Defender portal: what changes in your daily work',
+      sections: [
+        { title: 'When', text: 'We plan to connect our Sentinel workspaces to the Microsoft Defender portal {window}. Training comes before that date.' },
+        { title: 'Where you will work', points: [
+          'Incidents: security.microsoft.com, under Investigation & response > Incidents & alerts > Incidents. Sentinel and Defender XDR incidents share one queue.',
+          'Hunting: Investigation & response > Hunting > Advanced hunting. Sentinel bookmarks are under Microsoft Sentinel > Threat management > Hunting.',
+          'Workbooks, watchlists and automation: under Microsoft Sentinel in the Defender portal menu.',
+        ] },
+        { title: 'What works differently', points: [
+          'Incident titles and grouping can differ from today, and closed incidents are not reopened: new alerts open a new incident.',
+          'You can no longer run a playbook by hand on a single alert or entity. Running one on an incident still works.',
+          'Similar incidents, editing comments and livestream are not available in the Defender portal.',
+          'Automation can run up to 10 minutes after an alert.',
+        ] },
+        { title: 'What stays the same', points: ['Analytics rules keep running, and log data stays in Log Analytics.'] },
+      ],
+      closing: 'Questions before the switch? Reply to this email.',
+      sources: ['defportal', 'move', 'automation', 'ah'],
+    },
+    liveNote: {
+      label: '"We\'re live" note, on the day',
+      subject: 'Sentinel is now in the Defender portal: where to work from today',
+      sections: [
+        { title: 'From today', text: 'Our Sentinel workspaces are connected to the Microsoft Defender portal. Work incidents at security.microsoft.com, under Investigation & response > Incidents & alerts > Incidents.' },
+        { title: 'Tell us straight away about', points: ['Incidents you expected but do not see, or that appear twice.', 'Automation or playbooks that did not run.', 'Anything you can no longer do that your runbook expects.'] },
+      ],
+      closing: 'Report it to {lead}, or reply to this email.',
+      sources: ['defportal', 'onboard'],
+    },
+    changeSummary: {
+      label: 'Change request summary, for the change board',
+      subject: 'Change request: connect Microsoft Sentinel to the Defender portal',
+      sections: [
+        { title: 'What', text: 'Connect the Sentinel workspaces {workspaces} to the Microsoft Defender portal{primary}.' },
+        { title: 'Why', text: 'After 31 March 2027, Microsoft Sentinel is no longer supported in the Azure portal and is available only in the Defender portal.' },
+        { title: 'When', text: '{window}' },
+        { title: 'What changes on connection', points: [
+          'The Defender XDR engine creates all incidents, and the Fusion rule is turned off. Analytics rules keep running.',
+          'Microsoft incident creation rules are turned off. Their filters move to alert tuning or automation rules.',
+          'Some automation conditions and playbook options change. They are reviewed and fixed before the change.',
+          'Microsoft Defender XDR data policies apply to Sentinel data used in the Defender portal.',
+        ] },
+        { title: 'Safeguards', points: [
+          'The configuration is backed up before the change.',
+          'A workspace can be disconnected again as a temporary fallback. That does not undo every change, so a written rollback plan is in place.',
+          'Ingestion, incidents and automation are compared with baselines recorded before the change.',
+        ] },
+        { title: 'Approvers', text: '{approvers}' },
+      ],
+      closing: '',
+      sources: ['overview', 'move', 'fusion', 'xdrint', 'onboard'],
+    },
   },
   // What being primary or secondary means after connection. Shown in the primary workspace tool.
   workspaceRoles: {
@@ -250,6 +309,9 @@ export const REFERENCE = {
   ],
 };
 
+// Simplified mode: every check carries its short form and whether the move needs it.
+const withShortForm = (c) => ({ ...c, scope: EXTRAS.includes(c.id) ? 'extra' : 'needed', short: SHORT[c.id] || null });
+
 function buildKb() {
   return {
     meta: KB_META,
@@ -259,7 +321,7 @@ function buildKb() {
     questions: QUESTIONS,
     sources: SOURCES,
     snippets: SNIPPETS,
-    checks: [...PREPARE, ...TEST, ...TRANSITION, ...VALIDATE],
+    checks: [...PREPARE, ...TEST, ...TRANSITION, ...VALIDATE].map(withShortForm),
     reference: REFERENCE,
   };
 }

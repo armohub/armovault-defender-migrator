@@ -2,9 +2,10 @@
 import { h, icon, toast, modal, field } from '../dom.js';
 import { state, mutate } from '../../app/store.js';
 import { route, render, freshRoute, savePackageFlow } from '../shell.js';
-import { applicabilityMap, evaluateApplicability, questionIndex } from '../../core/applicability.js';
+import { applicabilityMap, evaluateApplicability, questionIndex, upfrontQuestions } from '../../core/applicability.js';
 import { assessStage, summariseStage, dependencyStatus, CONCLUSION_CRITERIA, effectiveStatus } from '../../core/readiness.js';
-import { setTestAvailability, effectiveOwner } from '../../core/model.js';
+import { setTestAvailability, effectiveOwner, setGuidance } from '../../core/model.js';
+import { missionsForStage, nextMission } from '../../core/missions.js';
 import { statusPill, critBadge, kindChip, applicabilityChip, progressBar, conclusionBadge, callout, emptyState, btn, linkBtn, daysUntil } from '../components.js';
 import { formatDate } from '../../core/util.js';
 import { importInventoryFlow } from '../inventory.js';
@@ -39,6 +40,7 @@ export function guidedNext(kb, p, appMap, { skip = null } = {}) {
         if (c.id === skip) continue;
         const app = appMap.get(c.id);
         if (app.value === 'not_applicable') continue;
+        if (c.scope === 'extra') continue; // good practice: listed, never suggested as the next step
         if (wanted.has(effectiveStatus(p, c.id))) return { stage: s, check: c, app };
       }
     }
@@ -48,15 +50,12 @@ export function guidedNext(kb, p, appMap, { skip = null } = {}) {
 }
 
 // Questions shown in this project (follow-ups appear only when their parent answer asks for them).
-export function visibleQuestions(kb, p) {
-  const qIdx = questionIndex(kb);
-  return kb.questions.filter((q) => !q.showIf || evaluateApplicability({ id: '_', applicability: q.showIf }, { ...p, mode: 'tailored', checks: {} }, kb, qIdx).value !== 'not_applicable');
-}
+export { visibleQuestions } from '../../core/applicability.js';
 
 // The first stop of the route: setting up the project and answering the questions.
 function planFact(kb, p) {
   const setupDone = !!(p.meta.name && p.meta.operatorName);
-  const qs = p.mode === 'tailored' ? visibleQuestions(kb, p) : [];
+  const qs = p.mode === 'tailored' ? upfrontQuestions(kb, p) : [];
   const answered = qs.filter((q) => p.answers[q.id]).length;
   const done = setupDone && answered >= qs.length;
   return { id: 'plan', name: 'Plan', assessed: (setupDone ? 1 : 0) + answered, inScope: 1 + qs.length, skipped: false, gateDone: true, href: p.mode === 'tailored' ? '#/answers' : '#/project', meta: done ? 'done' : (qs.length ? `${answered} of ${qs.length} questions` : 'project setup') };
@@ -86,6 +85,24 @@ function stageFacts(kb, p, appMap) {
 
 let whyOpen = false;
 
+// One mission in a list: status, title, attention, count and progress. "next" is highlighted.
+function missionRowView(m, next) {
+  return h('li', { class: ['mission-row', m.complete && 'done', next && m.key === next.key && 'current'] },
+    h('a', { href: `#/mission/${m.stage}/${m.workstream}` },
+      h('span', { class: 'status-ic' }, icon(m.complete ? 'check' : m.done ? 'half' : 'circle', 'icon-xs')),
+      h('span', { class: 'mission-row-title' }, m.title),
+      m.attention ? h('span', { class: 'chip chip-bad' }, `${m.attention} need${m.attention === 1 ? 's' : ''} attention`) : h('span'),
+      h('span', { class: 'mission-row-count tnum' }, m.total ? `${m.done} of ${m.total}` : 'nothing to do'),
+      h('span', { class: 'mission-bar', role: 'presentation' }, h('span', { style: { width: `${m.total ? Math.round((m.done / m.total) * 100) : 100}%` } }))));
+}
+
+// Simplified or Detailed: a view only, switchable any time. Records stay as they are.
+export function guidanceSwitch() {
+  const p = state.project;
+  const opt = (id, label) => h('button', { type: 'button', class: ['seg-btn', p.guidance === id && 'active'], 'aria-pressed': p.guidance === id ? 'true' : 'false', 'data-focus-key': `guidance-${id}`, onclick: () => { mutate((pr) => setGuidance(pr, id)); } }, label);
+  return h('div', { class: 'seg-group guidance-switch', role: 'group', 'aria-label': 'How the plan is shown' }, opt('simple', 'Simplified'), opt('detailed', 'Detailed'));
+}
+
 // ───────────────────────────── Overview ─────────────────────────────
 route('overview', () => {
   revokeObjectUrls();
@@ -99,6 +116,34 @@ route('overview', () => {
   const inScope = counted.reduce((a, f) => a + f.inScope, 0);
   const assessed = counted.reduce((a, f) => a + f.assessed, 0);
   const pct = routePercent([plan, ...counted]);
+  if (p.guidance === 'simple') {
+    const nm = nextMission(kb, p, appMap);
+    const activeStage = nm ? nm.stage : 'validate';
+    const stages = kb.stages.filter((s) => s.id !== 'test' || testActive(p));
+    const missionRow = (m) => missionRowView(m, nm);
+    const justPlannedSimple = state.ui.justPlanned;
+    state.ui.justPlanned = false;
+    return h('div', { class: 'page' },
+      h('div', { class: 'view-switch-row' }, guidanceSwitch()),
+      justPlannedSimple ? callout('good', 'Your plan is ready.', ' Start with the mission below. More questions come up in the missions they affect.') : null,
+      h('section', { class: 'next-panel', 'aria-label': 'Your next mission' },
+        h('div', { class: 'next-head' },
+          h('div', null,
+            h('h1', { id: 'page-title', tabindex: '-1' }, nm ? nm.title : 'Every mission is done'),
+            h('div', { class: 'next-context' }, h('span', null, 'Your next mission'), nm ? [h('span', { class: 'sep' }, '·'), h('span', null, kb.stages.find((s) => s.id === nm.stage).short), h('span', { class: 'sep' }, '·'), h('span', { class: 'tnum' }, `${nm.done} of ${nm.total} done`)] : null),
+            h('p', { class: 'objective-lead' }, nm ? nm.purpose : 'Review the conclusions and share the final report.'),
+            h('div', { class: 'next-actions' },
+              nm ? linkBtn(`Continue: ${nm.title}`, `#/mission/${nm.stage}/${nm.workstream}`, { kind: 'primary', iconName: 'arrow' }) : linkBtn('Open the final report', '#/report/final', { kind: 'primary', iconName: 'reports' }))),
+          h('div', { class: 'journey-figure' }, h('div', { class: 'big', 'aria-label': `${pct} percent of your route done` }, String(pct), h('small', null, '%')), h('div', { class: 'cap' }, 'of your route done'))),
+        h('div', { class: 'next-route' }, routeView({ ...model, animate: freshRoute, key: 'overview', label: 'Your route from the Azure portal to the Defender portal' }))),
+      ...stages.map((s) => {
+        const ms = missionsForStage(kb, p, s.id, appMap);
+        const doneCount = ms.filter((m) => m.complete).length;
+        return h('details', { class: 'card disclose stage-missions', open: s.id === activeStage || null },
+          h('summary', null, icon('chevron', 'icon-sm'), h('strong', null, s.short), h('span', { class: 'small muted tnum' }, `${doneCount} of ${ms.length} missions done`)),
+          h('ul', { class: 'mission-list' }, ms.map(missionRow)));
+      }));
+  }
   const planDone = plan.meta === 'done';
   const next = guidedNext(kb, p, appMap);
   if (freshRoute) whyOpen = false;
@@ -137,6 +182,7 @@ route('overview', () => {
   }
 
   return h('div', { class: 'page' },
+    h('div', { class: 'view-switch-row' }, guidanceSwitch()),
     justPlanned ? callout('good', 'Your plan is ready.', ' Start with the step below. The "Start here" list shows what comes after it, and the route shows where you are.') : null,
     h('section', { class: 'next-panel', 'aria-label': 'Your next step' }, hero,
       h('div', { class: 'next-route' }, routeView({ ...model, animate: freshRoute, key: 'overview', label: 'Your route from the Azure portal to the Defender portal' }))),
@@ -151,7 +197,7 @@ route('overview', () => {
 });
 
 function guideList(kb, p, appMap, facts, next) {
-  const qs = visibleQuestions(kb, p);
+  const qs = upfrontQuestions(kb, p);
   const answered = qs.filter((q) => p.answers[q.id]).length;
   const f = Object.fromEntries(facts.map((x) => [x.id, x]));
   const stageDone = (id) => f[id].inScope > 0 && f[id].assessed >= f[id].inScope;
@@ -259,7 +305,24 @@ route('stage', ({ params }) => {
   };
   const c = a.summary.counts;
   let seq = 0;
+  if (p.guidance === 'simple') {
+    const nm = nextMission(kb, p, appMap);
+    const ms = missionsForStage(kb, p, stage.id, appMap);
+    return h('div', { class: 'page' },
+      h('div', { class: 'view-switch-row' }, guidanceSwitch()),
+      h('div', { class: 'stage-head' },
+        h('div', null,
+          h('h1', { id: 'page-title', tabindex: '-1' }, stage.title),
+          h('p', { class: 'lede' }, stage.purpose),
+          h('p', { class: 'small muted tnum', style: { marginTop: '8px' } }, `${ms.filter((m) => m.complete).length} of ${ms.length} missions done. ${c.assessed} of ${c.inScope} checks done.`)),
+        h('div', { class: 'page-actions' },
+          linkBtn(`Open the ${stage.deliverable.toLowerCase()}`, `#/report/${stage.reportKind}`, { iconName: 'reports', small: true }))),
+      stage.id === 'test' ? testAvailabilityPanel(appMap) : null,
+      conclusionPanel(a),
+      h('section', { class: 'card stage-missions' }, h('ul', { class: 'mission-list' }, ms.map((m) => missionRowView(m, nm)))));
+  }
   return h('div', { class: 'page' },
+    h('div', { class: 'view-switch-row' }, guidanceSwitch()),
     h('div', { class: 'stage-head' },
       h('div', null,
         h('h1', { id: 'page-title', tabindex: '-1' }, stage.title),
@@ -274,7 +337,9 @@ route('stage', ({ params }) => {
       h('div', { class: 'seg-group', role: 'group', 'aria-label': 'Filter steps' }, filterBtn('inscope', 'Your steps', counts.inscope), filterBtn('attention', 'Needs attention', counts.attention), filterBtn('na', 'Set aside', counts.na), filterBtn('all', 'All', counts.all)),
       h('label', { class: 'search' }, icon('search', 'icon-sm'), h('span', { class: 'sr-only' }, 'Search steps'), h('input', { type: 'search', placeholder: 'Search this stage', value: f.query, 'data-focus-key': `search-${stage.id}`, oninput: (e) => { f.query = e.target.value; render(); } }))),
     groups.length ? groups.map(({ w, items }) => h('section', { class: 'ws-group' },
-      h('h2', { class: 'ws-title' }, w.title, h('span', { class: 'ws-count' }, `${items.filter((i) => ['passed', 'not_verified', 'failed', 'not_applicable'].includes(i.status)).length} of ${items.length}`)),
+      h('h2', { class: 'ws-title' }, w.title,
+        h('span', { class: 'ws-count tnum' }, `${items.filter((i) => ['passed', 'not_verified', 'failed', 'not_applicable'].includes(i.status)).length} of ${items.length}`),
+        h('span', { class: 'mission-bar ws-bar', role: 'presentation' }, h('span', { style: { width: `${items.length ? Math.round((items.filter((i) => ['passed', 'not_verified', 'not_applicable'].includes(i.status)).length / items.length) * 100) : 0}%` } }))),
       h('ul', { class: 'item-list' }, items.map((i) => { seq += 1; return itemRow(i, appMap, stage.id === 'transition' ? seq : null); }))))
       : emptyState('No steps match this filter.', f.filter === 'na' ? 'Every step applies to your environment.' : 'Try another filter or clear the search.'));
 });
@@ -292,6 +357,7 @@ function itemRow(i, appMap, seq) {
         h('span', { class: 'item-title' }, c.title),
         h('span', { class: 'item-meta' },
           critBadge(c.criticality),
+          c.scope === 'extra' ? h('span', { class: 'chip chip-muted', title: 'Useful, but not needed for the move. It never affects readiness.' }, 'Good practice') : null,
           c.kind !== 'check' ? kindChip(c.kind) : null,
           applicabilityChip(i.app),
           c.validation === 'needs-review' ? h('span', { class: 'chip chip-caution', title: 'Microsoft sources conflict or are unclear here' }, icon('alert', 'icon-xs'), 'Sources differ') : null,

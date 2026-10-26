@@ -25,6 +25,28 @@ The first public version, released as one final version. There are no release ca
 - Owners set per workstream appear on every step of that workstream, and known names are suggested in owner and decision fields.
 - The questionnaire's test environment answer switches the optional Test stage on or off. Questions that the inventory script can answer say so, and your workspace list hints at answers. A soft "Answer recorded" notice replaces the flash after each answer.
 
+### Simplified mode, from the dry run (26 October)
+
+The dry run found the assistant overwhelming: even a small organisation got 73 steps written like audit documents. Simplified mode keeps every check, proof and decision, and changes how much there is to read and how the work is organised.
+
+- **Two ways to work.** The new-project wizard asks "How do you want to work?":
+  - **Simplified** (the default): missions with short checklists.
+  - **Detailed**: the full step pages as before.
+
+  A switch on the overview and in Project setup changes it any time. Records stay the same, and the audit log notes the switch. Projects saved before this change open in Detailed.
+- **Missions.** Each workstream is a mission with an action title, such as "Get automation ready", and a progress bar. The overview lists the missions of each stage and leads with **Continue** to the next one.
+- **Short checklists.** Every one of the 109 checks has a short form: an action title, at most three "do this" points and one line on what counts as proof. The full step stays one click away under **Details**.
+- **Proof in one move.** Paste a screenshot (Ctrl+V) anywhere on a mission page, or drop a file on the open check. A copy that also carries text, from Excel or OneNote for example, still pastes as text into a field. The usual safety checks apply. Where a form in the assistant completes the check, **Use my entries as proof** attaches a note generated from those entries, labelled as such in the assistant and in reports.
+- **Fewer questions up front.** Simplified asks six questions before the plan exists. Every other question appears in the missions it affects; answering No there sets the related checks aside, with the reason.
+- **Good practice, apart.** Eight checks that Microsoft does not require for the move are now "recommended extras", for example the watchlist inventory and the post-transition review. They sit at the bottom of their mission, can be hidden, and never affect progress or readiness. This applies in both modes, so a stage whose only open items are extras now reaches its conclusion. Turning on auditing and health monitoring stays needed: the Validate checks for rules and automation use its data.
+- **Ready texts** for the teams involved: a notice to analysts, a "we're live" note and a change request summary, next to the stakeholder briefing. Each can be copied for Outlook, downloaded as an Outlook draft (.eml) or opened in the email app.
+- **Owners, lighter.**
+  - Simplified asks only who approves the change. Each mission has an optional owner field.
+  - Detailed asks first whether you want to record owners.
+- **Stage pages** list their missions in Simplified, and show a progress bar per workstream in Detailed.
+- **Decisions from the row:** decision checks have a **Record decision** button that opens the register with the step filled in.
+- **Clearer question:** "Do any internal or company policies, or regulations, limit where security data may be stored or processed?"
+
 ### Changes from the review on 20 October
 
 - **Dates:** typing a date no longer redraws the page, so the screen stays put and the digits land where you type them. A click opens the calendar. The window's end date must be on or after its start: the calendar greys out earlier days, a message explains the problem and Save waits until it is fixed. The same check runs in the new-project wizard.

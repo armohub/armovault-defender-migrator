@@ -16,42 +16,10 @@ import { revokeObjectUrls, trackUrl, orderedStageItems } from './work.js';
 import { rich, plain as plainText, renderSteps, renderList, renderPath } from '../rich.js';
 import { TOOLS, TOOL_TITLES, peopleList } from '../tools.js';
 import { saveSnapshotFlow } from './reports.js';
+import { actionsFor, setStatusFlow, waiveEvidenceFlow, downloadInventoryScript } from '../step-actions.js';
 
 const checkById = (id) => state.kb.checks.find((c) => c.id === id);
 const stageById = (id) => state.kb.stages.find((s) => s.id === id);
-
-// Moves focus to a field of "Your record" and briefly highlights it.
-function focusRecord(key) {
-  const el = document.querySelector(`[data-focus-key="${CSS.escape(key)}"]`);
-  if (!el) return;
-  const box = el.closest('.field') || el.closest('.gate-form') || el;
-  box.scrollIntoView({ block: 'center', behavior: reducedMotion() ? 'auto' : 'smooth' });
-  el.focus({ preventScroll: true });
-  box.classList.remove('flash');
-  void box.offsetWidth;
-  box.classList.add('flash');
-  setTimeout(() => box.classList.remove('flash'), 1700);
-}
-
-export function downloadInventoryScript() {
-  const sn = state.kb.snippets.PS_INVENTORY_SCRIPT;
-  if (!sn) return;
-  saveBlob(new Blob([sn.code.split('\n').join('\r\n')], { type: 'text/plain' }), 'Get-ArMoSentinelInventory.ps1', { description: 'PowerShell script', accept: { 'text/plain': ['.ps1'] } });
-}
-
-function actionsFor(c) {
-  const reg = (type) => () => editRegisterItem(null, { type, checkId: c.id, title: '' });
-  return {
-    'add-decision': reg('decision'), 'add-risk': reg('risk'), 'add-issue': reg('issue'), 'add-action': reg('action'), 'add-exception': reg('exception'),
-    'add-note': () => addNoteEvidence(c), 'add-screenshot': () => attachFiles(c, 'image'), 'add-file': () => attachFiles(c, 'file'), 'add-link': () => addLinkEvidence(c),
-    'set-owner': () => focusRecord(`owner-${c.id}`), 'set-due': () => focusRecord(`due-${c.id}`), 'write-notes': () => focusRecord(`notes-${c.id}`),
-    'record-gate': () => focusRecord(`gate-dec-${c.id}`),
-    'open-tool': () => { const t = document.getElementById('do-it-here'); if (t) { t.scrollIntoView({ block: 'start', behavior: reducedMotion() ? 'auto' : 'smooth' }); const f0 = t.querySelector('input, select, textarea, button'); if (f0) f0.focus({ preventScroll: true }); } },
-    'waive-evidence': () => waiveEvidenceFlow(c),
-    'save-snapshot': () => saveSnapshotFlow({ prepare: 'prepare', test: 'test', transition: 'transition', validate: 'validate' }[c.stage] || 'final'),
-    'import-inventory': () => importInventoryFlow(), 'download-inventory-script': () => downloadInventoryScript(),
-  };
-}
 
 route('item', ({ params }) => {
   revokeObjectUrls();
@@ -87,7 +55,7 @@ route('item', ({ params }) => {
         next ? h('a', { href: `#/item/${next.id}`, class: 'btn btn-sm', 'data-focus-key': 'next-step-top' }, 'Next step', icon('arrow', 'icon-sm')) : h('a', { href: '#/overview', class: 'btn btn-sm' }, 'Back to the overview', icon('arrow', 'icon-sm')))),
     h('div', { class: 'item-head' },
       h('h1', { id: 'page-title', tabindex: '-1' }, c.title),
-      h('div', { class: 'item-chips' }, statusPill(effectiveStatus(p, c.id)), critBadge(c.criticality), c.kind !== 'check' ? kindChip(c.kind) : null, provenanceChip(c), validationChip(c), applicabilityChip(app),
+      h('div', { class: 'item-chips' }, statusPill(effectiveStatus(p, c.id)), critBadge(c.criticality), c.scope === 'extra' ? h('span', { class: 'chip chip-muted', title: 'Useful, but not needed for the move. It never affects readiness.' }, 'Good practice') : null, c.kind !== 'check' ? kindChip(c.kind) : null, provenanceChip(c), validationChip(c), applicabilityChip(app),
         c.changesState ? h('span', { class: 'chip chip-warn' }, icon('edit', 'icon-xs'), 'Changes configuration: follow your change process') : null),
       h('p', { class: 'item-lead' }, rich(c.objective, ctx))),
     h('div', { class: 'item-layout' },
@@ -119,7 +87,7 @@ function guidance(c, app, ctx) {
   const why = Array.isArray(c.why) ? renderList(c.why, ctx) : h('p', null, rich(c.why, ctx));
   const needs = [...c.roles, ...c.prerequisites];
   return h('div', null,
-    c.tool && TOOLS[c.tool] ? h('section', { class: 'g-section' }, h('h2', null, icon('edit', 'icon-sm'), `Do it here: ${TOOL_TITLES[c.tool]}`), h('div', { class: 'g-panel do-here', id: 'do-it-here' }, TOOLS[c.tool](c, ctx))) : null,
+    c.tool && TOOLS[c.tool] ? h('section', { class: 'g-section' }, h('h2', null, icon('edit', 'icon-sm'), `Do it here: ${TOOL_TITLES[c.tool]}`), h('div', { class: 'g-panel do-here', id: c.kind === 'gate' ? 'do-it-here-tool' : 'do-it-here' }, TOOLS[c.tool](c, ctx))) : null,
     c.kind === 'gate' ? h('section', { class: 'g-section' }, h('h2', null, icon('gate', 'icon-sm'), 'Do it here: record the decision'), h('div', { class: 'g-panel do-here', id: 'do-it-here' }, gateForm(c))) : null,
     applicabilitySection(c, app),
     section('Where', 'route',
@@ -224,25 +192,6 @@ function recordPanel(c) {
   const wsOwner = team.lead;
   const alsoInvolved = team.people.length ? ` Also in this workstream: ${team.people.map((x) => (x.covers ? `${x.name} (${x.covers})` : x.name)).join(', ')}.` : '';
 
-  const setStatus = async (status) => {
-    let reason = '';
-    if (['failed', 'blocked', 'not_applicable'].includes(status) && status !== st.status) {
-      const ta = h('textarea', { rows: '3', maxlength: '20000' });
-      reason = await modal({ title: `${statusById(status).short}: what happened?`, body: h('div', { class: 'stack' }, h('p', null, 'A short explanation. It is shown in reports.'), field('Reason', ta, { required: true })), actions: [{ label: 'Cancel', value: null }, { label: 'Save', kind: 'primary', value: () => (ta.value.trim() ? ta.value.trim() : (toast('A reason is required.', 'bad'), null)) }] });
-      if (!reason) return;
-    }
-    if (status === 'passed' && evidence.length === 0 && !st.evidenceWaiver) {
-      const choice = await modal({ title: 'Passed needs evidence, or a reason why not', body: h('div', null, h('p', null, 'A pass is verified with evidence: a screenshot, an observation note, a link or a file.'), h('p', null, 'If your team decided this step needs no evidence, say why. Reports then show "evidence not needed", not missing evidence.')), actions: [{ label: 'Cancel', value: null }, { label: 'Done, not verified', value: 'nv' }, { label: 'No evidence needed', value: 'waive' }, { label: 'Add an observation note', kind: 'primary', value: 'note' }] });
-      if (choice === 'note') { await addNoteEvidence(c); if ((state.project.checks[c.id] || { evidenceIds: [] }).evidenceIds.length) mutate((pr) => setCheckStatus(pr, c, 'passed', { kbVersion: state.kb.meta.version })); }
-      else if (choice === 'waive') { if (await waiveEvidenceFlow(c)) mutate((pr) => setCheckStatus(pr, c, 'passed', { kbVersion: state.kb.meta.version })); }
-      else if (choice === 'nv') mutate((pr) => setCheckStatus(pr, c, 'not_verified', { kbVersion: state.kb.meta.version }));
-      return;
-    }
-    const res = mutate((pr) => setCheckStatus(pr, c, status, { reason, kbVersion: state.kb.meta.version }));
-    if (res && !res.ok) { toast(res.error, 'bad', 7000); return; }
-    if (['passed', 'not_verified', 'not_applicable'].includes(status)) savedPulse(`${statusById(status).short} recorded. Next step: top right or bottom of the page.`);
-  };
-
   // Radio group pattern: one tab stop, arrow keys move focus, Enter or Space select.
   const onStatusKey = (e) => {
     const keys = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 };
@@ -256,7 +205,7 @@ function recordPanel(c) {
   };
   const statusGroup = h('div', { class: 'status-grid', role: 'radiogroup', 'aria-label': 'Status', onkeydown: onStatusKey }, STATUSES.map((s) => h('button', {
     type: 'button', role: 'radio', 'aria-checked': st.status === s.id ? 'true' : 'false', tabindex: st.status === s.id ? '0' : '-1', class: ['status-opt', `tone-${s.tone}`, st.status === s.id && 'active'], 'data-focus-key': `status-${c.id}-${s.id}`, title: `${s.label}. ${STATUS_HELP[s.id]}`,
-    onclick: () => setStatus(s.id),
+    onclick: () => setStatusFlow(c, s.id),
   }, h('span', { class: ['status-ic', `pill-${s.tone}`] }, icon({ not_started: 'circle', in_progress: 'half', passed: 'check', not_verified: 'question', failed: 'x', blocked: 'block', needs_review: 'alert', not_applicable: 'minus' }[s.id], 'icon-xs')), h('span', { class: 'status-opt-label' }, s.short))));
 
   const textInput = (fieldName, attrs, multiline) => {
@@ -301,7 +250,7 @@ function linkedRegister(c) {
 
 function evidenceItem(ev) {
   const ic = { image: 'image', note: 'note', link: 'link', file: 'file' }[ev.kind];
-  const meta = h('div', { class: 'small muted' }, `${formatDate(ev.createdAt, true)}, ${ev.createdBy}${ev.size ? `, ${bytesLabel(ev.size)}` : ''}${ev.origin === 'import' ? ', imported' : ''}${ev.kind === 'image' && !ev.redactionConfirmed ? ', redaction not confirmed' : ''}`);
+  const meta = h('div', { class: 'small muted' }, `${formatDate(ev.createdAt, true)}, ${ev.createdBy}${ev.size ? `, ${bytesLabel(ev.size)}` : ''}${ev.origin === 'import' ? ', imported' : ''}${ev.generated ? ', generated from your entries' : ''}${ev.kind === 'image' && !ev.redactionConfirmed ? ', redaction not confirmed' : ''}`);
   let preview = null;
   if (ev.kind === 'image') {
     const img = h('img', { alt: ev.title || 'Screenshot evidence', class: 'thumb' });
@@ -333,7 +282,7 @@ async function viewImage(ev) {
 
 const gateDrafts = new Map(); // keeps what the user typed across re-renders (for example after a validation error)
 
-function gateForm(c) {
+export function gateForm(c) {
   const g = state.project.gates[c.id];
   if (!gateDrafts.has(c.id)) gateDrafts.set(c.id, { decision: g ? g.decision : '', decidedBy: '', decidedRole: '', rationale: '' });
   const draft = gateDrafts.get(c.id);
@@ -355,13 +304,3 @@ function gateForm(c) {
     }, { kind: 'primary', small: true }));
 }
 
-// "Not needed for us": the team decides this step needs no evidence, and says why.
-async function waiveEvidenceFlow(c) {
-  const ta = h('textarea', { rows: '3', maxlength: '2000', placeholder: 'For example: agreed in the kick-off; the result is recorded in the change record' });
-  const reason = await modal({ title: 'No evidence needed for this step', body: h('div', { class: 'stack' }, h('p', null, 'Record why. Reports show "evidence not needed" with your reason, your name and the date, so a reviewer can see it was a decision, not something forgotten.'), field('Reason', ta, { required: true })), actions: [{ label: 'Cancel', value: null }, { label: 'Record the decision', kind: 'primary', value: () => (ta.value.trim() ? ta.value.trim() : (toast('Please give a reason.', 'bad'), null)) }] });
-  if (!reason) return false;
-  const res = mutate((pr) => setEvidenceWaiver(pr, c.id, reason, state.kb.meta.version));
-  if (res && !res.ok) { toast(res.error, 'bad'); return false; }
-  savedPulse('Recorded: no evidence needed');
-  return true;
-}

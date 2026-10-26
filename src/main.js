@@ -6,6 +6,7 @@ import { showSplash, hideSplash, playIntro } from './ui/intro.js';
 import './ui/views/start.js';
 import './ui/views/questionnaire.js';
 import './ui/views/work.js';
+import './ui/views/mission.js';
 import './ui/views/item.js';
 import './ui/views/project.js';
 import './ui/views/records.js';

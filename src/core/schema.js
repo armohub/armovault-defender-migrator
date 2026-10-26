@@ -60,6 +60,7 @@ export function validateProject(input, { kb } = {}) {
     isDemo: raw.isDemo === true,
     meta: {},
     mode: oneOf(raw.mode, ['tailored', 'full'], 'tailored'),
+    guidance: oneOf(raw.guidance, ['simple', 'detailed'], 'detailed'),
     answers: {},
     checks: {},
     evidence: {},
@@ -82,6 +83,8 @@ export function validateProject(input, { kb } = {}) {
     plannedPrimaries: {},
     approvers: Array.isArray(m.approvers) ? m.approvers.slice(0, 30).filter(isPlainObject).map((a) => ({ role: str(a.role, 200), name: str(a.name, 200) })).filter((a) => a.role && a.name) : [],
     helpers: {},
+    showExtras: m.showExtras !== false,
+    ownersWanted: oneOf(m.ownersWanted, ['yes', 'later', ''], ''),
   };
   // Decision helpers: known helpers only; answers and choices are short identifiers, never text.
   if (isPlainObject(m.helpers)) {
@@ -132,7 +135,7 @@ export function validateProject(input, { kb } = {}) {
       id: k, checkId: safeId(ev.checkId) ? ev.checkId : '', kind: ev.kind, title: str(ev.title, 300), text: str(ev.text, MAX_TEXT), url,
       fileName: str(ev.fileName, 260), mime: str(ev.mime, 80), size: Number.isFinite(ev.size) ? Math.max(0, Math.floor(ev.size)) : 0,
       sha256: /^[a-f0-9]{64}$/.test(ev.sha256 || '') ? ev.sha256 : '', redactionConfirmed: ev.redactionConfirmed === true,
-      createdAt: iso(ev.createdAt), createdBy: str(ev.createdBy, 200), stage: str(ev.stage, 40), origin: ev.origin === 'import' ? 'import' : 'user',
+      createdAt: iso(ev.createdAt), createdBy: str(ev.createdBy, 200), stage: str(ev.stage, 40), origin: ev.origin === 'import' ? 'import' : 'user', generated: ev.kind === 'note' && ev.generated === true,
     };
   }
 

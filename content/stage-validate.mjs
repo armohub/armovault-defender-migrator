@@ -81,7 +81,7 @@ export const VALIDATE = [
     sources: [src('usage', 'Usage analysis; portal: Workspace Insights Usage tab'), src('move', 'Non-Microsoft connectors continue operating'), src('connectorhealth', 'Connector health; portal: Data collection health monitoring workbook Overview and Data collection anomalies tabs'), src('wsinsights', 'Workspace menu Monitoring > Insights; Usage tab per table; read permissions needed'), src('azworkbooks', 'Workbook permissions are based on the permissions you have for the resources the workbook uses')],
   }),
   k({
-    id: 'VAL-04', stage: 'validate', workstream: 'detections', order: 40, kind: 'check', criticality: 'critical', dependsOn: ['PREP-CON-05'],
+    id: 'VAL-04', stage: 'validate', workstream: 'detections', order: 40, kind: 'check', criticality: 'critical', dependsOn: ['PREP-CON-05', 'PREP-CON-06', 'PREP-DET-07'],
     title: 'Check analytics rules run and produce incidents',
     objective: 'Confirm analytics rules run without new failures and the expected rules create incidents.',
     why: [
@@ -131,7 +131,7 @@ export const VALIDATE = [
     sources: [src('corrsettings', 'Correlation settings'), src('correlation', 'Merging and Redirected tag'), src('migrategrouping', 'Validation list')],
   }),
   k({
-    id: 'VAL-06', stage: 'validate', workstream: 'automation', order: 60, kind: 'check', criticality: 'critical', applicability: q('automation_rules'), dependsOn: ['PREP-AUT-01'],
+    id: 'VAL-06', stage: 'validate', workstream: 'automation', order: 60, kind: 'check', criticality: 'critical', applicability: q('automation_rules'), dependsOn: ['PREP-AUT-01', 'PREP-CON-06'],
     title: 'Check automation rules execute as expected',
     objective: 'Confirm automation rules fire on the right incidents and succeed.',
     why: 'Condition changes (provider, title, description, Updated by) and timing changes can break or broaden automation.',
@@ -155,7 +155,7 @@ export const VALIDATE = [
     sources: [src('automation', 'Automation changes'), src('autohealth', 'Automation health; portal: Automation health workbook displays'), src('workbooks', 'Workbooks are under Threat management > Workbooks'), src('azworkbooks', 'Workbook permissions are based on the permissions you have for the resources the workbook uses'), src('investigateincidents', 'Incident Activity log shows actions taken on the incident, for example by automation rules')],
   }),
   k({
-    id: 'VAL-07', stage: 'validate', workstream: 'automation', order: 70, kind: 'check', criticality: 'high', applicability: q('playbooks'), dependsOn: ['PREP-AUT-03'],
+    id: 'VAL-07', stage: 'validate', workstream: 'automation', order: 70, kind: 'check', criticality: 'high', applicability: q('playbooks'), dependsOn: ['PREP-AUT-03', 'PREP-CON-06'],
     title: 'Check playbooks run successfully',
     objective: 'Confirm playbooks run from automation, and manually on incidents in the Defender portal.',
     why: 'Playbooks are affected by incident field changes, unsupported actions and permissions.',

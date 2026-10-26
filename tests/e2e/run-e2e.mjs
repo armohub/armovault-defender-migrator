@@ -174,6 +174,7 @@ await step('Create a tailored project with browser autosave', async () => {
   await page.getByText('Autosave in this browser', { exact: true }).click();
   await page.getByText('The data is not encrypted.', { exact: false }).waitFor();
   await btn(page, 'Continue').click();
+  await page.locator('label.choice', { has: page.getByText('Detailed', { exact: true }) }).click();
   await page.getByText('Tailor the plan to my environment (recommended)').click();
   await btn(page, 'Create my project').click();
   await page.getByText('Please confirm the responsibility statement').waitFor();
@@ -294,6 +295,8 @@ await step('Cancel closes a dialog without saving; a check on the input keeps it
 
 await step('Do it here: owners flow into steps, workspaces into reports, briefing email copies, "Leave for now" moves on', async () => {
   await go(page, '#/item/PREP-SCOPE-02');
+  // Detailed mode asks first whether the team wants to record owners.
+  await page.locator('#do-it-here').getByRole('button', { name: 'Yes, record owners' }).click();
   await page.locator('input[id="own-prepare:access"]').fill('IAM team');
   await page.locator('#do-it-here').getByRole('button', { name: 'Save', exact: true }).click();
   await page.waitForTimeout(200);
@@ -653,6 +656,7 @@ await step('Full-checklist project without autosave warns about unsaved work', a
   await btn(page, 'Continue').click();
   await page.getByText('I save project packages myself (default)', { exact: true }).click();
   await btn(page, 'Continue').click();
+  await page.locator('label.choice', { has: page.getByText('Detailed', { exact: true }) }).click();
   await page.getByText('Show me the full checklist').click();
   await page.getByLabel(/I understand this assistant gives guidance only/).check();
   await btn(page, 'Create my project').click();
@@ -693,6 +697,103 @@ await step('Reduced motion: the introduction shows everything at once and the ap
   await p2.getByRole('button', { name: "Let's begin" }).click();
   await p2.getByRole('heading', { name: WELCOME }).waitFor();
   await c2.close();
+});
+
+await step('Simplified: six questions, missions with progress, a mission question, pasted proof, Done opens the next row', async () => {
+  const c3 = await chromium.launch({ channel, headless });
+  const ctx3 = await c3.newContext({ viewport: { width: 1440, height: 1000 }, acceptDownloads: true, permissions: ['clipboard-read', 'clipboard-write'] });
+  await ctx3.addInitScript(() => { window.showSaveFilePicker = undefined; });
+  ctx3.on('request', (r) => { const u = r.url(); if (/^(https?|wss?):/i.test(u)) network.push(u); });
+  const pg = await ctx3.newPage();
+  watch(pg);
+  await pg.goto(appUrl);
+  await pg.getByRole('button', { name: 'Skip intro' }).click();
+  await pg.getByRole('button', { name: 'Start my project' }).click();
+  await pg.getByLabel('Project or customer label').fill('Simplified E2E');
+  await pg.getByLabel('Your name').fill('Tess');
+  for (let i = 0; i < 3; i++) await btn(pg, 'Continue').click();
+  await pg.locator('label.choice.selected', { hasText: 'Simplified (recommended)' }).waitFor();
+  await pg.getByLabel(/I understand this assistant gives guidance only/).check();
+  await btn(pg, 'Create my project').click();
+  // Six core questions: Yes to the first (several workspaces), No to the rest.
+  await pg.getByRole('button', { name: 'Start the questions' }).click();
+  for (let i = 0; i < 6; i++) { await pg.locator('.q-screen .answer-tile').first().waitFor(); await pg.keyboard.press(i === 0 ? '1' : '2'); await pg.waitForTimeout(900); }
+  await pg.getByRole('button', { name: 'Build my plan' }).click();
+  await pg.locator('.mission-row').first().waitFor();
+  assert.ok((await pg.locator('.mission-row').count()) >= 11, 'Prepare shows its missions');
+  await pg.getByRole('link', { name: /^Continue: / }).click();
+  await pg.waitForURL(/#\/mission\/prepare\/scope/);
+  // The first row is open; a pasted screenshot becomes proof after the details dialog.
+  const open = pg.locator('.crow.open');
+  await open.waitFor();
+  const firstTitle = await open.locator('.crow-title').textContent();
+  const clip = (b64, text) => pg.evaluate(async ([data, txt]) => {
+    const bytes = Uint8Array.from(atob(data), (ch) => ch.charCodeAt(0));
+    const parts = { 'image/png': new Blob([bytes], { type: 'image/png' }) };
+    if (txt) parts['text/plain'] = new Blob([txt], { type: 'text/plain' });
+    await navigator.clipboard.write([new ClipboardItem(parts)]);
+  }, [b64, text]);
+  await clip(PNG.toString('base64'));
+  await pg.keyboard.press('Control+V'); // focus is still on the page title after arriving
+  await dlg(pg).getByLabel('I have checked this attachment', { exact: false }).check();
+  await clickDlg(pg, 'Add evidence');
+  await pg.locator('.crow.open .crow-proof.yes').waitFor();
+  await pg.locator('.crow.open').getByRole('button', { name: 'Done', exact: true }).click();
+  await pg.waitForTimeout(300);
+  assert.equal(await pg.getByText('top right or bottom of the page', { exact: false }).count(), 0, 'no Detailed-only hint in a mission');
+  assert.notEqual(await pg.locator('.crow.open .crow-title').textContent(), firstTitle, 'Done opens the next row');
+  assert.match(await pg.locator('.mission-count').textContent(), /^1 of /);
+  // Text and an image (an Excel or OneNote copy) pasted into a field stay text.
+  await go(pg, '#/mission/prepare/topology');
+  await pg.locator('[data-focus-key="env-alias-0"]').click();
+  await clip(PNG.toString('base64'), 'E2E-PASTED');
+  await pg.keyboard.press('Control+V');
+  await pg.waitForTimeout(300);
+  assert.equal(await pg.locator('[data-focus-key="env-alias-0"]').inputValue(), 'E2E-PASTED');
+  assert.equal(await dlg(pg).count(), 0, 'no screenshot dialog');
+  // Decisions can be recorded from their row.
+  await go(pg, '#/mission/prepare/detections');
+  const dec = pg.locator('.crow', { hasText: 'Decide on incident correlation and grouping' });
+  await dec.locator('.crow-head').click();
+  await dec.getByRole('button', { name: 'Record decision' }).click();
+  assert.match(await dlg(pg).getByLabel('Title').inputValue(), /Decide on incident correlation and grouping/);
+  await clickDlg(pg, 'Cancel');
+  // A copied ready text can become the proof straight away.
+  await go(pg, '#/mission/prepare/operations');
+  const comms = pg.locator('.crow', { hasText: 'Tell the teams involved' });
+  if (!(await comms.evaluate((el) => el.classList.contains('open')))) await comms.locator('.crow-head').click();
+  await comms.getByRole('button', { name: 'Copy email' }).first().click();
+  await comms.getByRole('button', { name: 'Use my entries as proof' }).waitFor();
+  // A mission question sets its checks aside when answered No.
+  await go(pg, '#/mission/prepare/automation');
+  await pg.locator('.mq', { hasText: 'Do you use playbooks?' }).getByRole('button', { name: 'No', exact: true }).click();
+  await pg.locator('.mission-aside summary').waitFor();
+  // Extras can be hidden.
+  await go(pg, '#/mission/prepare/governance');
+  await pg.locator('.mission-extras .crow').first().waitFor();
+  await pg.locator('[data-focus-key="show-extras"]').uncheck();
+  await pg.waitForTimeout(200);
+  assert.equal(await pg.locator('.mission-extras .crow').count(), 0);
+  // The gate is a row of the last Prepare mission, with the decision form inside it.
+  await go(pg, '#/mission/prepare/planning');
+  const gate = pg.locator('.crow', { hasText: 'Decide whether you are ready for production' });
+  await gate.locator('.crow-head').click();
+  await gate.locator('[data-focus-key^="gate-dec-"]').waitFor();
+  // Simplified stage pages list missions; Detailed shows the steps with a bar per workstream.
+  await go(pg, '#/stage/prepare');
+  assert.ok((await pg.locator('.mission-row').count()) >= 11, 'the stage page lists its missions');
+  await pg.locator('[data-focus-key="guidance-detailed"]').click();
+  await pg.waitForTimeout(200);
+  assert.ok((await pg.locator('.ws-bar').count()) >= 11, 'a progress bar per workstream');
+  await pg.locator('[data-focus-key="guidance-simple"]').click();
+  // Any answer can be reopened from "Your answers", including questions asked in missions.
+  await go(pg, '#/answers');
+  await pg.locator('li, tr, .answer-row', { hasText: 'Do you use playbooks?' }).getByRole('link', { name: 'Open' }).first().click();
+  await pg.locator('.q-screen', { hasText: 'Do you use playbooks?' }).waitFor();
+  // The report lists good practice separately.
+  await go(pg, '#/report/prepare');
+  await pg.getByText('Good practice (optional)').first().waitFor();
+  await c3.close();
 });
 
 await step('No network request was made during the whole run, and no console errors occurred', async () => {

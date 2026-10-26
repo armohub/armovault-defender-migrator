@@ -297,6 +297,7 @@ export const PREPARE_3 = [
     sources: [src('move', 'Update processes and retrain analysts; training recommended')],
   }),
   k({
+    tool: 'comms',
     id: 'PREP-OPS-04', stage: 'prepare', workstream: 'operations', order: 40, kind: 'task', criticality: 'low', provenance: 'practice', confidence: 'medium',
     title: 'Prepare communications for affected teams',
     objective: 'Tell the affected teams what will change and when.',

@@ -2,6 +2,7 @@
 import { h, pickFile, modal, toast, confirmDialog, readBlobBytes, withLoader, showSequence } from './dom.js';
 import { state, importProjectBytes, setProject, putEvidenceBlob, mutate, dropEvidenceBlob, prepareToLeaveProject, notify, closeProject } from '../app/store.js';
 import { go, setExitDemo } from './shell.js';
+import { generatedProof } from '../core/generated-proof.js';
 import { addEvidence, removeEvidence, ALLOWED_IMAGE_TYPES, ALLOWED_FILE_TYPES, MAX_EVIDENCE_BYTES, MAX_EVIDENCE_ITEMS } from '../core/model.js';
 import { sniffMime, sha256Hex } from '../core/files.js';
 import { bytesLabel, formatDate } from '../core/util.js';
@@ -82,24 +83,39 @@ export async function attachFiles(check, kindHint) {
   const accept = kindHint === 'image' ? ALLOWED_IMAGE_TYPES.join(',') : [...ALLOWED_IMAGE_TYPES, ...ALLOWED_FILE_TYPES, '.txt', '.csv', '.json', '.pdf', '.log'].join(',');
   if (!evidenceRoom()) return;
   const files = await pickFile({ accept, multiple: true });
-  if (!files.length) return;
+  if (files.length) await ingestFiles(check, files);
+}
+
+// Every file a user adds (picked, pasted or dropped) goes through the same checks: size, real type and details.
+export async function ingestFiles(check, files) {
+  if (!evidenceRoom()) return 0;
   let added = 0;
   for (const f of files) {
-    if (f.size > MAX_EVIDENCE_BYTES) { toast(`${f.name} is larger than ${bytesLabel(MAX_EVIDENCE_BYTES)} and was not attached. Crop or compress it, or attach a summary instead.`, 'bad', 9000); continue; }
+    const name = f.name || 'pasted-screenshot.png';
+    if (f.size > MAX_EVIDENCE_BYTES) { toast(`${name} is larger than ${bytesLabel(MAX_EVIDENCE_BYTES)} and was not attached. Crop or compress it, or attach a summary instead.`, 'bad', 9000); continue; }
     const bytes = await readBlobBytes(f);
     const mime = sniffMime(bytes);
     const isImage = mime && ALLOWED_IMAGE_TYPES.includes(mime);
-    if (!mime || (!isImage && !ALLOWED_FILE_TYPES.includes(mime) && mime !== 'text/plain')) { toast(`${f.name}: unsupported or unsafe file type (allowed: PNG, JPEG, GIF, WebP, PDF, text, CSV, JSON).`, 'bad', 9000); continue; }
-    const meta = await askEvidenceDetails({ fileName: f.name, isImage, size: f.size });
+    if (!mime || (!isImage && !ALLOWED_FILE_TYPES.includes(mime) && mime !== 'text/plain')) { toast(`${name}: unsupported or unsafe file type (allowed: PNG, JPEG, GIF, WebP, PDF, text, CSV, JSON).`, 'bad', 9000); continue; }
+    const meta = await askEvidenceDetails({ fileName: name, isImage, size: f.size });
     if (!meta) continue;
     const sha256 = await sha256Hex(bytes);
     // Store the file content before the page re-renders, so the new thumbnail can find it.
-    const ev = mutate((p) => addEvidence(p, check.id, { kind: isImage ? 'image' : 'file', title: meta.title || f.name, text: meta.text, fileName: f.name.slice(0, 260), mime, size: bytes.length, sha256, redactionConfirmed: meta.redaction, stage: check.stage }, state.kb.meta.version), { silent: true });
+    const ev = mutate((p) => addEvidence(p, check.id, { kind: isImage ? 'image' : 'file', title: meta.title || name, text: meta.text, fileName: name.slice(0, 260), mime, size: bytes.length, sha256, redactionConfirmed: meta.redaction, stage: check.stage }, state.kb.meta.version), { silent: true });
     putEvidenceBlob(ev.id, new Blob([bytes], { type: mime }));
     notify();
     added += 1;
   }
   if (added) toast(`${added} attachment(s) added.`, 'good');
+  return added;
+}
+
+// Proof built from the user's own entries in this step's form. Returns false when the form is still empty.
+export function addGeneratedProof(check) {
+  const g = generatedProof(state.kb, state.project, check);
+  if (!g) return false;
+  mutate((p) => addEvidence(p, check.id, { kind: 'note', title: g.title, text: `Generated from your entries.\n${g.text}`, stage: check.stage, generated: true }, state.kb.meta.version));
+  return true;
 }
 
 function askEvidenceDetails({ fileName, isImage, size }) {

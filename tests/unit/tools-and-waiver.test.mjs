@@ -111,7 +111,7 @@ test('saved projects keep the new fields through import, and import rules still 
 });
 
 test('every step tool named in the knowledge base exists, and briefing and planning data are complete', () => {
-  const tools = new Set(['workspaces', 'connection', 'primary', 'owners', 'briefing', 'window', 'mdc', 'urbac', 'tenants']);
+  const tools = new Set(['workspaces', 'connection', 'primary', 'owners', 'briefing', 'window', 'mdc', 'urbac', 'tenants', 'comms', 'change']);
   for (const c of KB.checks) if (c.tool) assert.ok(tools.has(c.tool), `${c.id}: ${c.tool}`);
   assert.ok(KB.checks.filter((c) => c.tool).length >= 6);
   const b = KB.reference.briefing;
