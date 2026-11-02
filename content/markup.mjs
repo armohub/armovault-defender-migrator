@@ -41,6 +41,7 @@ export const DO_ACTIONS = {
   'add-issue': 'Opens a new issue in the register, linked to this step',
   'add-action': 'Opens a new action in the register, linked to this step',
   'add-exception': 'Opens a new exception (risk acceptance) in the register, linked to this step',
+  'add-control': 'Records a compensating control (a decision with the restriction and what replaces it), linked to this step',
   'add-note': 'Adds an observation note as evidence on this step',
   'add-screenshot': 'Attaches a screenshot as evidence on this step',
   'add-file': 'Attaches a file (CSV, JSON, PDF, text) as evidence on this step',

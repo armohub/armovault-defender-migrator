@@ -31,6 +31,7 @@ export function parseInventory(text) {
   return {
     collectedAt: str(obj.collectedAt, 40),
     alias: str(isPlainObject(obj.workspace) ? obj.workspace.alias : '', 120),
+    region: str(isPlainObject(obj.workspace) ? obj.workspace.region : '', 80),
     tool: isPlainObject(obj.tool) ? `${str(obj.tool.name, 80)} ${str(obj.tool.version, 20)}`.trim() : '',
     analyticsRules: limit(arr(obj.analyticsRules), 'analytics rule').map((r) => ({
       name: str(r.name), kind: str(r.kind, 60), enabled: bool(r.enabled), createIncident: bool(r.createIncident), groupingEnabled: bool(r.groupingEnabled),

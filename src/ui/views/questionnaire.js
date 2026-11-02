@@ -54,11 +54,11 @@ route('questionnaire', ({ params }) => {
   let qs = upfrontQuestions(kb, p);
   // A question asked in a mission can still be reopened here, from "Your answers".
   if (params[0] === 'q' && !qs.some((x) => x.id === params[1]) && visibleQuestions(kb, p).some((x) => x.id === params[1])) qs = visibleQuestions(kb, p);
-  const sections = kb.questionSections;
+  const sections = kb.questionSections.filter((s) => qs.some((x) => x.section === s.id));
   if (params[0] === 'done') return doneScreen(qs);
   let q = params[0] === 'q' ? qs.find((x) => x.id === params[1]) : null;
   if (!q) {
-    const answeredAny = qs.some((x) => p.answers[x.id]);
+    const answeredAny = qs.some((x) => p.answers[x.id] && !/^From imported inventory/.test(p.answers[x.id].reason || ''));
     const firstOpen = qs.find((x) => !p.answers[x.id]);
     if (!answeredAny) return introScreen(qs);
     if (!firstOpen) return doneScreen(qs);
@@ -128,7 +128,7 @@ route('questionnaire', ({ params }) => {
   return h('div', { class: 'q-screen' },
     progress,
     h('div', { class: 'q-meta' },
-      h('span', null, h('strong', null, section ? section.title : ''), ` · section ${sIdx + 1} of ${sections.length}`),
+      h('span', null, h('strong', null, section ? section.title : ''), sections.length > 1 ? ` · section ${sIdx + 1} of ${sections.length}` : ''),
       left ? h('span', { class: 'tnum' }, `${left} question${left === 1 ? '' : 's'} left`) : h('span', null, 'All answered')),
     h('div', { class: ['q-card', firstPaint && (direction === 'back' ? 'q-back' : 'q-forward')] },
       h('h1', { id: 'page-title', tabindex: '-1' }, q.text),
@@ -138,7 +138,8 @@ route('questionnaire', ({ params }) => {
       a && openedWithAnswer ? h('p', { class: 'small muted answer-meta' }, `Answered by ${a.by} on ${formatDate(a.at)}. `, h('button', { type: 'button', class: 'linklike', onclick: () => changeAnswer(q, null) }, 'Clear answer')) : null,
       h('div', { class: 'q-aside' },
         knownHint(q, p) ? h('div', { class: 'q-note q-hint' }, icon('check', 'icon-sm'), h('div', null, h('b', null, 'From what you entered'), knownHint(q, p))) : null,
-        INVENTORY_QS.has(q.id) ? h('div', { class: 'q-note q-hint' }, icon('upload', 'icon-sm'), h('div', null, h('b', null, 'The inventory script can answer this'), 'Run the read-only ', h('a', { href: '#/item/PREP-DET-01' }, 'inventory script'), ' and import its results: the assistant suggests answers for this and eight other questions, and you confirm them.')) : null,
+        a && /^From imported inventory/.test(a.reason || '') ? h('div', { class: 'q-note q-hint' }, icon('upload', 'icon-sm'), h('div', null, h('b', null, 'Filled in from your inventory'), `The script found: ${a.reason.replace(/^From imported inventory \(/, '').replace(/\); confirmed by.*$/, '')}. Change the answer if it is wrong.`)) : null,
+        INVENTORY_QS.has(q.id) && !p.meta.inventoryChoice ? h('div', { class: 'q-note q-hint' }, icon('upload', 'icon-sm'), h('div', null, h('b', null, 'The inventory script can answer this'), 'Run the read-only ', h('a', { href: '#/item/PREP-DET-01' }, 'inventory script'), ' and import its results: the assistant suggests answers for this and eight other questions, and you confirm them.')) : null,
         q.why ? h('div', { class: 'q-note' }, icon('sparkle', 'icon-sm'), h('div', null, h('b', null, 'Why we ask'), rich(q.why, { kb }))) : null,
         q.help ? h('div', { class: 'q-note' }, icon('search', 'icon-sm'), h('div', null, h('b', null, 'Where to find the answer'), rich(q.help, { kb }))) : null)),
     h('div', { class: 'q-foot' },
@@ -154,15 +155,25 @@ const findOutTitle = (q) => `Find out: ${q.text}`;
 
 function introScreen(qs) {
   const kb = state.kb;
+  const p = state.project;
+  const sections = kb.questionSections.filter((s) => qs.some((q) => q.section === s.id));
+  const simple = p.guidance === 'simple';
+  const filled = qs.filter((q) => p.answers[q.id] && /^From imported inventory/.test(p.answers[q.id].reason || '')).length;
+  const listed = simple
+    ? h('ol', { class: 'steps', style: { marginTop: '26px' } }, qs.map((q) => h('li', null, h('div', { class: 'step-text' }, q.text))))
+    : h('ol', { class: 'steps', style: { marginTop: '26px' } }, sections.map((s) => { const n = qs.filter((q) => q.section === s.id).length; return h('li', null, h('div', { class: 'step-text' }, h('strong', null, s.title), h('span', { class: 'small muted' }, ` ${n} question${n === 1 ? '' : 's'}`)), h('div', { class: 'small muted' }, s.intro)); }));
   return h('div', { class: 'q-screen' },
     h('div', { class: 'q-section-intro' },
-      h('h1', { id: 'page-title', tabindex: '-1' }, 'A few questions to tailor your plan'),
-      h('p', { class: 'q-detail' }, `About ${qs.length} questions, one per screen, in ${kb.questionSections.length} short sections. Answer what you know: "I don't know yet" is a good answer, and it keeps the related steps in your plan.`),
-      h('ol', { class: 'steps', style: { marginTop: '26px' } }, kb.questionSections.map((s) => h('li', null, h('div', { class: 'step-text' }, h('strong', null, s.title)), h('div', { class: 'small muted' }, s.intro)))),
+      h('h1', { id: 'page-title', tabindex: '-1' }, simple ? `${qs.length} questions to tailor your plan` : 'A few questions to tailor your plan'),
+      h('p', { class: 'q-detail' }, simple
+        ? `${qs.length} questions, one per screen, about your environment. Answer what you know: "I don't know yet" is a good answer, and it keeps the related steps in your plan. The other questions come up later, inside the missions they affect.`
+        : `${qs.length} questions, one per screen, in ${sections.length} short sections. Answer what you know: "I don't know yet" is a good answer, and it keeps the related steps in your plan.`),
+      listed,
+      filled ? callout('good', `${filled} answer${filled === 1 ? ' is' : 's are'} already filled in from your inventory.`, ' You will see them as you go, and you can change any of them.') : null,
       callout('info', 'Nothing is hidden for good.', ' Steps that do not apply are set aside with the reason, and you can change any answer later in "Your answers".'),
-      h('p', { class: 'q-keys', style: { marginTop: '12px' } }, icon('upload', 'icon-sm'), 'Want fewer questions to answer by hand? Run the read-only ', h('a', { href: '#/item/PREP-DET-01' }, 'inventory script'), ' first: it suggests answers for nine questions.'),
+      !p.meta.inventoryChoice ? h('p', { class: 'q-keys', style: { marginTop: '12px' } }, icon('upload', 'icon-sm'), 'Want fewer questions to answer by hand? Run the read-only ', h('a', { href: '#/item/PREP-DET-01' }, 'inventory script'), ' first: it suggests answers for nine questions.') : null,
       h('div', { class: 'hero-actions' },
-        h('button', { type: 'button', class: 'btn btn-primary btn-lg', 'data-focus-key': 'q-start', onclick: () => { direction = 'forward'; go(`#/questionnaire/q/${qs[0].id}`); } }, 'Start the questions', icon('arrow', 'icon-sm')),
+        h('button', { type: 'button', class: 'btn btn-primary btn-lg', 'data-focus-key': 'q-start', onclick: () => { direction = 'forward'; go(`#/questionnaire/q/${(qs.find((q) => !p.answers[q.id]) || qs[0]).id}`); } }, 'Start the questions', icon('arrow', 'icon-sm')),
         linkBtn('Skip, show the full plan', '#/overview', { kind: 'ghost' })),
       h('p', { class: 'q-keys', style: { marginTop: '14px' } }, icon('keyboard', 'icon-sm'), 'Tip: keys 1 to 4 answer. After Yes or No you move on by yourself; you can turn that off.')));
 }

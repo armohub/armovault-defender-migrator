@@ -1,5 +1,36 @@
 # Changelog
 
+## Unreleased: onboarding and guidance review (29 October 2026)
+
+### Setup
+- The wizard has five steps. **Timing** restates that Sentinel is available only in the Defender portal after 31 March 2027, with the days left.
+- **Your workspaces** is its own step: run the inventory script and import its files, or type the names in (an explainer says where to find them). Imported workspaces are listed with their region and counts; you tick the ones in scope and rename them if you like. The answers the import can give are shown, ticked, for you to confirm, and the questions show which answers came from the inventory.
+- The inventory script has a `-Discover` mode. It lists the subscriptions you can read, their Log Analytics workspaces and their Microsoft Sentinel onboarding state (GET requests only, from documented REST APIs), writes `workspaces.json` and one inventory file per workspace. Inventory files now carry the workspace region. Tested against a mock (`tests/tools/mock-inventory-discover.ps1`).
+- **How to start** gives the real numbers: Simplified asks the core questions now and the rest inside the missions; Detailed asks all questions up front in sections. The question intro lists only the sections, or in Simplified the questions, that are actually asked.
+
+### Questions
+- While the setup questions are open, the left pane shows only the setup progress and one way out, "Leave the questions for later". The overview then shows how many questions are still open, with **Continue the questions**.
+- The inventory hint no longer appears in the questions once the inventory was offered during setup.
+- Mission questions have an explainer: where to find the answer and why it is asked.
+
+### Missions
+- An attached proof shows on the check straight away: thumbnails for screenshots, who added it and when, and a way to remove it. The buttons then read "Add another".
+- Every check has **Show me how, step by step**: where to go, the numbered steps and what you should see, taken from the full step.
+- A journey rail beside the mission shows the progress across all missions, with a milestone per stage. Finishing a mission, and finishing a stage, is celebrated, with the next mission one click away. Reduced motion shows the card without animation.
+
+### Records and tools
+- Person lists offer everyone the project knows, with their role, and **Add a new person** records a new name with a role for every other list.
+- Items added from a step open a short form with labels that fit (for example "What was decided" and "Decided by"); type, severity and status sit under "More options". Compensating controls have their own form: the restriction that does not carry over, and what you do instead.
+- The briefing and ready-to-send emails are folded until you open them. The leadership email is a short note: headlines, the window and what is needed from them.
+- The window planner shows the window entered at setup instead of asking again. Its ranges are marked as example estimates. The suggested ranges say why, say when there is not enough information yet, and one sign of a larger environment on its own no longer moves the plan to the longer ranges.
+
+### Guidance checked against Microsoft Learn (29 October 2026)
+- Every portal path was compared with current Learn pages. "System > Permissions > Microsoft Defender XDR > Roles" is correct; the guidance now adds that System is near the bottom of the navigation pane, other names Learn uses for it, the direct link and the Security Administrator requirement.
+- "Owner must have no conditions" is explained: what a condition on a role assignment is, and how to see it in the Condition column.
+- The cloud check names the right pages (feature support per cloud, advanced hunting), says what to look for, and cites the feature support page for the 21Vianet retirement. GCC High and DoD portal addresses, the Sentinel Reader caveat for the workspace check, the GDAP contradiction for unified RBAC and examples for standalone connector content were added.
+- 74 more checks have an explainer (ⓘ) that says in plain words what the check means, what to look for and why, written only from that check's own content and sources. Four checks have clearer wording, for example "resource-context access" is now explained.
+- New sources: feature support per cloud, Defender XDR for US Government, conditions on role assignments, alert schema differences, and the three REST APIs used by `-Discover`.
+
 ## 1.0.0 (2026-10-19)
 
 The first public version, released as one final version. There are no release candidates or pilot stages. It replaces the internal release candidate 0.9.0-rc.1, which was never published.

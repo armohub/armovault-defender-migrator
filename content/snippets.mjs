@@ -20,8 +20,8 @@ export const SNIPPETS = {
     notDo: 'Sends GET requests only, so it changes nothing. It does not read Defender portal settings, and it does not sign you in.',
     code: INVENTORY_SCRIPT,
     expected: 'A JSON file per workspace (schema armohub.dma.inventory) and a summary line with counts. Review the files before you import or share them.',
-    caveats: ['Written for this project and tested against a mocked API only. It is not yet validated against a live tenant, so review it before you run it.', 'Rule and watchlist names can be sensitive. Handle the output under your data policy.', 'For several workspaces, list them in a JSON file and pass -WorkspacesFile (see the examples at the top of the script). It writes one file per workspace, and a workspace that fails does not stop the others.'],
-    sources: ['sialertrules', 'siautomation', 'siconnectors', 'siwatchlists', 'siversions', 'invokerest'],
+    caveats: ['Written for this project and tested against a mocked API only. It is not yet validated against a live tenant, so review it before you run it.', 'Rule and watchlist names can be sensitive. Handle the output under your data policy.', 'To find your workspaces for you, pass -Discover: it lists the subscriptions you can read, their Log Analytics workspaces, and keeps those with a Microsoft Sentinel onboarding state. It writes workspaces.json and one file per workspace.', 'For a list you choose, put the workspaces in a JSON file and pass -WorkspacesFile (see the examples at the top of the script). A workspace that fails does not stop the others.'],
+    sources: ['sialertrules', 'siautomation', 'siconnectors', 'siwatchlists', 'siversions', 'invokerest', 'sisubscriptions', 'laworkspaces', 'sionboarding'],
   },
   K_USAGE_BY_TABLE: {
     title: 'Billable ingestion per table (last 30 full days)', language: 'kql', status: 'composed', runIn: LA, permissions: READER, readOnly: true,

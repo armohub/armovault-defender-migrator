@@ -2,7 +2,7 @@
 
 Generated from the knowledge base by `scripts/gen-research.mjs`. Do not edit by hand.
 
-Knowledge base **2026.10.26**, reviewed **2026-10-19**. 120 sources, all Microsoft Learn. "Page date" is the ms.date shown in the page metadata; "Updated" is the page's last-publish timestamp; "Verified" is when this project last fetched and read the page.
+Knowledge base **2026.10.26**, reviewed **2026-10-19**. 127 sources, all Microsoft Learn. "Page date" is the ms.date shown in the page metadata; "Updated" is the page's last-publish timestamp; "Verified" is when this project last fetched and read the page.
 
 Detailed research notes with verbatim quotes, confidence levels and gaps: [notes/](notes/).
 
@@ -28,7 +28,7 @@ Detailed research notes with verbatim quotes, confidence levels and gaps: [notes
 | `urbacactivate` | [Activate Microsoft Defender unified RBAC](https://learn.microsoft.com/en-us/defender-xdr/activate-defender-rbac) | 2026-07-10 | 2026-08-11 | 2026-10-19 | PREP-TOP-05, PREP-ACC-03, PREP-ACC-06 |  |
 | `scoping` | [Configure Microsoft Sentinel scoping (row-level RBAC)](https://learn.microsoft.com/en-us/defender-xdr/scoping) | 2026-08-05 | 2026-08-11 | 2026-10-19 | PREP-ACC-03, PREP-ACC-04 |  |
 | `cmk` | [Set up customer-managed keys in Microsoft Sentinel](https://learn.microsoft.com/en-us/azure/sentinel/customer-managed-keys) | 2026-07-12 | 2026-08-16 | 2026-10-19 | PREP-GOV-03 |  |
-| `residency` | [Geographical availability and data residency in Microsoft Sentinel](https://learn.microsoft.com/en-us/azure/sentinel/geographical-availability-data-residency) | 2026-08-18 | 2026-09-08 | 2026-10-19 | PREP-SCOPE-05, PREP-GOV-01, PREP-GOV-02 |  |
+| `residency` | [Geographical availability and data residency in Microsoft Sentinel](https://learn.microsoft.com/en-us/azure/sentinel/geographical-availability-data-residency) | 2026-08-18 | 2026-09-08 | 2026-10-19 | PREP-GOV-01, PREP-GOV-02 |  |
 | `xdrint` | [Microsoft Defender XDR integration with Microsoft Sentinel](https://learn.microsoft.com/en-us/azure/sentinel/microsoft-365-defender-sentinel-integration) | 2026-06-17 | 2026-09-24 | 2026-10-19 | PREP-GOV-05, PREP-CON-01, PREP-DET-03, PREP-AUT-01, TRN-12 |  |
 | `xdrconnector` | [Stream data from Microsoft Defender XDR to Microsoft Sentinel](https://learn.microsoft.com/en-us/azure/sentinel/connect-microsoft-365-defender) | 2026-07-02 | 2026-09-10 | 2026-10-19 | PREP-TOP-03, PREP-CON-01, PREP-CON-08, TRN-12, TRN-13 | K_DEFENDER_TABLE_INGESTION, K_XDR_INCIDENTS, K_XDR_TREND |
 | `mtoreq` | [Set up Microsoft Defender multitenant management](https://learn.microsoft.com/en-us/defender-xdr/mto-requirements) | 2026-07-02 | 2026-09-10 | 2026-10-19 | PREP-TOP-05 |  |
@@ -80,7 +80,14 @@ Detailed research notes with verbatim quotes, confidence levels and gaps: [notes
 | `securityalerttable` | [Azure Monitor Logs reference: SecurityAlert](https://learn.microsoft.com/en-us/azure/azure-monitor/reference/tables/securityalert) | 2026-07-27 | 2026-07-28 | 2026-10-19 |  | K_ALERTS_BY_PRODUCT |
 | `tasksdefender` | [Streamline incident response using tasks in the Microsoft Defender portal](https://learn.microsoft.com/en-us/defender-xdr/split-incidents-into-tasks) | 2026-06-15 | 2026-09-23 | 2026-10-19 | PREP-OPS-02 |  |
 | `manualincidents` | [Create your own incidents manually in Microsoft Sentinel in the Azure portal](https://learn.microsoft.com/en-us/azure/sentinel/create-incident-manually) | 2026-07-02 | 2026-08-11 | 2026-10-19 | PREP-INT-03 | K_MANUAL_INCIDENTS |
-| `ah` | [Advanced hunting with Microsoft Sentinel data in Microsoft Defender](https://learn.microsoft.com/en-us/defender-xdr/advanced-hunting-microsoft-defender) | 2026-06-09 | 2026-09-23 | 2026-10-19 | PREP-SCOPE-05, PREP-ACC-02, PREP-CON-08, PREP-CNT-03, TEST-09, VAL-02, VAL-12 |  |
+| `ah` | [Advanced hunting with Microsoft Sentinel data in Microsoft Defender](https://learn.microsoft.com/en-us/defender-xdr/advanced-hunting-microsoft-defender) | 2026-06-09 | 2026-10-20 | 2026-10-29 | PREP-SCOPE-05, PREP-ACC-02, PREP-CON-08, PREP-CNT-03, TEST-09, VAL-02, VAL-12 |  |
+| `sisubscriptions` | [Subscriptions - List (REST API, Azure Resource Management)](https://learn.microsoft.com/en-us/rest/api/resources/subscriptions/list) | 2026-10-23 | 2026-07-23 | 2026-10-29 |  | PS_INVENTORY_SCRIPT |
+| `laworkspaces` | [Workspaces - List (REST API, Azure Log Analytics)](https://learn.microsoft.com/en-us/rest/api/loganalytics/workspaces/list) | 2026-10-23 | 2026-08-10 | 2026-10-29 |  | PS_INVENTORY_SCRIPT |
+| `sionboarding` | [Sentinel Onboarding States - List (REST API, Microsoft Sentinel)](https://learn.microsoft.com/en-us/rest/api/securityinsights/sentinel-onboarding-states/list) | 2026-10-23 | 2026-07-14 | 2026-10-29 |  | PS_INVENTORY_SCRIPT |
+| `featureavail` | [Microsoft Sentinel feature support for Azure commercial/other clouds](https://learn.microsoft.com/en-us/azure/sentinel/feature-availability) | 2026-09-29 | 2026-09-29 | 2026-10-29 | PREP-SCOPE-05 |  |
+| `usgov` | [Microsoft Defender XDR for US Government customers](https://learn.microsoft.com/en-us/defender-xdr/usgov) | 2026-06-26 | 2026-06-26 | 2026-10-29 | PREP-SCOPE-04, PREP-SCOPE-05 |  |
+| `rbacconditions` | [Delegate Azure role assignment management to others with conditions](https://learn.microsoft.com/en-us/azure/role-based-access-control/delegate-role-assignments-portal) | 2026-03-30 | 2026-03-30 | 2026-10-29 | PREP-ACC-01 |  |
+| `alertschema` | [Alert schema differences: standalone and Defender XDR connector alerts](https://learn.microsoft.com/en-us/azure/sentinel/security-alert-schema-differences) | 2026-06-24 | 2026-06-24 | 2026-10-29 | PREP-TOP-03 |  |
 | `ahoverview` | [Advanced hunting overview in Microsoft Defender XDR](https://learn.microsoft.com/en-us/defender-xdr/advanced-hunting-overview) | 2026-08-07 | 2026-09-10 | 2026-10-19 | PREP-GOV-01, PREP-CNT-03 |  |
 | `customfunctions` | [Use Microsoft Sentinel custom functions in advanced hunting in Microsoft Defender](https://learn.microsoft.com/en-us/defender-xdr/advanced-hunting-defender-use-custom-rules) | 2026-07-02 | 2026-08-11 | 2026-10-19 | PREP-TOP-02, PREP-DET-08 |  |
 | `ueba` | [Microsoft Sentinel UEBA reference](https://learn.microsoft.com/en-us/azure/sentinel/ueba-reference) | 2025-08-28 | 2026-08-05 | 2026-10-19 | PREP-CNT-02, PREP-CNT-06, VAL-12 | K_UEBA_TABLES |
@@ -211,7 +218,7 @@ https://learn.microsoft.com/en-us/azure/sentinel/microsoft-sentinel-defender-por
 
 https://learn.microsoft.com/en-us/azure/sentinel/microsoft-sentinel-onboard
 
-- **PREP-SCOPE-04**: Settings path, Workspaces page, permissions to see workspaces
+- **PREP-SCOPE-04**: Settings path, Workspaces page, permissions to see workspaces; Microsoft Sentinel appears in the navigation after you connect
 - **PREP-TOP-02**: Set as primary steps
 - **PREP-TOP-05**: GDAP with Azure Lighthouse not supported for Sentinel data in the Defender portal
 - **PREP-ACC-01**: Roles table for onboarding; unconditional Owner; workspaces without permissions not shown
@@ -372,7 +379,6 @@ https://learn.microsoft.com/en-us/azure/sentinel/customer-managed-keys
 
 https://learn.microsoft.com/en-us/azure/sentinel/geographical-availability-data-residency
 
-- **PREP-SCOPE-05**: Sentinel retired in Azure operated by 21Vianet on August 18, 2026
 - **PREP-GOV-01**: Raw data storage location remains unchanged; processing may occur in Defender XDR regions
 - **PREP-GOV-02**: Sentinel data residency
 
@@ -771,13 +777,38 @@ https://learn.microsoft.com/en-us/azure/sentinel/create-incident-manually
 
 https://learn.microsoft.com/en-us/defender-xdr/advanced-hunting-microsoft-defender
 
-- **PREP-SCOPE-05**: GCC-M: queries mixing Sentinel and Defender tables are not supported
+- **PREP-SCOPE-05**: GCC-M: queries mixing Sentinel and Defender tables are not supported (under "What to expect for Defender XDR tables streamed to Microsoft Sentinel"); Known issues
 - **PREP-ACC-02**: Unified advanced hunting needs at least Microsoft Sentinel Reader
 - **PREP-CON-08**: Advanced hunting follows the retention you set for streamed Defender tables; Sentinel needs raw ingestion to query Defender data
 - **PREP-CNT-03**: Bookmarks; Sentinel query folders; functions; portal: Sentinel functions on the Functions tab and Sentinel folders on the Queries tab
 - **TEST-09**: Advanced hunting with Sentinel data
 - **VAL-02**: Advanced hunting role requirement
 - **VAL-12**: Advanced hunting with Sentinel data; bookmarks
+
+### Microsoft Sentinel feature support for Azure commercial/other clouds
+
+https://learn.microsoft.com/en-us/azure/sentinel/feature-availability
+
+- **PREP-SCOPE-05**: GA features available in commercial, GCC, GCC High and DoD; preview features commercial only; Sentinel retired in Azure operated by 21Vianet on August 18, 2026; per-cloud feature table
+
+### Microsoft Defender XDR for US Government customers
+
+https://learn.microsoft.com/en-us/defender-xdr/usgov
+
+- **PREP-SCOPE-04**: Defender portal addresses for GCC High and DoD
+- **PREP-SCOPE-05**: Defender portal addresses and differences for US Government clouds
+
+### Delegate Azure role assignment management to others with conditions
+
+https://learn.microsoft.com/en-us/azure/role-based-access-control/delegate-role-assignments-portal
+
+- **PREP-ACC-01**: What a condition on a role assignment is, and where to view it: Access control (IAM) > Role assignments > Condition column > View/Edit
+
+### Alert schema differences: standalone and Defender XDR connector alerts
+
+https://learn.microsoft.com/en-us/azure/sentinel/security-alert-schema-differences
+
+- **PREP-TOP-03**: Tenant-based alerts are available only in the primary workspace; content in secondary workspaces that depends on standalone connector alerts no longer functions as expected
 
 ### Advanced hunting overview in Microsoft Defender XDR
 

@@ -64,7 +64,7 @@ Version 1.0.0 is the first public version, released as one final version (no rel
 First start   -> Introduction (about 4 s, skippable) -> Welcome
 Later starts  -> Short splash -> Welcome, or the open project's overview
 
-Welcome -> Start my project -> New project (4 steps) -> Tailored? -> yes -> Questions, one per screen
+Welcome -> Start my project -> New project (5 steps) -> Tailored? -> yes -> Questions, one per screen
         |                     about the project,                          -> End screen with counts
         |                     timing and scope,                           -> "Building your plan" -> Overview
         |                     where to keep your work,     no -> Overview
@@ -88,7 +88,7 @@ Sidebar: Overview, the four stages, Decisions and risks, Evidence, Reports, Proj
    - You can replay it from **About** or **Settings and data**. Later starts show a short splash instead.
 2. **Welcome and new project.**
    - The welcome page offers **Start my project**, **Open a saved project** and **Try the demo**, explains how it works and what happens to your data, and shows the thanks note.
-   - The wizard has four steps: about the project, timing and scope, where to keep your work, and how to start.
+   - The wizard has five steps: about the project, timing (with the 31 March 2027 date restated), your workspaces (import the inventory script results and tick the ones in scope, or type them in), where to keep your work, and how to start.
    - A project label and your name are required. No secrets are asked for, and workspaces use aliases only.
    - Saving: autosave is **off by default**, and the "Autosave in this browser" option explains its limits.
    - The responsibility statement must be acknowledged before the project is created.

@@ -14,7 +14,7 @@ import { editRegisterItem } from './records.js';
 import { importInventoryFlow } from '../inventory.js';
 import { revokeObjectUrls, trackUrl, orderedStageItems } from './work.js';
 import { rich, plain as plainText, renderSteps, renderList, renderPath } from '../rich.js';
-import { TOOLS, TOOL_TITLES, peopleList } from '../tools.js';
+import { TOOLS, TOOL_TITLES, peopleList, personPicker } from '../tools.js';
 import { saveSnapshotFlow } from './reports.js';
 import { actionsFor, setStatusFlow, waiveEvidenceFlow, downloadInventoryScript } from '../step-actions.js';
 
@@ -220,7 +220,7 @@ function recordPanel(c) {
     h('div', null, h('h3', null, 'Status'), statusGroup, h('p', { class: 'status-explain', style: { marginTop: '8px' } }, STATUS_HELP[st.status] || ''),
       lastStatus ? h('p', { class: 'checked-by' }, icon('user', 'icon-xs'), ` Set to ${statusById(lastStatus.to).short} by ${lastStatus.by}, `, h('span', { class: 'tnum' }, formatDate(lastStatus.at, true)), '. Who checked and when is recorded for you.') : h('p', { class: 'checked-by muted' }, 'When you set a status, the assistant records who did it and when.')),
     (['failed', 'blocked', 'not_applicable', 'needs_review'].includes(st.status) || st.statusReason) ? field('Reason for this status', textInput('statusReason', { rows: '2', maxlength: '20000' }, true)) : null,
-    h('div', { class: 'grid-2' }, field('Owner', textInput('owner', { type: 'text', maxlength: '200', list: 'people-list', placeholder: wsOwner || 'Name or team' }), { hint: wsOwner && !st.owner ? `From the workstream lead. Type a name to change it for this step.${alsoInvolved}` : h('span', null, `Responsible for getting it done.${alsoInvolved} `, h('a', { href: '#/item/PREP-SCOPE-02' }, 'Set owners per workstream')) }), field('Due date', textInput('due', { type: 'date' }), { hint: 'When it should be done.' })),
+    h('div', { class: 'grid-2' }, field('Owner', personPicker({ value: st.owner || '', placeholder: wsOwner ? `Workstream lead: ${wsOwner}` : 'Not set', focusKey: `owner-${c.id}`, label: 'Owner', onChange: (v) => mutate((pr) => setCheckField(pr, c.id, 'owner', v, state.kb.meta.version)) }), { hint: wsOwner && !st.owner ? `From the workstream lead. Choose a person to change it for this step.${alsoInvolved}` : h('span', null, `Responsible for getting it done.${alsoInvolved} `, h('a', { href: '#/item/PREP-SCOPE-02' }, 'Set owners per workstream')) }), field('Due date', textInput('due', { type: 'date' }), { hint: 'When it should be done.' })),
     field('Notes', textInput('notes', { rows: '4', maxlength: '20000', placeholder: 'What you saw, what you decided, ticket numbers' }, true), { hint: 'Your own words. Use evidence for results that prove a status.' }),
     h('div', { class: 'evidence-block' },
       h('h3', null, `Evidence (${evidence.length})`),

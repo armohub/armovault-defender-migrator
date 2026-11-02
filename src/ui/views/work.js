@@ -14,7 +14,8 @@ import { rich, plain } from '../rich.js';
 import { autosaveEnabled } from '../../app/store.js';
 
 const objectUrls = new Set();
-export function revokeObjectUrls() { for (const u of objectUrls) URL.revokeObjectURL(u); objectUrls.clear(); }
+// Released a moment later, not at once: an image of the page being replaced may still be loading its URL.
+export function revokeObjectUrls() { const old = [...objectUrls]; objectUrls.clear(); if (old.length) setTimeout(() => old.forEach((u) => URL.revokeObjectURL(u)), 3000); }
 // Object URLs created for thumbnails are released on the next page render.
 export function trackUrl(blob) { const u = URL.createObjectURL(blob); objectUrls.add(u); return u; }
 
@@ -105,6 +106,17 @@ export function guidanceSwitch() {
     infoTip({ key: 'guidance', title: 'Simplified or Detailed' }, h('p', null, 'Simplified shows missions with short checklists. Detailed shows every step in full, with background and sources. Your records, proofs and decisions are the same in both, and you can switch at any time.')));
 }
 
+// The questions asked at the start, while some are still open: a clear way back, so none get lost.
+function openQuestionsCallout(kb, p) {
+  if (p.mode !== 'tailored') return null;
+  const qs = upfrontQuestions(kb, p);
+  const open = qs.filter((q) => !p.answers[q.id]);
+  if (!open.length) return null;
+  return h('div', { class: 'callout callout-info open-questions' }, icon('question', 'icon-sm'),
+    h('div', null, h('strong', null, `${open.length} of ${qs.length} setup question${qs.length === 1 ? '' : 's'} still open.`), ' Their steps stay in your plan until you answer. Answering takes a minute and keeps only what applies to you.'),
+    linkBtn('Continue the questions', `#/questionnaire/q/${open[0].id}`, { kind: 'primary', small: true, iconName: 'arrow' }));
+}
+
 // ───────────────────────────── Overview ─────────────────────────────
 route('overview', () => {
   revokeObjectUrls();
@@ -127,7 +139,7 @@ route('overview', () => {
     state.ui.justPlanned = false;
     return h('div', { class: 'page' },
       h('div', { class: 'view-switch-row' }, guidanceSwitch()),
-      justPlannedSimple ? callout('good', 'Your plan is ready.', ' Start with the mission below. More questions come up in the missions they affect.') : null,
+      justPlannedSimple ? callout('good', 'Your plan is ready.', ' Start with the mission below. More questions come up in the missions they affect.') : openQuestionsCallout(kb, p),
       h('section', { class: 'next-panel', 'aria-label': 'Your next mission' },
         h('div', { class: 'next-head' },
           h('div', null,
@@ -185,7 +197,7 @@ route('overview', () => {
 
   return h('div', { class: 'page' },
     h('div', { class: 'view-switch-row' }, guidanceSwitch()),
-    justPlanned ? callout('good', 'Your plan is ready.', ' Start with the step below. The "Start here" list shows what comes after it, and the route shows where you are.') : null,
+    justPlanned ? callout('good', 'Your plan is ready.', ' Start with the step below. The "Start here" list shows what comes after it, and the route shows where you are.') : openQuestionsCallout(kb, p),
     h('section', { class: 'next-panel', 'aria-label': 'Your next step' }, hero,
       h('div', { class: 'next-route' }, routeView({ ...model, animate: freshRoute, key: 'overview', label: 'Your route from the Azure portal to the Defender portal' }))),
     h('div', { class: 'overview-grid' },

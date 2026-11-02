@@ -139,8 +139,14 @@ export const PREPARE_1 = [
     ],
     where: [at(DP, 'https://security.microsoft.com > System > Settings > Microsoft Sentinel > Workspaces')],
     steps: [
-      "Sign in to https://security.microsoft.com.",
-      "Look for **Microsoft Sentinel** in the left navigation. If it's there, at least one workspace is connected.",
+      {
+        text: "Sign in to the Defender portal: https://security.microsoft.com.",
+        tip: 'US Government clouds use their own address: GCC High at https://security.microsoft.us, DoD at https://security.apps.mil.',
+      },
+      {
+        text: "Look for **Microsoft Sentinel** in the left navigation. If it's there, at least one workspace is connected.",
+        tip: 'This only proves something if you hold at least Microsoft Sentinel Reader. Without it, the menu can be missing even when a workspace is connected.',
+      },
       "Open **System > Settings > Microsoft Sentinel**, then open the **Workspaces** page.",
       "In **Do it here**, set each workspace to **Not connected**, **Connected, primary** or **Connected, secondary**.",
       "If you only see **Connect a workspace**, no workspace is connected yet. Keep in mind that you only see the workspaces you have the required permissions for."
@@ -155,7 +161,7 @@ export const PREPARE_1 = [
       "The connection state of each workspace: in **Do it here** (who checked and when is recorded for you when you set the status)"
     ],
     evidence: ['A screenshot of the Workspaces page: [[do:add-screenshot|attach it]]. Redact tenant and workspace IDs if your policy requires.'],
-    sources: [src('overview', 'Automatic onboarding of new customers from July 2025 and its conditions'), src('onboard', 'Settings path, Workspaces page, permissions to see workspaces'), src('quickstart', 'Settings > Microsoft Sentinel > Workspaces')],
+    sources: [src('overview', 'Automatic onboarding of new customers from July 2025 and its conditions'), src('onboard', 'Settings path, Workspaces page, permissions to see workspaces; Microsoft Sentinel appears in the navigation after you connect'), src('quickstart', 'Settings > Microsoft Sentinel > Workspaces'), src('usgov', 'Defender portal addresses for GCC High and DoD')],
   }),
   k({
     id: 'PREP-SCOPE-05', stage: 'prepare', workstream: 'scope', order: 50, kind: 'check', criticality: 'high', applicability: q('sovereign_cloud'),
@@ -164,17 +170,19 @@ export const PREPARE_1 = [
     why: [
       'Some behaviours differ by cloud.',
       'For example, in GCC-M, advanced hunting queries that reference both Microsoft Sentinel and Defender tables are not supported.',
+      'In the Defender portal, generally available features are available in the commercial, GCC, GCC High and DoD clouds. Features still in preview are available only in the commercial cloud.',
       'Microsoft Sentinel was retired in Azure operated by 21Vianet on 18 August 2026.',
     ],
     where: [at(ORG, 'Cloud environment documentation')],
     steps: [
       'Note the cloud for each tenant in scope in [[do:write-notes|this step\'s notes]].',
       {
-        text: 'Review two Microsoft sources:',
+        text: 'Review two Microsoft pages, listed under Sources below:',
         bullets: [
-          'The known issues for advanced hunting with Sentinel data (the GCC-M limitation)',
-          'The Sentinel geographical availability page',
+          '**Advanced hunting with Microsoft Sentinel data in Microsoft Defender**: read the GCC-M note on queries that mix Sentinel and Defender tables, and the Known issues section, for example no near-real-time custom detections on Sentinel data.',
+          '**Microsoft Sentinel feature support for Azure commercial/other clouds**: find each feature your SOC uses and check the column for your cloud. Rows marked No for Azure Government include, for example, repositories, summary rules and SOC optimizations.',
         ],
+        tip: 'Look for the features your analysts use every day: hunting, automation, threat intelligence, UEBA and the connectors you rely on.',
       },
       'List any feature your SOC depends on that is limited in your cloud.',
       '[[do:add-risk|Add each one to the register as a risk]].',
@@ -185,7 +193,7 @@ export const PREPARE_1 = [
       'Limitations that affect you: [[do:add-risk|add a risk]] for each one',
     ],
     evidence: ['Notes with links to the relevant Microsoft pages: [[do:add-link|add each link]] or [[do:add-note|add a note]]'],
-    sources: [src('ah', 'GCC-M: queries mixing Sentinel and Defender tables are not supported'), src('residency', 'Sentinel retired in Azure operated by 21Vianet on August 18, 2026'), src('whatsnew', 'May 2025: support for all government and commercial clouds became GA in the Defender portal')],
+    sources: [src('ah', 'GCC-M: queries mixing Sentinel and Defender tables are not supported (under "What to expect for Defender XDR tables streamed to Microsoft Sentinel"); Known issues'), src('featureavail', 'GA features available in commercial, GCC, GCC High and DoD; preview features commercial only; Sentinel retired in Azure operated by 21Vianet on August 18, 2026; per-cloud feature table'), src('whatsnew', 'May 2025: support for all government and commercial clouds became GA in the Defender portal'), src('usgov', 'Defender portal addresses and differences for US Government clouds')],
     caveats: ['Feature availability can differ per cloud and change over time. For critical capabilities, confirm with your Microsoft account team.'],
   }),
 
@@ -329,7 +337,7 @@ export const PREPARE_1 = [
       'Query results as CSV: [[do:add-file|attach the file]]',
       'The decision list: [[do:add-file|attach it]]',
     ],
-    sources: [src('move', 'Standalone connectors disconnected automatically in secondary workspaces'), src('multiws', 'Disconnect other standalone Microsoft connectors with alerts before onboarding; table ingestion options'), src('schemadiff', 'Rules and workbooks relying on those alerts in secondary workspaces no longer function as expected'), src('configconnector', 'Connector page shows the Data received graph and the connectivity status of its data types'), src('xdrconnector', 'Component connectors can still appear connected after the Defender XDR connector is enabled, with no data flowing through them'), src('exportrules', 'Export from the Analytics page; the file includes the query of scheduled rules; one page of rules at a time')],
+    sources: [src('alertschema', 'Tenant-based alerts are available only in the primary workspace; content in secondary workspaces that depends on standalone connector alerts no longer functions as expected'), src('move', 'Standalone connectors disconnected automatically in secondary workspaces'), src('multiws', 'Disconnect other standalone Microsoft connectors with alerts before onboarding; table ingestion options'), src('schemadiff', 'Rules and workbooks relying on those alerts in secondary workspaces no longer function as expected'), src('configconnector', 'Connector page shows the Data received graph and the connectivity status of its data types'), src('xdrconnector', 'Component connectors can still appear connected after the Defender XDR connector is enabled, with no data flowing through them'), src('exportrules', 'Export from the Analytics page; the file includes the query of scheduled rules; one page of rules at a time')],
   }),
   k({
     id: 'PREP-TOP-04', stage: 'prepare', workstream: 'topology', order: 40, kind: 'task', criticality: 'high', applicability: all(q('multi_workspace'), q('automation_rules')), testable: true,
@@ -488,7 +496,13 @@ export const PREPARE_1 = [
       'Identify the person (or break-glass or PIM role) who will connect the workspaces.',
       'In the Azure portal, open the subscription that contains each workspace, then open **Access control (IAM) > Role assignments**.',
       'Confirm the operator holds Owner, or User Access Administrator plus Microsoft Sentinel Contributor.',
-      'If Owner is used, confirm the assignment is unconditional: no condition restricts which roles can be assigned.',
+      {
+        text: 'If Owner is used, confirm the assignment is unconditional. Open the **Privileged** tab of **Role assignments** and find the operator\'s Owner row.',
+        bullets: [
+          'The **Condition** column is empty: the assignment is unconditional, which is what connecting needs.',
+          'The **Condition** column shows **View/Edit**: a condition limits which roles this person may assign, or to whom. That does not qualify. Microsoft\'s example of the right setting is "Allow user to assign all roles (highly privileged)".',
+        ],
+      },
       {
         text: 'In the Entra admin center, confirm the operator holds Security Administrator (or a higher role), either directly or through a PIM activation planned for the change window.',
         tip: 'The same combination applies later, to [[PREP-TOP-02|change the primary workspace]] or to [[PREP-ACC-03|activate unified RBAC]].',
@@ -505,7 +519,7 @@ export const PREPARE_1 = [
       'Request the missing role assignment through your access process.',
       'For PIM, confirm the activation duration covers the change window.',
     ],
-    sources: [src('onboard', 'Roles table for onboarding; unconditional Owner; workspaces without permissions not shown'), src('multiws', 'Roles for primary change and connecting secondary workspaces'), src('urbacmap', 'Security Architect persona permissions')],
+    sources: [src('rbacconditions', 'What a condition on a role assignment is, and where to view it: Access control (IAM) > Role assignments > Condition column > View/Edit'), src('onboard', 'Roles table for onboarding; unconditional Owner; workspaces without permissions not shown'), src('multiws', 'Roles for primary change and connecting secondary workspaces'), src('urbacmap', 'Security Architect persona permissions')],
     caveats: [
       'The onboarding page footnote suggests Security Administrator is required only when the tenant has more than one Sentinel workspace. The roles table lists it for all cases. The assistant treats it as required.',
       'The Azure IAM and Entra navigation paths are general administration paths, not taken from the transition documentation.',
@@ -549,7 +563,7 @@ export const PREPARE_1 = [
       intro: 'Answer five questions. This step gives a firm answer only where you need row-level access. Otherwise you see both ways side by side, with what your answers mean for each, and you choose.',
       questions: [
         {
-          id: 'state', text: 'Is unified RBAC already active in your tenant?', hint: 'In the Defender portal: System > Permissions > Microsoft Defender XDR > Roles.',
+          id: 'state', text: 'Is unified RBAC already active in your tenant?', hint: 'In the Defender portal: System > Permissions (near the bottom of the navigation pane), then Roles under Microsoft Defender XDR. Direct link: https://security.microsoft.com/mtp_roles. You need at least Security Administrator in Entra ID to open it.',
           options: [{ id: 'sentinel', label: 'Yes, for Sentinel workspaces' }, { id: 'other', label: 'Yes, for other workloads only' }, { id: 'no', label: 'No' }, { id: 'unknown', label: 'Not checked yet' }],
         },
         {
@@ -618,7 +632,14 @@ export const PREPARE_1 = [
     roles: ['Activation: Security Administrator plus Owner, or User Access Administrator and Microsoft Sentinel Contributor on the workspace'],
     where: [at(DP, 'System > Permissions > Microsoft Defender XDR > Roles (Activate workloads / Workload settings)'), at(DP, 'System > Settings > Microsoft Defender XDR > General > Permissions and roles')],
     steps: [
-      'Check whether unified RBAC is already active in the tenant, and for which workloads.',
+      {
+        text: 'Check whether unified RBAC is already active in the tenant, and for which workloads: in the Defender portal, open **System > Permissions**, then **Roles** under **Microsoft Defender XDR**, and look at **Workload settings**.',
+        bullets: [
+          'System is near the bottom of the navigation pane: scroll down. Some Microsoft pages call it **Permissions** or **Setup & Configuration > Permissions**.',
+          'Direct link: https://security.microsoft.com/mtp_roles.',
+          'You need at least Security Administrator in Microsoft Entra ID to open this page. Without it, ask your identity team to check for you.',
+        ],
+      },
       {
         text: 'Review the role mapping:',
         bullets: [
@@ -653,6 +674,7 @@ export const PREPARE_1 = [
     sources: [src('urbac', 'URBAC for Sentinel workspaces, source of permissions, service principals unsupported, per-workspace activation, Global Administrator note'), src('urbacmap', 'Role mapping and roles not available in URBAC'), src('urbacactivate', 'Activation paths; Azure-portal permission changes may cause sync errors'), src('scoping', 'Row-level scoping requires URBAC (preview)'), src('multiws', 'Roles for activation')],
     caveats: [
       'No Microsoft page fetched on 2026-10-19 explicitly labels unified RBAC for Sentinel as generally available or preview.',
+      'Sources differ on GDAP: the activation page says assigning permissions to a GDAP user group in Microsoft Sentinel is not supported in unified RBAC, while the unified RBAC overview says it is. Confirm before you rely on GDAP groups.',
       'Unverified: a non-Microsoft blog reports a Message Center post (MC1457836) saying Microsoft may enable unified RBAC automatically for some tenants between late September and December 2026. Check your tenant\'s Message Center.',
     ],
   }),
@@ -675,7 +697,7 @@ export const PREPARE_1 = [
           'A different access design',
         ],
       },
-      '[[do:add-decision|Record each compensating control as a decision]] in the register.',
+      '[[do:add-control|Record each compensating control]] in the register.',
       'Plan a test of the restricted personas in the [[go:stage:test|test stage]] or in [[go:stage:validate|Stage 3]].',
     ],
     expected: 'Each restriction has a documented outcome and compensating control.',

@@ -59,7 +59,7 @@ route('project', ({ params }) => {
       h('label', { class: 'check-line' }, h('input', { type: 'checkbox', checked: state.project.meta.showExtras !== false, onchange: (e) => mutate((pr) => setShowExtras(pr, e.target.checked)) }), ' Show recommended extras (good practice, not needed for the move)'),
       field('Project notes', (() => { const t = h('textarea', { rows: '3', maxlength: '20000', 'data-focus-key': 'proj-notes', oninput: (e) => { m.notes = e.target.value; refreshBar(); } }); t.value = m.notes || ''; return t; })()),
       bar),
-    h('section', { class: 'card form-section stack', id: 'sec-window' }, h('h2', { class: 'card-title' }, icon('calendar', 'icon-sm'), 'Planned transition window'), windowTool()),
+    h('section', { class: 'card form-section stack', id: 'sec-window' }, h('h2', { class: 'card-title' }, icon('calendar', 'icon-sm'), 'Planned transition window'), windowTool({ setupPage: true })),
     h('section', { class: 'card form-section stack', id: 'sec-environments' }, h('h2', { class: 'card-title' }, 'Workspaces in scope'), workspaceTool()),
     h('section', { class: 'card form-section stack', id: 'sec-owners' }, h('h2', { class: 'card-title' }, icon('users', 'icon-sm'), 'Owners and approvers'), ownersTool({ simple: false, setupPage: true })));
 

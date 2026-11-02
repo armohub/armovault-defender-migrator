@@ -8,7 +8,7 @@
     "build": "node scripts/build.mjs",
     "validate-kb": "node scripts/validate-kb.mjs",
     "research": "node scripts/gen-research.mjs",
-    "test:unit": "node --test tests/unit/core.test.mjs tests/unit/io.test.mjs tests/unit/content-report.test.mjs tests/unit/static.test.mjs tests/unit/contrast.test.mjs tests/unit/review-fixes.test.mjs tests/unit/copy-and-ux.test.mjs tests/unit/tools-and-waiver.test.mjs tests/unit/decision-helpers.test.mjs tests/unit/workstream-people.test.mjs tests/unit/primary-per-tenant.test.mjs tests/unit/simple-content.test.mjs tests/unit/simple-model.test.mjs tests/unit/missions.test.mjs tests/unit/eml.test.mjs tests/unit/proof.test.mjs tests/unit/review-additions.test.mjs",
+    "test:unit": "node --test tests/unit/core.test.mjs tests/unit/io.test.mjs tests/unit/content-report.test.mjs tests/unit/static.test.mjs tests/unit/contrast.test.mjs tests/unit/review-fixes.test.mjs tests/unit/copy-and-ux.test.mjs tests/unit/tools-and-waiver.test.mjs tests/unit/decision-helpers.test.mjs tests/unit/workstream-people.test.mjs tests/unit/primary-per-tenant.test.mjs tests/unit/simple-content.test.mjs tests/unit/simple-model.test.mjs tests/unit/missions.test.mjs tests/unit/eml.test.mjs tests/unit/proof.test.mjs tests/unit/review-additions.test.mjs tests/unit/onboarding-review.test.mjs",
     "test:e2e": "node tests/e2e/run-e2e.mjs --channel msedge",
     "test:e2e:chrome": "node tests/e2e/run-e2e.mjs --channel chrome",
     "test": "npm run test:unit && npm run build && npm run test:e2e"

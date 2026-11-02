@@ -5,7 +5,7 @@
 import {
   PROJECT_SCHEMA, PROJECT_SCHEMA_VERSION, STATUS_IDS, ANSWER_IDS, REGISTER_TYPE_IDS, REGISTER_STATUS_IDS,
   SEVERITY_IDS, GATE_DECISION_IDS, EVIDENCE_KINDS, MAX_TEXT, HELPER_KEYS, MAX_HELPER_SUBJECTS, cleanHelperSubject,
-  MAX_WORKSTREAM_PEOPLE, cleanWorkstreamPeople,
+  MAX_WORKSTREAM_PEOPLE, cleanWorkstreamPeople, MAX_PEOPLE, cleanPeople, INVENTORY_CHOICES,
 } from './model.js';
 import { FORBIDDEN_KEYS, isPlainObject } from './util.js';
 
@@ -86,6 +86,8 @@ export function validateProject(input, { kb } = {}) {
     showExtras: m.showExtras !== false,
     ownersWanted: oneOf(m.ownersWanted, ['yes', 'later', ''], ''),
     planProfile: oneOf(m.planProfile, ['auto', 'lean', 'smaller', 'larger'], 'auto'),
+    people: Array.isArray(m.people) ? cleanPeople(m.people.slice(0, MAX_PEOPLE).filter(isPlainObject).map((x) => ({ name: str(x.name, 200), role: str(x.role, 200) }))) : [],
+    inventoryChoice: oneOf(m.inventoryChoice, INVENTORY_CHOICES, ''),
   };
   // Decision helpers: known helpers only; answers and choices are short identifiers, never text.
   if (isPlainObject(m.helpers)) {

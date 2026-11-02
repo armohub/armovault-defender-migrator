@@ -2,7 +2,7 @@
 import { h, icon, clear, toast, saveBlob, modal, initToasts, withLoader } from './dom.js';
 import { state, subscribe, subscribeStatus, exportPackage, markExported, autosaveEnabled, flushAutosave, hasUnprotectedChanges } from '../app/store.js';
 import { BRAND, APP_VERSION } from '../brand.js';
-import { applicabilityMap } from '../core/applicability.js';
+import { applicabilityMap, upfrontQuestions } from '../core/applicability.js';
 import { summariseStage } from '../core/readiness.js';
 import { slugify, formatDate } from '../core/util.js';
 import { STAGE_ICONS } from './components.js';
@@ -60,10 +60,10 @@ export function render() {
   }
   if (freshRoute && content && content.classList && content.classList.contains('page')) content.classList.add('page-enter');
   const isReport = routeName === 'report' || routeName === 'snapshot';
-  const focusMode = routeName === 'questionnaire' && state.project;
-  app.appendChild(h('div', { class: ['shell', isReport && 'shell-report', navOpen && 'nav-open'] },
+  const focusMode = !!(routeName === 'questionnaire' && state.project && state.project.mode === 'tailored');
+  app.appendChild(h('div', { class: ['shell', isReport && 'shell-report', navOpen && 'nav-open', focusMode && 'shell-focus'] },
     h('a', { class: 'skip', href: '#main', onclick: (e) => { e.preventDefault(); document.getElementById('main').focus(); } }, 'Skip to content'),
-    sidebar(routeName, params),
+    focusMode ? focusSidebar() : sidebar(routeName, params),
     h('div', { class: 'workspace' }, topbar(routeName, params, focusMode), banners(routeName), h('main', { id: 'main', tabindex: '-1', class: 'main' }, content))));
 
   const newMain = document.getElementById('main');
@@ -126,6 +126,27 @@ function sidebar(routeName, params) {
       h('div', { class: 'offline-note', title: 'This file blocks all network requests (Content-Security-Policy connect-src none). Links to Microsoft Learn open only when you click them.' }, h('span', { class: 'live-dot', 'aria-hidden': 'true' }), 'Offline. Nothing leaves this device.')));
 }
 
+// While the questions are open, the left pane shows only where you are in setting up the plan, so nothing
+// pulls you out of the questions by mistake. "Leave the questions for later" is the one way out.
+function focusSidebar() {
+  const p = state.project;
+  const qs = upfrontQuestions(state.kb, p);
+  const answered = qs.filter((q) => p.answers[q.id]).length;
+  const step = (st, label, meta) => h('li', { class: ['focus-step', st] }, h('span', { class: 'focus-dot', 'aria-hidden': 'true' }, st === 'done' ? icon('check', 'icon-xs') : null), h('span', null, h('strong', null, label), meta ? h('span', { class: 'small muted' }, meta) : null));
+  const allDone = answered >= qs.length;
+  return h('aside', { class: 'sidebar sidebar-focus', id: 'sidebar' },
+    h('div', { class: 'brand' }, brandMark(), h('span', { class: 'brand-text' }, h('span', { class: 'brand-name' }, BRAND.brandName), h('span', { class: 'brand-product' }, `MS ${BRAND.shortName}`))),
+    h('div', { class: 'project-chip' }, h('span', { class: 'project-chip-label' }, p.isDemo ? 'Demo project (fictional)' : 'Your project'), h('span', { class: 'project-chip-name' }, p.meta.name || 'Untitled project')),
+    h('div', { class: 'nav-section' }, 'Setting up your plan'),
+    h('ol', { class: 'focus-steps' },
+      step('done', 'Project set up', `${(p.meta.environments || []).length} workspace${(p.meta.environments || []).length === 1 ? '' : 's'}`),
+      step(allDone ? 'done' : 'current', 'Answer the questions', `${answered} of ${qs.length} answered`),
+      step(allDone ? 'current' : 'todo', 'Build your plan', '')),
+    h('div', { class: 'sidebar-foot' },
+      h('a', { href: '#/overview', class: 'help-link' }, icon('back', 'icon-sm'), 'Leave the questions for later'),
+      h('div', { class: 'offline-note' }, h('span', { class: 'live-dot', 'aria-hidden': 'true' }), 'Offline. Nothing leaves this device.')));
+}
+
 function saveStatus() {
   const p = state.project;
   if (!p) return h('span', { class: 'save-status', id: 'save-status' });
@@ -184,11 +205,11 @@ function crumbs(routeName, params) {
   return h('nav', { class: 'crumbs', 'aria-label': 'You are here' }, parts.flatMap((x, i) => [i ? h('span', { class: 'sep', 'aria-hidden': 'true' }, '/') : null, x]));
 }
 
-function topbar(routeName, params) {
+function topbar(routeName, params, focusMode) {
   const p = state.project;
   return h('header', { class: 'topbar' },
     h('div', { class: 'topbar-left' },
-      h('button', { type: 'button', class: 'btn-icon menu-btn', 'aria-label': navOpen ? 'Close menu' : 'Open menu', 'aria-expanded': navOpen ? 'true' : 'false', 'aria-controls': 'sidebar', onclick: () => { navOpen = !navOpen; render(); } }, icon(navOpen ? 'x' : 'menu')),
+      focusMode ? null : h('button', { type: 'button', class: 'btn-icon menu-btn', 'aria-label': navOpen ? 'Close menu' : 'Open menu', 'aria-expanded': navOpen ? 'true' : 'false', 'aria-controls': 'sidebar', onclick: () => { navOpen = !navOpen; render(); } }, icon(navOpen ? 'x' : 'menu')),
       crumbs(routeName, params)),
     h('div', { class: 'topbar-right' },
       p && p.isDemo ? h('span', { class: 'demo-pill' }, icon('sparkle', 'icon-xs'), 'Demo') : null,

@@ -6,6 +6,47 @@ import { addEvidence, setAnswer, answerLabel, addAudit, setEnvironments } from '
 import { sha256Hex } from '../core/files.js';
 import { callout } from './components.js';
 
+// Reads inventory files without changing the project: [{ file, bytes, sha, inv, res }] or { file, error }.
+export async function readInventoryFiles(files) {
+  const out = [];
+  for (const file of files) {
+    if (file.size > MAX_INVENTORY_BYTES) { out.push({ file, error: 'The file is larger than 5 MB.' }); continue; }
+    try {
+      const bytes = await readBlobBytes(file);
+      const inv = parseInventory(new TextDecoder('utf-8').decode(bytes));
+      out.push({ file, bytes, sha: await sha256Hex(bytes), inv, res: analyseInventory(inv) });
+    } catch (e) { out.push({ file, error: e.message }); }
+  }
+  return out;
+}
+
+// Applies one analysed inventory to a project (inside mutate). findings / suggestions: arrays of booleans,
+// or true for all. Returns the counts. The file itself is kept as evidence on the analytics rules step.
+export function applyInventory(pr, { res, fileName, bytes, sha }, { findings = true, suggestions = false, attachFile = true, addAlias = '', region = '', kind = 'production' } = {}) {
+  const kb = state.kb;
+  const v = kb.meta.version;
+  const pick = (sel, i) => (sel === true ? true : Array.isArray(sel) ? !!sel[i] : false);
+  let nEv = 0;
+  let nAns = 0;
+  res.findings.forEach((f, i) => {
+    if (!pick(findings, i) || !kb.checks.some((c) => c.id === f.checkId)) return;
+    addEvidence(pr, f.checkId, { kind: 'note', title: f.title, text: f.text, origin: 'import', stage: 'prepare' }, v);
+    nEv += 1;
+  });
+  if (attachFile && bytes) {
+    const ev = addEvidence(pr, 'PREP-DET-01', { kind: 'file', title: `Inventory file ${res.label}`, fileName: String(fileName || 'inventory.json').slice(0, 260), mime: 'application/json', size: bytes.length, sha256: sha, origin: 'import', stage: 'prepare', text: 'Original output of Get-ArMoSentinelInventory.ps1' }, v);
+    putEvidenceBlob(ev.id, new Blob([bytes], { type: 'application/json' }));
+  }
+  res.suggestions.forEach((s, i) => {
+    if (!pick(suggestions, i)) return;
+    setAnswer(pr, s.questionId, s.value, `From imported inventory (${s.reason}); confirmed by ${pr.meta.operatorName || 'operator'}`);
+    nAns += 1;
+  });
+  if (addAlias) setEnvironments(pr, [...(pr.meta.environments || []), { alias: addAlias, kind, region, defender: 'unknown' }]);
+  addAudit(pr, 'inventory.imported', `Inventory imported for ${res.label}: ${nEv} evidence note(s), ${nAns} answer(s) applied`);
+  return { evidence: nEv, answers: nAns };
+}
+
 // One file per workspace: the script writes inventory-<alias>.json for each workspace in its list, and you can
 // pick them all at once. Each file gets its own dialog, so you confirm findings and answers per workspace.
 export async function importInventoryFlow() {
@@ -65,28 +106,13 @@ async function importOneInventory(file, { n, total }) {
   ].filter(Boolean) });
   if (ok === 'skip') return 'skipped';
   if (ok !== true) return 'stop';
-  let nEv = 0;
-  let nAns = 0;
-  const v = kb.meta.version;
   const sha = await sha256Hex(bytes);
+  let counts = { evidence: 0, answers: 0 };
   mutate((pr) => {
-    res.findings.forEach((f, i) => {
-      if (!fSel[i] || !kb.checks.some((c) => c.id === f.checkId)) return;
-      addEvidence(pr, f.checkId, { kind: 'note', title: f.title, text: f.text, origin: 'import', stage: 'prepare' }, v);
-      nEv += 1;
-    });
-    if (attachFile) {
-      const ev = addEvidence(pr, 'PREP-DET-01', { kind: 'file', title: `Inventory file ${res.label}`, fileName: file.name.slice(0, 260), mime: 'application/json', size: bytes.length, sha256: sha, origin: 'import', stage: 'prepare', text: 'Original output of Get-ArMoSentinelInventory.ps1' }, v);
-      putEvidenceBlob(ev.id, new Blob([bytes], { type: 'application/json' }));
-    }
-    res.suggestions.forEach((s, i) => {
-      if (!sSel[i]) return;
-      setAnswer(pr, s.questionId, s.value, `From imported inventory (${s.reason}); confirmed by ${pr.meta.operatorName || 'operator'}`);
-      nAns += 1;
-    });
-    if (addAlias) setEnvironments(pr, [...(pr.meta.environments || []), { alias: newAlias, kind: 'production', defender: 'unknown' }]);
-    addAudit(pr, 'inventory.imported', `Inventory imported for ${res.label}: ${nEv} evidence note(s), ${nAns} answer(s) applied`);
+    counts = applyInventory(pr, { res, fileName: file.name, bytes, sha }, { findings: fSel, suggestions: sSel, attachFile, addAlias: addAlias ? newAlias : '', region: inv.region });
   });
+  const nEv = counts.evidence;
+  const nAns = counts.answers;
   if (!many) toast(`Imported ${nEv} evidence note(s)${attachFile ? ' and the inventory file' : ''}; ${nAns} answer(s) applied.`, 'good', 7000);
   return 'imported';
 }

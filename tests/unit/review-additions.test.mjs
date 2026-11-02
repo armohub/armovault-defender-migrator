@@ -63,8 +63,12 @@ test('the planner suggests a small-team profile for one simple workspace, and yo
   for (const id of ['multi_workspace', 'multi_tenant', 'playbooks', 'itsm']) p.answers[id] = { value: 'no' };
   assert.equal(suggestedProfile(p), 'lean');
   p.answers.playbooks = { value: 'yes' };
-  assert.equal(suggestedProfile(p), 'larger');
+  assert.equal(suggestedProfile(p), 'smaller', 'one sign of a bigger environment is not enough for the longer ranges');
+  p.answers.itsm = { value: 'yes' };
+  assert.equal(suggestedProfile(p), 'larger', 'two signs together are');
   delete p.answers.playbooks;
+  delete p.answers.itsm;
+  delete p.answers.multi_workspace;
   assert.equal(suggestedProfile(p), 'smaller', 'not answered yet: the middle ranges');
   assert.equal(planProfile(p), 'smaller', 'automatic by default');
   assert.equal(setPlanProfile(p, 'lean').ok, true);

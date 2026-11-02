@@ -9,18 +9,39 @@ import { formatDate, bytesLabel, slugify } from '../../core/util.js';
 import { BRAND } from '../../brand.js';
 import { revokeObjectUrls, trackUrl } from './work.js';
 import { importInventoryFlow } from '../inventory.js';
+import { personPicker } from '../tools.js';
 
 const regFilter = { type: 'all', status: 'open' };
 
+// The words of the dialog when you add an item from a step: what the item is for, in plain labels.
+// Type, severity, status and the linked step are filled in and sit under "More options".
+const FORMS = {
+  decision: { heading: 'Record a decision', titleLabel: 'What was decided', titlePlaceholder: 'For example: we keep Azure RBAC until after the move', descLabel: 'Why, and any conditions (optional)', ownerLabel: 'Decided by' },
+  action: { heading: 'Add an action', titleLabel: 'What needs doing', titlePlaceholder: 'For example: recreate the rule in the primary workspace', descLabel: 'Details (optional)', ownerLabel: 'Who does it' },
+  risk: { heading: 'Add a risk', titleLabel: 'What could go wrong', titlePlaceholder: 'For example: the ticketing sync misses new incidents', descLabel: 'How likely, the impact, and what would reduce it (optional)', ownerLabel: 'Who keeps an eye on it' },
+  issue: { heading: 'Add an issue', titleLabel: 'What is wrong', titlePlaceholder: 'For example: the connector shows no data since Monday', descLabel: 'What you saw (optional)', ownerLabel: 'Who fixes it' },
+  exception: { heading: 'Record an exception', titleLabel: 'What is accepted', titlePlaceholder: 'For example: workbook PDF export stays in the Azure portal', descLabel: 'Why it is acceptable (optional)', ownerLabel: 'Owner' },
+};
+export const CONTROL_FORM = {
+  heading: 'Record a compensating control',
+  intro: 'Use this for each access restriction that will not carry over to the Defender portal: say what the restriction was, and what you do instead so the same people still cannot see the same data.',
+  titleLabel: 'Restriction that will not carry over', titlePlaceholder: 'For example: the L1 role cannot read the IdentityInfo table',
+  descLabel: 'What you do instead (the compensating control)', descPlaceholder: 'For example: L1 analysts get no Defender XDR data access for identities; reviewed monthly by the SOC lead', descRequired: true,
+  ownerLabel: 'Who owns the control', titlePrefix: 'Compensating control: ', type: 'decision',
+};
+
 export async function editRegisterItem(existing, preset = {}) {
   if (!existing && state.project.register.length >= MAX_REGISTER_ITEMS) { toast(`The register already has ${MAX_REGISTER_ITEMS} items, the maximum a package can carry.`, 'bad', 9000); return; }
-  const r = existing ? { ...existing } : { type: 'action', title: '', description: '', owner: '', due: '', severity: 'medium', status: 'open', checkId: '', ...preset };
+  const { form: presetForm, ...rest } = preset;
+  const r = existing ? { ...existing } : { type: 'action', title: '', description: '', owner: '', due: '', severity: 'medium', status: 'open', checkId: '', ...rest };
+  // From a step, a new item gets the short form that fits it; the register page keeps the full form.
+  const form = existing ? null : presetForm || (r.checkId ? FORMS[r.type] : null);
   const typeSel = h('select', { onchange: (e) => { r.type = e.target.value; drawAccept(); } }, REGISTER_TYPES.map((t) => h('option', { value: t.id, selected: r.type === t.id }, t.label)));
   const PLACEHOLDER = { decision: 'What was decided?', action: 'What needs doing?', issue: 'What is wrong?', risk: 'What could go wrong?', exception: 'What is accepted, and why?' };
-  const title = h('input', { type: 'text', value: r.title, maxlength: '300', placeholder: PLACEHOLDER[r.type] || '', oninput: (e) => { r.title = e.target.value; } });
-  const desc = h('textarea', { rows: '4', maxlength: '20000', oninput: (e) => { r.description = e.target.value; } });
+  const title = h('input', { type: 'text', value: r.title, maxlength: '300', placeholder: (form && form.titlePlaceholder) || PLACEHOLDER[r.type] || '', oninput: (e) => { r.title = e.target.value; } });
+  const desc = h('textarea', { rows: '4', maxlength: '20000', placeholder: (form && form.descPlaceholder) || '', oninput: (e) => { r.description = e.target.value; } });
   desc.value = r.description || '';
-  const owner = h('input', { type: 'text', value: r.owner, maxlength: '200', oninput: (e) => { r.owner = e.target.value; } });
+  const owner = personPicker({ value: r.owner, label: (form && form.ownerLabel) || 'Owner', onChange: (v) => { r.owner = v; } });
   const due = h('input', { type: 'date', value: r.due, oninput: (e) => { r.due = e.target.value; } });
   const sev = h('select', { onchange: (e) => { r.severity = e.target.value; } }, SEVERITY_IDS.map((s) => h('option', { value: s, selected: r.severity === s }, s)));
   // "accepted" can only be set by recording a risk acceptance below; it is shown, not selectable.
@@ -43,19 +64,37 @@ export async function editRegisterItem(existing, preset = {}) {
       field('Rationale and compensating controls', h('textarea', { rows: '3', maxlength: '20000', oninput: (e) => { acc.rationale = e.target.value; } }))));
   }
   drawAccept();
-  const result = await modal({
-    title: existing ? `Edit ${(REGISTER_TYPES.find((t) => t.id === r.type) || { label: 'item' }).label.toLowerCase()}` : `New ${(REGISTER_TYPES.find((t) => t.id === r.type) || { label: 'item' }).label.toLowerCase()}`, wide: true,
-    body: h('div', { class: 'stack' },
+  const linked = r.checkId ? state.kb.checks.find((c) => c.id === r.checkId) : null;
+  const typeLabel = (REGISTER_TYPES.find((t) => t.id === r.type) || { label: 'item' }).label.toLowerCase();
+  const body = form
+    ? h('div', { class: 'stack' },
+      form.intro ? h('p', { class: 'small muted' }, form.intro) : null,
+      linked ? h('p', { class: 'small muted' }, 'Linked to the step ', h('strong', null, linked.title), '.') : null,
+      field(form.titleLabel, title, { required: true }), field(form.descLabel, desc, { required: !!form.descRequired }),
+      h('div', { class: 'grid-2' }, field(form.ownerLabel, owner), field(r.type === 'decision' ? 'Review by (optional)' : 'Due date (optional)', due)),
+      acceptBox,
+      h('details', { class: 'disclose' }, h('summary', null, icon('chevron', 'icon-sm'), 'More options: type, severity, status, linked step'),
+        h('div', { class: 'stack', style: { marginTop: '10px' } }, h('div', { class: 'grid-3' }, field('Type', typeSel), field('Severity', sev), field('Status', stat)), field('Linked step', checkSel))))
+    : h('div', { class: 'stack' },
       h('div', { class: 'grid-3' }, field('Type', typeSel), field('Severity', sev), field('Status', stat)),
       field('Title', title, { required: true }), field('Description', desc),
       h('div', { class: 'grid-3' }, field('Owner', owner), field('Due date', due), field('Linked step', checkSel)),
-      acceptBox),
+      acceptBox);
+  const valid = () => {
+    if (!r.title.trim()) { toast(form ? `Please fill in "${form.titleLabel}".` : 'Please enter a title.', 'bad'); return null; }
+    if (form && form.descRequired && !String(r.description || '').trim()) { toast(`Please fill in "${form.descLabel}".`, 'bad'); return null; }
+    return 'save';
+  };
+  const result = await modal({
+    title: existing ? `Edit ${typeLabel}` : form ? form.heading : `New ${typeLabel}`, wide: !form,
+    body,
     actions: [
       ...(existing ? [{ label: 'Delete', kind: 'danger', value: 'delete' }] : []),
       { label: 'Cancel', value: null },
-      { label: existing ? 'Save' : 'Add', kind: 'primary', value: () => (r.title.trim() ? 'save' : (toast('Please enter a title.', 'bad'), null)) },
+      { label: existing ? 'Save' : 'Add', kind: 'primary', value: valid },
     ],
   });
+  if (result === 'save' && form && form.titlePrefix && !r.title.startsWith(form.titlePrefix)) r.title = `${form.titlePrefix}${r.title.trim()}`.slice(0, 300);
   if (result === 'delete') {
     if (await confirmDialog({ title: 'Delete this register item?', message: 'The deletion is recorded in the audit log.', confirmLabel: 'Delete', danger: true })) mutate((p) => removeRegisterItem(p, existing.id));
     return;

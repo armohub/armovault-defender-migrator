@@ -958,3 +958,106 @@ body[data-motion="reduced"] .route-marker .pulse { animation: none !important; }
 .item-head .explain-lead { margin-top: 12px; max-width: 78ch; }
 .guidance-wrap { display: inline-flex; align-items: center; }
 .plan-profile { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 6px 0 8px; }
+
+/* ───── Setup: timing and workspaces ───── */
+.deadline-inline { background: color-mix(in srgb, var(--caution) 9%, var(--surface)); border-color: color-mix(in srgb, var(--caution) 40%, var(--border)); }
+.import-ws { display: grid; grid-template-columns: auto minmax(160px, 1.4fr) minmax(110px, .8fr) 2fr; gap: 12px; align-items: end; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-2); }
+.import-ws.off { opacity: .6; }
+.import-scope { align-self: center; padding-top: 18px; }
+.import-counts { align-self: center; padding-top: 18px; }
+@media (max-width: 900px) { .import-ws { grid-template-columns: 1fr; } .import-scope, .import-counts { padding-top: 0; } }
+.info-pop > * + * { margin-top: 8px; }
+
+/* ───── Questions in focus: the left pane shows only the setup progress ───── */
+.sidebar-focus .brand { pointer-events: none; }
+.focus-steps { list-style: none; margin: 4px 6px; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.focus-step { display: flex; gap: 10px; align-items: flex-start; padding: 8px 6px; border-radius: var(--radius-sm); }
+.focus-step > span:last-child { display: flex; flex-direction: column; gap: 2px; font-size: .9rem; }
+.focus-step.current { background: var(--accent-soft); }
+.focus-dot { flex: none; width: 20px; height: 20px; border-radius: 50%; border: 2px solid var(--border-strong); display: inline-flex; align-items: center; justify-content: center; margin-top: 1px; }
+.focus-step.current .focus-dot { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); }
+.focus-step.done .focus-dot { border-color: var(--good); background: var(--good); color: var(--on-fill); }
+.open-questions { align-items: center; }
+.open-questions > div { flex: 1; }
+
+/* ───── People lists ───── */
+.owner-chip { display: inline-flex; align-items: center; gap: 8px; }
+select.owner-chip-input { width: 220px; }
+
+/* ───── Mission rows: proofs and step-by-step help ───── */
+.crow-proofs { border: 1px solid color-mix(in srgb, var(--good) 40%, var(--border)); background: color-mix(in srgb, var(--good) 8%, var(--surface)); border-radius: var(--radius-md); padding: 10px 12px; }
+.crow-proofs-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 0 0 6px; }
+.crow-proofs-head > .icon-sm { color: var(--good); }
+.crow-proofs ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.crow-proofs li { display: flex; align-items: center; gap: 10px; }
+.crow-thumb { width: 56px; height: 38px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); background: var(--surface-2); }
+.crow-proof-ic { width: 56px; height: 38px; display: inline-flex; align-items: center; justify-content: center; border-radius: 6px; background: var(--surface-2); color: var(--muted); }
+.crow-proof-text { flex: 1; display: flex; flex-direction: column; min-width: 0; overflow-wrap: anywhere; }
+.crow-how > summary { cursor: pointer; color: var(--accent-strong); font-size: .9rem; font-weight: 600; }
+.crow-how-body { margin-top: 10px; padding: 12px 14px; border-radius: var(--radius-md); background: var(--surface-2); display: flex; flex-direction: column; gap: 12px; }
+.crow-how-body h5 { margin: 0 0 6px; font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.crow-how-body .steps { margin: 0; }
+
+/* ───── Mission page: questions and the journey rail ───── */
+.mission-layout { display: grid; grid-template-columns: minmax(0, 1fr) 260px; gap: 28px; align-items: start; }
+.mq-head { display: flex; align-items: flex-start; gap: 6px; }
+.mq-head .mq-text { flex: 1; }
+.mq-detail { margin: -4px 0 8px; }
+.journey-rail { position: sticky; top: 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); padding: 16px; max-height: calc(100vh - 110px); overflow-y: auto; }
+.rail-head { display: flex; align-items: center; gap: 12px; }
+.rail-pct { font-size: 2rem; font-weight: 700; line-height: 1; color: var(--text); }
+.rail-pct small { font-size: 1rem; color: var(--muted); }
+.rail-bar { height: 6px; border-radius: 3px; background: var(--surface-3); overflow: hidden; margin: 12px 0 14px; }
+.rail-bar > span { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), var(--good)); transition: width var(--t-hero) var(--ease-out); }
+.rail-stages, .rail-missions { list-style: none; margin: 0; padding: 0; }
+.rail-stage + .rail-stage { margin-top: 12px; }
+.rail-milestone { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+.rail-milestone strong { flex: 1; font-size: .9rem; }
+.rail-flag { width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: var(--surface-3); color: var(--muted); }
+.rail-stage.done .rail-flag { background: var(--good); color: var(--on-fill); }
+.rail-missions { position: relative; margin-left: 10px; padding-left: 14px; border-left: 2px solid var(--border); }
+.rail-stage.done .rail-missions { border-left-color: color-mix(in srgb, var(--good) 60%, var(--border)); }
+.rail-mission a { display: flex; align-items: flex-start; gap: 8px; padding: 4px 6px; border-radius: var(--radius-sm); color: var(--text-2); text-decoration: none; font-size: .84rem; line-height: 1.35; }
+.rail-mission a:hover { background: var(--surface-2); color: var(--text); }
+.rail-dot { flex: none; width: 14px; height: 14px; margin-top: 2px; margin-left: -22px; border-radius: 50%; border: 2px solid var(--border-strong); background: var(--surface); display: inline-flex; align-items: center; justify-content: center; }
+.rail-dot .icon-xs { width: 10px; height: 10px; }
+.rail-mission.done .rail-dot { border-color: var(--good); background: var(--good); color: var(--on-fill); }
+.rail-mission.done a { color: var(--muted); }
+.rail-mission.current a { background: var(--accent-soft); color: var(--text); font-weight: 620; }
+.rail-mission.current .rail-dot { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
+@media (max-width: 1180px) {
+  .mission-layout { grid-template-columns: 1fr; }
+  .journey-rail { position: static; order: -1; max-height: none; padding: 12px 14px; }
+  .journey-rail .rail-stages { display: none; }
+  .rail-bar { margin-bottom: 0; }
+}
+
+/* ───── Celebration ───── */
+.celebrate { border: 0; padding: 0; background: transparent; overflow: visible; color: var(--text); }
+.celebrate::backdrop { background: var(--scrim); backdrop-filter: blur(3px); animation: fade-in 200ms var(--ease-out) both; }
+.celebrate-card { position: relative; width: min(440px, 92vw); padding: 30px 28px 24px; border-radius: 20px; background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow-pop); text-align: center; animation: cel-pop 420ms var(--ease-out) both; }
+.celebrate-card h2 { margin: 14px 0 8px; font-size: 1.4rem; }
+.celebrate-card p { margin: 0 auto; max-width: 36ch; color: var(--text-2); }
+.celebrate-mark { width: 68px; height: 68px; margin: 0 auto; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: var(--good); color: var(--on-fill); animation: cel-mark 560ms 80ms var(--ease-out) both; }
+.celebrate-mark .icon { width: 34px; height: 34px; stroke-width: 2.6; }
+.celebrate.milestone .celebrate-mark { background: linear-gradient(135deg, var(--accent), var(--good)); }
+.celebrate-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+.confetti { position: absolute; left: 50%; top: 64px; width: 0; height: 0; pointer-events: none; }
+.confetti .bit { position: absolute; width: 8px; height: 12px; border-radius: 2px; opacity: 0; animation: cel-bit 1100ms var(--d) var(--ease-out) forwards; }
+.confetti .b0 { background: var(--accent); } .confetti .b1 { background: var(--good); } .confetti .b2 { background: var(--caution); } .confetti .b3 { background: var(--info); }
+@keyframes cel-pop { from { opacity: 0; transform: translateY(12px) scale(.94); } to { opacity: 1; transform: none; } }
+@keyframes cel-mark { 0% { transform: scale(.2); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
+@keyframes cel-bit { 0% { opacity: 1; transform: translate(0, 0) rotate(0); } 70% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--x), calc(var(--y) + 60px)) rotate(var(--r)); } }
+.celebrate.calm .celebrate-card, .celebrate.calm .celebrate-mark { animation: none; }
+@media (prefers-reduced-motion: reduce) { .celebrate-card, .celebrate-mark, .confetti { animation: none !important; } .confetti { display: none; } .rail-bar > span { transition: none; } }
+body[data-motion="reduced"] .confetti { display: none; }
+
+/* ───── Folded email templates and example estimates ───── */
+.email-fold > summary { cursor: pointer; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-2); }
+.email-fold > summary > span { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.email-fold[open] > summary { border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+.email-fold > .email-preview { border-top-left-radius: 0; border-top-right-radius: 0; margin-top: 0; }
+.estimate-note { margin: 6px 0 10px; }
+.window-summary { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 14px; border-radius: var(--radius-md); border: 1px solid color-mix(in srgb, var(--good) 40%, var(--border)); background: color-mix(in srgb, var(--good) 8%, var(--surface)); }
+.window-summary > div { flex: 1; }
+.profile-why { margin: 0 0 8px; }

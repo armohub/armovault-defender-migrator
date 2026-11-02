@@ -65,7 +65,7 @@ export const REFERENCE = {
   briefing: {
     audiences: [
       {
-        id: 'leadership', label: 'Security leadership', hint: 'CISO or manager: impact and decisions.',
+        id: 'leadership', label: 'Security leadership', hint: 'CISO or manager: a short note on impact and decisions.', concise: true,
         subject: 'Microsoft Sentinel moves to the Defender portal: what it means for us',
         asksTitle: 'What we need from you',
         asks: [
@@ -229,7 +229,7 @@ export const REFERENCE = {
   },
   // Planning ranges for the window planner. Practical guidance from the makers, not Microsoft guidance.
   planning: {
-    note: 'Typical ranges from practice, not Microsoft guidance. Your timeline depends on the number of workspaces, tenants, automation rules, playbooks and integrations. Adjust them to your organisation.',
+    note: 'Example ranges from practice, not Microsoft guidance. Your timeline depends on the number of workspaces, tenants, automation rules, playbooks and integrations. Adjust them to your organisation.',
     phases: [
       { id: 'prepare', label: 'Prepare: find what changes, fix or accept it', lean: [1, 2], smaller: [2, 4], larger: [4, 8] },
       { id: 'test', label: 'Test run (optional, if you have a test environment)', lean: [1, 1], smaller: [1, 2], larger: [2, 3] },
@@ -238,7 +238,7 @@ export const REFERENCE = {
     ],
     changeDay: 'Pick a Tuesday to Thursday morning for the change, never a Friday or the day before a holiday, so the team that made it is there for the first days.',
     change: 'The change itself: plan one attended working day. Connecting a workspace takes minutes; the rest of the day is for checks.',
-    larger: 'Your answers suggest a larger environment (several workspaces or tenants, or playbooks), so the planner uses the longer ranges.',
+    larger: 'Your answers suggest a larger environment, so the planner uses the longer ranges.',
     smaller: 'Your answers suggest a standard environment, so the planner uses the middle ranges.',
     lean: 'Your answers suggest one workspace with few dependencies, so the planner uses the shortest ranges. A small team working on this part-time can often prepare in one to two weeks.',
     profiles: [
@@ -251,8 +251,8 @@ export const REFERENCE = {
       title: 'How the planner picks its ranges',
       points: [
         'Small team: one workspace, one tenant, no playbooks and no ticketing integration.',
-        'Larger: several workspaces or tenants, playbooks, a ticketing integration, or more than two workspaces in your list.',
-        'Standard: everything in between, including answers you have not given yet.',
+        'Larger: several tenants, more than two workspaces in your list, or two signs together (more than one workspace, playbooks, a ticketing integration).',
+        'Standard: everything in between, including one of those signs on its own, and answers you have not given yet.',
         'Pick another profile if your team knows better. These are practical estimates from the makers, not Microsoft guidance.',
       ],
     },
@@ -270,7 +270,7 @@ export const REFERENCE = {
     { date: '2025-07-31', event: 'Ingestion into the legacy ThreatIntelligenceIndicator table stopped.', sources: ['ti'] },
     { date: '2026-03', event: 'Playbooks called directly from analytics rules (classic alert automation) were deprecated.', sources: ['runplaybooks'] },
     { date: '2026-08-01', event: 'Microsoft Defender Threat Intelligence (standalone) reached end of life. Its capabilities are available at no extra cost in the Defender portal.', sources: ['mdtieol', 'tiexplorer'] },
-    { date: '2026-08-18', event: 'Microsoft Sentinel was retired in Azure operated by 21Vianet.', sources: ['residency'] },
+    { date: '2026-08-18', event: 'Microsoft Sentinel was retired in Azure operated by 21Vianet.', sources: ['featureavail'] },
     { date: '2027-03-31', event: 'After this date, Microsoft Sentinel is no longer supported in the Azure portal and is available only in the Defender portal.', sources: ['defportal', 'overview'] },
   ],
   portalMap: [

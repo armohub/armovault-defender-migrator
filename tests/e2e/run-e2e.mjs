@@ -49,7 +49,7 @@ async function launch() {
   return { ctx, page };
 }
 function watch(page) {
-  page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(m.text()); });
+  page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push(`${m.text()} (on ${page.url().replace(/^.*#/, '#')})`); });
   page.on('pageerror', (e) => consoleErrors.push(`pageerror: ${e.message}`));
 }
 
@@ -169,7 +169,14 @@ await step('Create a tailored project with browser autosave', async () => {
   await page.getByLabel(/^Your name/).fill('E2E Operator');
   await page.getByLabel('Your role (optional)').fill('Tester');
   await btn(page, 'Continue').click();
-  await page.getByLabel('Workspace alias').first().fill('E2E-PROD');
+  // Timing: the deadline is restated here.
+  await page.getByText('Microsoft states that after', { exact: false }).waitFor();
+  await btn(page, 'Continue').click();
+  // Workspaces: import or type them in. A choice is needed.
+  await btn(page, 'Continue').click();
+  await page.getByText('Choose how to add your workspaces.').waitFor();
+  await page.getByText('Type them in myself', { exact: true }).click();
+  await page.getByLabel('Workspace name or alias').first().fill('E2E-PROD');
   await btn(page, 'Continue').click();
   await page.getByText('Autosave in this browser', { exact: true }).click();
   await page.getByText('The data is not encrypted.', { exact: false }).waitFor();
@@ -237,12 +244,23 @@ await step('Applicability: "I don\'t know yet" keeps steps in scope; "No" sets s
   assert.equal(await visibleCodes(page), null, 'no item codes on the stage page');
 });
 
+// Chooses a person in a person list, adding them with "Add a new person" when the list does not have them yet.
+async function pickPerson(pg, sel, name, role = '') {
+  if (await sel.locator(`option[value="${name}"]`).count()) { await sel.selectOption(name); return; }
+  await sel.selectOption('__new__');
+  await dlg(pg).getByRole('heading', { name: 'Add a new person' }).waitFor();
+  await dlg(pg).getByLabel('Name').fill(name);
+  if (role) await dlg(pg).getByLabel('Role').fill(role);
+  await clickDlg(pg, 'Add');
+  await dlg(pg).waitFor({ state: 'detached' });
+}
+
 await step('Step page: cross-references are links, and "do it here" buttons act on the step', async () => {
   await go(page, '#/item/PREP-SCOPE-03');
   assert.equal(await visibleCodes(page), null, 'no item codes in step guidance');
   await page.locator('.steps').getByRole('button', { name: 'Add the decision to the register' }).click();
-  await dlg(page).getByRole('heading', { name: 'New decision' }).waitFor();
-  await dlg(page).getByLabel('Title').fill('Window approved for November');
+  await dlg(page).getByRole('heading', { name: 'Record a decision' }).waitFor();
+  await dlg(page).getByLabel('What was decided').fill('Window approved for November');
   await clickDlg(page, 'Add');
   await page.locator('.register-actions').getByText('Decision: Window approved for November').waitFor();
   // The window is planned right in the step, and the planner reacts to it.
@@ -258,7 +276,11 @@ await step('Step page: cross-references are links, and "do it here" buttons act 
   assert.equal(await page.locator('#sec-window').getByLabel('Window from').inputValue(), '2026-11-17');
   await go(page, '#/item/PREP-SCOPE-03');
   const owner = page.locator('[data-focus-key="owner-PREP-SCOPE-03"]');
-  await owner.fill('Change manager');
+  await pickPerson(page, owner, 'Change manager', 'Project manager');
+  assert.equal(await page.locator('[data-focus-key="owner-PREP-SCOPE-03"]').inputValue(), 'Change manager');
+  assert.ok(await page.locator('[data-focus-key="owner-PREP-SCOPE-03"] option', { hasText: 'Change manager (Project manager)' }).count(), 'the new person is listed with their role');
+  // The window entered here is shown, not asked again.
+  await page.locator('#do-it-here').getByText('Your window:', { exact: false }).waitFor();
   await page.locator('.nav-card.next').waitFor();
   await page.locator('[data-focus-key="next-step-top"]').waitFor();
 });
@@ -268,12 +290,12 @@ await step('Cancel closes a dialog without saving; a check on the input keeps it
   const follow = page.locator('.register-actions');
   const linked = await follow.locator('.list-row').count();
   await follow.getByRole('button', { name: 'Decision', exact: true }).click();
-  await dlg(page).getByRole('heading', { name: 'New decision' }).waitFor();
+  await dlg(page).getByRole('heading', { name: 'Record a decision' }).waitFor();
   // An empty title is refused and the dialog stays open.
   await clickDlg(page, 'Add');
-  await page.getByText('Please enter a title.').waitFor();
+  await page.getByText('Please fill in "What was decided".').waitFor();
   assert.equal(await dlg(page).count(), 1, 'the check keeps the dialog open');
-  await dlg(page).getByLabel('Title').fill('Typed, then cancelled');
+  await dlg(page).getByLabel('What was decided').fill('Typed, then cancelled');
   await clickDlg(page, 'Cancel');
   await dlg(page).waitFor({ state: 'detached' });
   assert.equal(await page.locator('dialog[open]').count(), 0, 'Cancel closes the register dialog');
@@ -297,11 +319,11 @@ await step('Do it here: owners flow into steps, workspaces into reports, briefin
   await go(page, '#/item/PREP-SCOPE-02');
   // Detailed mode asks first whether the team wants to record owners.
   await page.locator('#do-it-here').getByRole('button', { name: 'Yes, record owners' }).click();
-  await page.locator('input[id="own-prepare:access"]').fill('IAM team');
+  await pickPerson(page, page.locator('select[id="own-prepare:access"]'), 'IAM team', 'Identity and access management');
   await page.locator('#do-it-here').getByRole('button', { name: 'Save', exact: true }).click();
   await page.waitForTimeout(200);
   await go(page, '#/item/PREP-ACC-01');
-  assert.equal(await page.locator('[data-focus-key="owner-PREP-ACC-01"]').getAttribute('placeholder'), 'IAM team');
+  assert.equal(await page.locator('[data-focus-key="owner-PREP-ACC-01"] option').first().textContent(), 'Workstream lead: IAM team');
   await go(page, '#/item/PREP-TOP-01');
   await page.locator('#do-it-here').getByRole('button', { name: 'Add a workspace' }).click();
   await page.locator('[data-focus-key="env-alias-1"]').fill('E2E-PROD-NEU');
@@ -310,7 +332,7 @@ await step('Do it here: owners flow into steps, workspaces into reports, briefin
   await go(page, '#/project/environments');
   await page.locator('#sec-environments').getByText('E2E-PROD-NEU').first().waitFor();
   await go(page, '#/item/PREP-SCOPE-01');
-  await page.locator('#do-it-here').getByRole('heading', { name: 'What stays the same' }).waitFor();
+  await page.locator('#do-it-here .email-fold > summary').getByText('Show the email').waitFor();
   await page.locator('#do-it-here').getByRole('button', { name: 'Copy email' }).waitFor();
   assert.match(await page.locator('#do-it-here a', { hasText: 'Open in email app' }).getAttribute('href'), /^mailto:\?subject=/);
   await btn(page, 'Leave for now').click();
@@ -322,6 +344,7 @@ await step('Do it here: owners flow into steps, workspaces into reports, briefin
 await step('Dates: typing never redraws the page, and the window cannot end before it starts', async () => {
   await go(page, '#/item/PREP-SCOPE-03');
   const tool = page.locator('#do-it-here');
+  await tool.getByRole('button', { name: 'Change the dates' }).click();
   const from = tool.getByLabel('Window from');
   const to = tool.getByLabel('Window to');
   await from.fill('2026-12-05');
@@ -340,12 +363,12 @@ await step('Dates: typing never redraws the page, and the window cannot end befo
 await step('Owners: a lead per workstream, more people with what they cover, and a step of its own', async () => {
   await go(page, '#/item/PREP-SCOPE-02');
   const tool = page.locator('#do-it-here');
-  await tool.getByLabel('Scope, governance and timeline: lead').fill('E2E Lead');
+  await pickPerson(page, tool.getByLabel('Scope, governance and timeline: lead'), 'E2E Lead');
   await tool.locator('.ws-owner').first().locator('details.ws-more > summary').click();
   await tool.locator('.ws-owner').first().getByRole('button', { name: 'Add a person' }).click();
   await page.keyboard.type('E2E Planner');
   await tool.getByLabel('Scope, governance and timeline: what person 1 covers').fill('timeline');
-  await tool.locator('[id="own-step-PREP-SCOPE-03"]').fill('E2E Planner');
+  await tool.locator('[id="own-step-PREP-SCOPE-03"]').selectOption('E2E Planner');
   await tool.getByRole('button', { name: 'Save', exact: true }).last().click();
   await page.waitForTimeout(200);
   await go(page, '#/item/PREP-SCOPE-03');
@@ -357,13 +380,19 @@ await step('Owners: a lead per workstream, more people with what they cover, and
 await step('Briefing: one email per reader, and each change says what it means', async () => {
   await go(page, '#/item/PREP-SCOPE-01');
   const tool = page.locator('#do-it-here');
-  await tool.getByRole('heading', { name: 'If something goes wrong' }).waitFor();
+  // The email is folded until you open it; for leadership it is a short note.
+  assert.equal(await tool.locator('.email-fold[open]').count(), 0, 'the email starts folded');
+  await tool.locator('.email-fold > summary').click();
   await tool.getByText('In short:').waitFor();
+  assert.equal(await tool.getByRole('heading', { name: 'If something goes wrong' }).count(), 0, 'the leadership note has headlines only');
   assert.equal(await tool.getByText('A few investigation features work differently.').count(), 0, 'the SOC-only point is not in the leadership email');
   await tool.locator('label.choice', { hasText: 'SOC team' }).click();
+  await tool.locator('.email-fold > summary').click();
+  await tool.getByRole('heading', { name: 'If something goes wrong' }).waitFor();
   await tool.getByText('A few investigation features work differently.').waitFor();
   assert.match(await tool.locator('.email-subject').textContent(), /what changes for the SOC/);
   await tool.locator('label.choice', { hasText: 'A client we serve' }).click();
+  await tool.locator('.email-fold > summary').click();
   await tool.getByText('As your security service provider, we plan and run this move with you.', { exact: false }).waitFor();
   const href = await tool.locator('a', { hasText: 'Open in email app' }).getAttribute('href');
   assert.ok(href.length <= 2000, `mailto link is ${href.length} characters`);
@@ -396,9 +425,9 @@ await step('Decision helper: a verdict only where the step gives one, and the sa
   await tool.getByText('Save your choice, then record it as a decision.').waitFor();
   await tool.getByRole('button', { name: 'Save', exact: true }).click();
   await tool.getByRole('button', { name: 'Record as a decision' }).click();
-  await dlg(page).getByRole('heading', { name: 'New decision' }).waitFor();
-  assert.equal(await dlg(page).getByLabel('Title').inputValue(), 'Unified RBAC for Sentinel: Activate unified RBAC per workspace, after the transition');
-  const desc = await dlg(page).getByLabel('Description').inputValue();
+  await dlg(page).getByRole('heading', { name: 'Record a decision' }).waitFor();
+  assert.equal(await dlg(page).getByLabel('What was decided').inputValue(), 'Unified RBAC for Sentinel: Activate unified RBAC per workspace, after the transition');
+  const desc = await dlg(page).getByLabel(/^Why, and any conditions/).inputValue();
   assert.match(desc, /Why:\n- You need row-level access/);
   assert.match(desc, /Do service principals or managed identities have Sentinel roles\? Yes/);
   await clickDlg(page, 'Add');
@@ -460,7 +489,7 @@ await step('Failed status requires a reason; exception with named acceptance is 
   await clickDlg(page, 'Save');
   await page.locator('button[role="radio"][aria-checked="true"][title^="Failed"]').waitFor();
   await page.locator('.register-actions').getByRole('button', { name: 'Exception', exact: true }).click();
-  await dlg(page).getByLabel('Title').fill('Accept until the redesign');
+  await dlg(page).getByLabel('What is accepted').fill('Accept until the redesign');
   await dlg(page).getByLabel('Accepted by').fill('CISO Example');
   await dlg(page).getByLabel('Their role').fill('CISO');
   await dlg(page).getByLabel('Rationale and compensating controls').fill('Monitor automation health daily until fixed.');
@@ -654,6 +683,8 @@ await step('Full-checklist project without autosave warns about unsaved work', a
   await page.getByLabel(/^Your name/).fill('Second Operator');
   await btn(page, 'Continue').click();
   await btn(page, 'Continue').click();
+  await page.getByText('Type them in myself', { exact: true }).click();
+  await btn(page, 'Continue').click();
   await page.getByText('I save project packages myself (default)', { exact: true }).click();
   await btn(page, 'Continue').click();
   await page.locator('label.choice', { has: page.getByText('Detailed', { exact: true }) }).click();
@@ -711,7 +742,11 @@ await step('Simplified: six questions, missions with progress, a mission questio
   await pg.getByRole('button', { name: 'Start my project' }).click();
   await pg.getByLabel('Project or customer label').fill('Simplified E2E');
   await pg.getByLabel('Your name').fill('Tess');
-  for (let i = 0; i < 3; i++) await btn(pg, 'Continue').click();
+  await btn(pg, 'Continue').click();
+  await btn(pg, 'Continue').click();
+  await pg.getByText('Type them in myself', { exact: true }).click();
+  await btn(pg, 'Continue').click();
+  await btn(pg, 'Continue').click();
   await pg.locator('label.choice.selected', { hasText: 'Simplified (recommended)' }).waitFor();
   await pg.getByLabel(/I understand this assistant gives guidance only/).check();
   await btn(pg, 'Create my project').click();
@@ -738,7 +773,11 @@ await step('Simplified: six questions, missions with progress, a mission questio
   await dlg(pg).getByLabel('I have checked this attachment', { exact: false }).check();
   await clickDlg(pg, 'Add evidence');
   await pg.locator('.crow.open .crow-proof.yes').waitFor();
-  await pg.locator('.crow.open').getByRole('button', { name: 'Done', exact: true }).click();
+  // The proof shows on the check itself, and the buttons now offer to add another.
+  await pg.locator('.crow.open .crow-proofs').getByText('1 proof attached').waitFor();
+  await pg.locator('.crow.open .crow-proofs img.crow-thumb').waitFor();
+  await pg.locator('.crow.open').getByRole('button', { name: 'Add another screenshot or file' }).waitFor();
+  await pg.locator('.crow.open').getByRole('button', { name: 'Done, with proof', exact: true }).click();
   await pg.waitForTimeout(300);
   assert.equal(await pg.getByText('top right or bottom of the page', { exact: false }).count(), 0, 'no Detailed-only hint in a mission');
   assert.notEqual(await pg.locator('.crow.open .crow-title').textContent(), firstTitle, 'Done opens the next row');
@@ -756,7 +795,7 @@ await step('Simplified: six questions, missions with progress, a mission questio
   const dec = pg.locator('.crow', { hasText: 'Decide on incident correlation and grouping' });
   await dec.locator('.crow-head').click();
   await dec.getByRole('button', { name: 'Record decision' }).click();
-  assert.match(await dlg(pg).getByLabel('Title').inputValue(), /Decide on incident correlation and grouping/);
+  assert.match(await dlg(pg).getByLabel('What was decided').inputValue(), /Decide on incident correlation and grouping/);
   await clickDlg(pg, 'Cancel');
   // A copied ready text can become the proof straight away.
   await go(pg, '#/mission/prepare/operations');
@@ -825,6 +864,57 @@ await step('Several inventory files import together, one dialog per workspace, a
   assert.equal(await pg.getByText(/Inventory file E2E-WS-B/).count(), 0, 'the skipped file is not attached');
   assert.ok(await pg.getByText(/Inventory file E2E-WS-C/).count() > 0, 'the third file is attached');
   await c5.close();
+});
+
+await step('Setup: import the inventory, choose the workspaces in scope, and the questions show what was filled in', async () => {
+  const sample = JSON.parse(fs.readFileSync(path.resolve('samples/sample-inventory.json'), 'utf8'));
+  const files = [['law-soc-weu', 'westeurope'], ['law-soc-neu', 'northeurope'], ['law-lab', 'westeurope']].map(([alias, region]) => {
+    const f = path.join(work, `inventory-${alias}.json`);
+    fs.writeFileSync(f, JSON.stringify({ ...sample, workspace: { alias, region } }));
+    return f;
+  });
+  const c6 = await chromium.launch({ channel, headless });
+  const ctx6 = await c6.newContext({ viewport: { width: 1440, height: 1000 } });
+  ctx6.on('request', (r) => { const u = r.url(); if (/^(https?|wss?):/i.test(u)) network.push(u); });
+  const pg = await ctx6.newPage();
+  watch(pg);
+  await pg.goto(appUrl);
+  await pg.getByRole('button', { name: 'Skip intro' }).click();
+  await pg.getByRole('button', { name: 'Start my project' }).click();
+  await pg.getByLabel('Project or customer label').fill('Imported E2E');
+  await pg.getByLabel('Your name').fill('Ines');
+  await btn(pg, 'Continue').click();
+  await btn(pg, 'Continue').click();
+  await pg.getByText('Run the inventory script and import its results (recommended)').click();
+  await pg.locator('pre.code', { hasText: '-Discover' }).waitFor();
+  await chooseFile(pg, () => btn(pg, 'Choose the inventory files').click(), files);
+  await pg.getByRole('heading', { name: 'Found 3 workspaces. Which are in scope?' }).waitFor();
+  assert.equal(await pg.locator('.import-ws').nth(2).locator('select').inputValue(), 'test', 'a lab workspace is proposed as test');
+  await pg.locator('[data-focus-key="imp-scope-2"]').uncheck();
+  await pg.getByRole('heading', { name: 'Answers the import fills in for you' }).waitFor();
+  await pg.locator('.list-row', { hasText: 'Is more than one Sentinel-enabled workspace in scope in this tenant?' }).waitFor();
+  await btn(pg, 'Continue').click();
+  await btn(pg, 'Continue').click();
+  await pg.getByText(/already filled in from your inventory/).waitFor();
+  await pg.getByLabel(/I understand this assistant gives guidance only/).check();
+  await btn(pg, 'Create my project').click();
+  // Questions in focus: the left pane shows only the setup progress.
+  await pg.getByText('answer is already filled in from your inventory', { exact: false }).or(pg.getByText('answers are already filled in from your inventory', { exact: false })).first().waitFor();
+  assert.equal(await pg.locator('.sidebar-focus').count(), 1, 'the questions open in focus');
+  assert.equal(await pg.locator('.sidebar a[href="#/register"]').count(), 0, 'no way out to other pages by mistake');
+  assert.equal(await pg.getByText('inventory script', { exact: false }).count(), 0, 'no second invitation to run the script');
+  await go(pg, '#/questionnaire/q/multi_workspace');
+  await pg.getByText('Filled in from your inventory').waitFor();
+  assert.equal(await pg.locator('[data-answer="yes"][aria-checked="true"]').count(), 1);
+  // Leaving early: the overview says how many are open and takes you back.
+  await pg.getByRole('link', { name: 'Leave the questions for later' }).click();
+  await pg.getByRole('link', { name: 'Continue the questions' }).waitFor();
+  await go(pg, '#/project/environments');
+  await pg.locator('#sec-environments').getByText('law-soc-neu').first().waitFor();
+  assert.equal(await pg.locator('#sec-environments').getByText('law-lab').count(), 0, 'the unticked workspace is left out');
+  await go(pg, '#/item/PREP-DET-01');
+  assert.ok(await pg.getByText(/Inventory file law-soc-weu/).count() > 0, 'each imported file is kept as evidence');
+  await c6.close();
 });
 
 await step('Explainers: the Defender table review says first that nothing is lost; the planner offers a small-team profile', async () => {

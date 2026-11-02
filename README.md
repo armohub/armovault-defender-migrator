@@ -29,13 +29,15 @@ Microsoft states that *"After March 31, 2027, Microsoft Sentinel will no longer 
 - **A register** of decisions, risks, issues, actions and exceptions, linked to the steps they belong to.
 - **Reports** for each stage and a final report. Print them or save them as PDF offline. Frozen **snapshots** carry a SHA-256 fingerprint.
 - **Project packages (.zip)** with SHA-256 integrity hashes (they detect corruption, they are not signatures), for backup, resuming and hand-over. JSON and CSV exports too.
-- **Import-based assistance.** A read-only PowerShell inventory script (GET requests only) that you run yourself. The assistant turns its output into labelled "imported" evidence and suggested answers, which you confirm.
+- **Import-based assistance.** A read-only PowerShell inventory script (GET requests only) that you run yourself. With `-Discover` it finds the Sentinel workspaces you can read. The assistant turns its output into the workspace list, labelled "imported" evidence and suggested answers, which you confirm.
 
 ## What you'll see
 
 - **A short introduction on first start.** About four seconds, with six promises: no internet needed, processed on this device, your data stays with you, grounded in Microsoft Learn (120 pages), built by practitioners, open for review. It closes with "Your data is yours." and the makers' words, "Built to make your migration journey easy." Focus starts on **Skip intro**, and Escape closes it too. With reduced motion, everything appears at once. Replay it from **About** or **Settings and data**. Later starts show a short splash.
 - **A welcome page** with three ways in: **Start my project**, **Open a saved project** and **Try the demo**.
-- **A new project in four steps:** about the project, timing and scope, where to keep your work, and how to work (Simplified or Detailed, tailored or full checklist).
+- **A new project in five steps:** about the project, timing (with the 31 March 2027 date restated), your workspaces, where to keep your work, and how to work (Simplified or Detailed, tailored or full checklist).
+- **Workspaces imported or typed in.** Run the read-only inventory script with `-Discover` and import its files: the assistant lists the Sentinel workspaces it found, you tick the ones in scope, and the answers it can fill in are shown for you to confirm. Or type the names in, with help on where to find them.
+- **Questions in focus.** While you answer the setup questions, the left pane shows only your setup progress, so nothing pulls you away by mistake. If you leave, the overview shows how many are still open and takes you back.
 - **One question per screen.** Section progress across six sections, answers by click or keys 1 to 4, and Enter for the next question. After Yes or No you can move on by yourself (a setting you can turn off). Every question has "Why we ask" and "Where to find the answer". "I don't know yet" keeps the steps in your plan and can add a "find out" action to the register. The end screen shows real counts, then a short "Building your plan" sequence takes you to the overview. **Your answers** shows every answer on one page for review.
 - **A guided overview.** Your next step is the headline, with **Start this step** and **Why this one?**. Below it: the route, a **Start here** checklist from setup to the final report, **Needs your attention**, and key dates.
 - **The route.** One line from "Azure portal" to "Defender portal" with a stop for each of the four stages and a **You are here** marker.

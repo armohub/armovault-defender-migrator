@@ -1,15 +1,15 @@
 // "Do it here" tools: the forms a step needs, right inside the step, so information is entered once
 // and reused everywhere it is needed (project setup, other steps, reports).
-import { h, icon, toast, field, copyText, savedPulse, externalLink } from './dom.js';
+import { h, icon, toast, field, copyText, savedPulse, externalLink, modal } from './dom.js';
 import { state, mutate } from '../app/store.js';
 import { render } from './shell.js';
 import { readyText, emailActions } from './templates.js';
-import { setPlanProfile, setOwnersWanted, setEnvironments, setPlannedPrimary, plannedPrimaryOf, plannedRole, setWorkstreamOwners, setWorkstreamPeople, cleanWorkstreamPeople, setApprovers, setCheckField, DEFENDER_STATES, ENV_KINDS, workstreamKey, knownPeople, addAudit, setHelper, MAX_HELPER_SUBJECTS } from '../core/model.js';
+import { setPlanProfile, setOwnersWanted, setEnvironments, setPlannedPrimary, plannedPrimaryOf, plannedRole, setWorkstreamOwners, setWorkstreamPeople, cleanWorkstreamPeople, setApprovers, setCheckField, DEFENDER_STATES, ENV_KINDS, workstreamKey, knownPeople, addAudit, setHelper, MAX_HELPER_SUBJECTS, addPerson, peopleWithRoles } from '../core/model.js';
 import { applicabilityMap } from '../core/applicability.js';
 import { evaluateHelper, decisionDraft } from '../core/decision-helper.js';
 import { formatDate } from '../core/util.js';
 import { btn, callout, infoTip } from './components.js';
-import { planProfile, suggestedProfile } from '../core/planning.js';
+import { planProfile, suggestedProfile, profileReasons } from '../core/planning.js';
 import { rich, renderList } from './rich.js';
 import { editRegisterItem } from './views/records.js';
 
@@ -18,6 +18,49 @@ const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 // Names the project already knows, offered as suggestions in every name field.
 export function peopleList() {
   return h('datalist', { id: 'people-list' }, knownPeople(state.project).map((n) => h('option', { value: n })));
+}
+
+// A person list: everyone the project knows, with their role, and "Add a new person" at the end. A new person
+// is recorded with a role, so they appear in every other person list too. Rebuilds itself, so it also works in dialogs.
+const ROLE_SUGGESTIONS = ['SOC lead', 'SOC analyst', 'Detection engineer', 'Security architect', 'Security engineer', 'Project manager', 'Identity and access management', 'Data protection and compliance', 'Change advisory board', 'Ticketing (ITSM) owner', 'Cloud platform team'];
+const NEW_PERSON = '__new__';
+// extra: names not saved yet that the list should still offer (for example people typed into the same form).
+export function personPicker({ value = '', onChange, label, focusKey, placeholder = 'Not set', id, cls, extra } = {}) {
+  let current = String(value || '');
+  const sel = h('select', { id, class: ['person-picker', cls], 'aria-label': label, 'data-focus-key': focusKey });
+  const fill = () => {
+    const people = peopleWithRoles(state.project);
+    for (const n of (extra ? extra() : []).map((x) => String(x || '').trim()).filter(Boolean)) if (!people.some((x) => x.name === n)) people.push({ name: n, role: '' });
+    if (current && !people.some((x) => x.name === current)) people.unshift({ name: current, role: '' });
+    sel.replaceChildren(
+      h('option', { value: '', selected: !current }, placeholder),
+      ...people.map((x) => h('option', { value: x.name, selected: x.name === current }, x.role ? `${x.name} (${x.role})` : x.name)),
+      h('option', { value: NEW_PERSON }, '+ Add a new person'));
+  };
+  fill();
+  sel.addEventListener('change', async () => {
+    if (sel.value !== NEW_PERSON) { current = sel.value; if (onChange) onChange(current); return; }
+    const name = h('input', { type: 'text', maxlength: '200', placeholder: 'Name or team' });
+    const role = h('input', { type: 'text', maxlength: '200', list: 'person-role-list', placeholder: 'For example: SOC lead' });
+    const res = await modal({
+      title: 'Add a new person',
+      body: h('div', { class: 'stack' },
+        h('p', { class: 'small muted' }, 'They are added to the project and offered in every person list, with their role.'),
+        field('Name', name, { required: true }), field('Role', role, { hint: 'What they do in this project, or their job title.' }),
+        h('datalist', { id: 'person-role-list' }, ROLE_SUGGESTIONS.map((r) => h('option', { value: r })))),
+      actions: [{ label: 'Cancel', value: null }, { label: 'Add', kind: 'primary', value: () => (name.value.trim() ? { name: name.value.trim(), role: role.value.trim() } : (toast('Please enter a name.', 'bad'), null)) }],
+      onOpen: () => name.focus(),
+    });
+    if (!res) { fill(); return; }
+    const out = mutate((pr) => addPerson(pr, res), { silent: true });
+    if (!out || !out.ok) { toast((out && out.error) || 'The person could not be added.', 'bad'); fill(); return; }
+    current = out.name;
+    fill();
+    savedPulse(`${out.name} added`);
+    if (onChange) onChange(current);
+  });
+  sel.refill = fill;
+  return sel;
 }
 
 function saveBar(dirty, onSave, onDiscard, savedText) {
@@ -49,7 +92,9 @@ export function workspaceTool({ show = 'all' } = {}) {
   const multiTenant = (state.project.answers.multi_tenant && state.project.answers.multi_tenant.value === 'yes') || rows.some((r) => r.tenant);
   const dirty = JSON.stringify(rows) !== envDraft.base;
   const sel = (value, options, onchange, label) => h('select', { 'aria-label': label, onchange: (e) => { onchange(e.target.value); render(); } }, options.map(([v, l]) => h('option', { value: v, selected: value === v }, l)));
-  const inp = (row, key, label, attrs = {}) => field(label, h('input', { type: 'text', value: row[key] || '', maxlength: '200', list: key === 'owner' ? 'people-list' : null, oninput: (e) => { row[key] = e.target.value; refresh(); }, ...attrs }));
+  const inp = (row, key, label, attrs = {}) => field(label, key === 'owner'
+    ? personPicker({ value: row.owner, label, onChange: (v) => { row.owner = v; refresh(); } })
+    : h('input', { type: 'text', value: row[key] || '', maxlength: '200', oninput: (e) => { row[key] = e.target.value; refresh(); }, ...attrs }));
   const cards = rows.map((r, i) => h('div', { class: 'ws-card' },
     h('div', { class: 'ws-card-head' }, h('strong', null, r.alias || `Workspace ${i + 1}`),
       rows.length > 1 ? h('button', { type: 'button', class: 'btn-icon', 'aria-label': `Remove ${r.alias || `workspace ${i + 1}`}`, onclick: () => { rows.splice(i, 1); render(); } }, icon('trash', 'icon-sm')) : null),
@@ -182,20 +227,24 @@ export function ownersTool({ simple, setupPage = false } = {}) {
     const named = people.filter((x) => x.name.trim()).length;
     const ownSteps = steps.filter((c) => (d.steps[c.id] || '').trim()).length;
     const team = h('datalist', { id: `team-${key}` });
-    const fillTeam = () => team.replaceChildren(...[...new Set([d.owners[key], ...people.map((x) => x.name), ...knownPeople(p)].map((n) => String(n || '').trim()).filter(Boolean))].map((n) => h('option', { value: n })));
+    const stepPickers = [];
+    const teamNames = () => [d.owners[key], ...people.map((x) => x.name)];
+    const fillTeam = () => { team.replaceChildren(...[...new Set([...teamNames(), ...knownPeople(p)].map((n) => String(n || '').trim()).filter(Boolean))].map((n) => h('option', { value: n }))); stepPickers.forEach((x) => x.refill()); };
     fillTeam();
     const counts = () => [named ? `${named} more ${named === 1 ? 'person' : 'people'}` : '', ownSteps ? `${ownSteps} of ${steps.length} steps with their own owner` : ''].filter(Boolean).join(', ');
     const personRow = (x, i) => h('div', { class: 'person-row' },
       h('input', { type: 'text', list: 'people-list', maxlength: '200', placeholder: 'Name or team', 'aria-label': `${ws.title}: person ${i + 1}`, value: x.name, 'data-focus-key': `ppl-${key}-${i}`, oninput: (e) => { x.name = e.target.value; fillTeam(); refresh(); } }),
       h('input', { type: 'text', maxlength: '200', placeholder: 'What they cover', 'aria-label': `${ws.title}: what person ${i + 1} covers`, value: x.covers, oninput: (e) => { x.covers = e.target.value; refresh(); } }),
       h('button', { type: 'button', class: 'btn-icon', 'aria-label': `Remove ${x.name || `person ${i + 1}`} from ${ws.title}`, onclick: () => { people.splice(i, 1); render(); } }, icon('trash', 'icon-sm')));
-    const stepRow = (c) => h('div', { class: 'owner-row step-owner' },
-      h('label', { for: `own-step-${c.id}` }, c.title),
-      h('input', { id: `own-step-${c.id}`, type: 'text', list: `team-${key}`, maxlength: '200', placeholder: d.owners[key] ? `Lead: ${d.owners[key]}` : 'Name or team', value: d.steps[c.id] || '', 'data-focus-key': `own-step-${c.id}`, oninput: (e) => { d.steps[c.id] = e.target.value; refresh(); } }));
+    const stepRow = (c) => {
+      const picker = personPicker({ id: `own-step-${c.id}`, value: d.steps[c.id] || '', placeholder: d.owners[key] ? `Lead: ${d.owners[key]}` : 'Not set', focusKey: `own-step-${c.id}`, extra: teamNames, onChange: (v) => { d.steps[c.id] = v; refresh(); } });
+      stepPickers.push(picker);
+      return h('div', { class: 'owner-row step-owner' }, h('label', { for: `own-step-${c.id}` }, c.title), picker);
+    };
     return h('div', { class: 'ws-owner' },
       h('div', { class: 'owner-row' },
         h('label', { for: `own-${key}` }, ws.title, h('span', { class: 'small muted' }, ` ${steps.length} step${steps.length === 1 ? '' : 's'}`)),
-        h('input', { id: `own-${key}`, type: 'text', list: 'people-list', maxlength: '200', placeholder: 'Lead: name or team', 'aria-label': `${ws.title}: lead`, value: d.owners[key] || '', 'data-focus-key': `own-${key}`, oninput: (e) => { d.owners[key] = e.target.value; fillTeam(); refresh(); } })),
+        personPicker({ id: `own-${key}`, value: d.owners[key] || '', placeholder: 'Lead: not set', label: `${ws.title}: lead`, focusKey: `own-${key}`, onChange: (v) => { d.owners[key] = v; fillTeam(); refresh(); } })),
       disclose(`ws:${key}`, 'ws-more', ['More people and step owners', h('span', { class: 'small muted' }, counts())],
         h('div', { class: 'ws-more-body' },
           team,
@@ -222,7 +271,7 @@ export function ownersTool({ simple, setupPage = false } = {}) {
   };
   const approvers = h('div', { class: 'owner-grid' }, d.approvers.map((x, i) => h('div', { class: 'approver-row' },
     h('input', { type: 'text', list: 'role-list', 'aria-label': `Approver role ${i + 1}`, value: x.role, maxlength: '200', placeholder: 'Role', oninput: (e) => { x.role = e.target.value; refresh(); } }),
-    h('input', { type: 'text', list: 'people-list', 'aria-label': `Approver name ${i + 1}`, value: x.name, maxlength: '200', placeholder: 'Name', 'data-focus-key': `appr-${i}`, oninput: (e) => { x.name = e.target.value; refresh(); } }),
+    personPicker({ value: x.name, label: `Approver name ${i + 1}`, placeholder: 'Choose a name', focusKey: `appr-${i}`, onChange: (v) => { x.name = v; refresh(); } }),
     h('button', { type: 'button', class: 'btn-icon', 'aria-label': `Remove approver ${i + 1}`, onclick: () => { d.approvers.splice(i, 1); render(); } }, icon('trash', 'icon-sm')))));
   function save() {
     const kbv = kb.meta.version;
@@ -313,24 +362,31 @@ export function briefingModel(audienceId = briefAudience) {
   };
 }
 
-// level 0: the full email; 1: headlines only; 2: headlines of the changes only, for the shortest links.
+// level 0: the full email; 1: headlines and the asks (the leadership note); 2: headlines of the changes only, for the shortest links.
 function briefingEmail(m, { level = 0 } = {}) {
   const short = level > 0;
   const text = [
     'Hello,', '',
-    level > 1 ? m.openingShort : m.opening, '',
+    short ? m.openingShort : m.opening, '',
     `In short: ${m.inShort}`, '',
-    'What changes, and what it means:',
+    short ? 'What changes:' : 'What changes, and what it means:',
     ...m.changes.flatMap((x, i) => (short ? [`${i + 1}. ${x.what}`] : [`${i + 1}. ${x.what}`, `   ${x.meaning}`, ''])),
     ...(short ? [''] : []),
-    ...(level > 1 ? [] : ['What stays the same:', ...m.same.map((x) => (short ? `- ${x.what}` : `- ${x.what} ${x.meaning}`)), '']),
+    ...(short ? [] : ['What stays the same:', ...m.same.map((x) => `- ${x.what} ${x.meaning}`), '']),
     ...(short ? [] : ['If something goes wrong:', m.fallback.text, '']),
     'When:', m.when, '',
-    ...(short ? [] : [`${m.asksTitle}:`, ...m.asks.map((x) => `- ${x}`), '', 'Read more (Microsoft Learn):', ...m.links.map((x) => `- ${x.title}: ${x.url}`), '']),
+    ...(level > 1 ? [] : [`${m.asksTitle}:`, ...m.asks.map((x) => `- ${x}`), '']),
+    ...(short ? [] : ['Read more (Microsoft Learn):', ...m.links.map((x) => `- ${x.title}: ${x.url}`), '']),
     m.closing, '',
     'Kind regards,', m.sign,
   ].join('\n');
-  const html = `<p>Hello,</p><p>${esc(m.opening)}</p><p><b>In short:</b> ${esc(m.inShort)}</p>`
+  const html = short
+    ? `<p>Hello,</p><p>${esc(m.openingShort)}</p><p><b>In short:</b> ${esc(m.inShort)}</p>`
+      + `<p><b>What changes</b></p><ol>${m.changes.map((x) => `<li>${esc(x.what)}</li>`).join('')}</ol>`
+      + `<p><b>When</b><br>${esc(m.when)}</p>`
+      + (level > 1 ? '' : `<p><b>${esc(m.asksTitle)}</b></p><ul>${m.asks.map((x) => `<li>${esc(x)}</li>`).join('')}</ul>`)
+      + `<p>${esc(m.closing)}</p><p>Kind regards,<br>${esc(m.sign)}</p>`
+    : `<p>Hello,</p><p>${esc(m.opening)}</p><p><b>In short:</b> ${esc(m.inShort)}</p>`
     + `<p><b>What changes, and what it means</b></p><ol>${m.changes.map((x) => `<li><b>${esc(x.what)}</b><br>${esc(x.meaning)}</li>`).join('')}</ol>`
     + `<p><b>What stays the same</b></p><ul>${m.same.map((x) => `<li><b>${esc(x.what)}</b> ${esc(x.meaning)}</li>`).join('')}</ul>`
     + `<p><b>If something goes wrong</b><br>${esc(m.fallback.text)}</p>`
@@ -341,13 +397,22 @@ function briefingEmail(m, { level = 0 } = {}) {
   return { subject: m.subject, text, html };
 }
 
+// An email preview, folded: the subject and size show; the full text opens on request.
+let openEmails = new Set();
+function emailFold(key, subject, meta, preview) {
+  return h('details', { class: 'disclose email-fold', open: openEmails.has(key), ontoggle: (e) => { if (e.target.open) openEmails.add(key); else openEmails.delete(key); } },
+    h('summary', null, icon('chevron', 'icon-sm'), h('span', null, h('strong', null, subject), h('span', { class: 'small muted' }, meta)), h('span', { class: 'small' }, 'Show the email')),
+    preview);
+}
+
 export function briefingTool() {
   const kb = state.kb;
   const m = briefingModel();
-  const mail = briefingEmail(m);
+  const mail = briefingEmail(m, { level: m.audience.concise ? 1 : 0 });
   const cite = (ids) => (ids || []).map((id) => kb.sources.find((x) => x.id === id)).filter(Boolean);
   const sourceLine = (ids) => (briefSources ? h('span', { class: 'brief-src' }, 'Source: ', ...cite(ids).flatMap((src, i) => [i ? ', ' : '', externalLink(src.url, src.title)])) : null);
-  const point = (x) => h('li', null, h('strong', null, x.what), ' ', x.meaning, sourceLine(x.sources));
+  const concise = !!m.audience.concise;
+  const point = (x) => h('li', null, h('strong', null, x.what), concise ? null : ' ', concise ? null : x.meaning, sourceLine(x.sources));
   const readers = h('fieldset', { class: 'choices brief-readers' }, h('legend', { class: 'small muted' }, 'Who is it for?'),
     kb.reference.briefing.audiences.map((x) => h('label', { class: ['choice', x.id === m.audience.id && 'selected'] },
       h('input', { type: 'radio', name: 'brief-reader', checked: x.id === m.audience.id, 'data-focus-key': `brief-reader-${x.id}`, onchange: () => { briefAudience = x.id; render(); } }),
@@ -355,27 +420,29 @@ export function briefingTool() {
   return h('div', { class: 'tool' },
     readers,
     h('label', { class: 'check-line small brief-toggle' }, h('input', { type: 'checkbox', checked: briefSources, 'data-focus-key': 'brief-sources', onchange: (e) => { briefSources = e.target.checked; render(); } }), ' Show the Microsoft Learn source for each point (for you to check; not part of the email)'),
-    h('article', { class: 'email-preview brief-email', 'aria-label': `Email for ${m.audience.label}` },
-      h('div', { class: 'email-subject' }, h('span', { class: 'muted' }, 'Subject: '), m.subject),
-      h('p', null, 'Hello,'),
-      h('p', null, m.opening),
-      h('p', { class: 'brief-short' }, h('strong', null, 'In short: '), m.inShort),
-      h('h3', null, 'What changes, and what it means'),
-      h('ol', { class: 'brief-points' }, m.changes.map(point)),
-      h('h3', null, 'What stays the same'),
-      h('ul', { class: 'brief-points' }, m.same.map(point)),
-      h('h3', null, 'If something goes wrong'),
-      h('p', null, m.fallback.text, sourceLine(m.fallback.sources)),
-      h('h3', null, 'When'),
-      h('p', null, m.when),
-      h('h3', null, m.asksTitle),
-      h('ul', { class: 'bullets' }, m.asks.map((x) => h('li', null, x))),
-      h('h3', null, 'Read more (Microsoft Learn)'),
-      h('ul', { class: 'bullets' }, m.links.map((x) => h('li', null, externalLink(x.url, x.title)))),
-      h('p', null, m.closing),
-      h('p', null, 'Kind regards,', h('br'), m.sign || h('span', { class: 'muted' }, 'Your name, from Project setup'))),
+    emailFold(`brief-${m.audience.id}`, m.subject, `For ${m.audience.label.toLowerCase()}: ${m.changes.length} changes${concise ? ', headlines only' : ', each with what it means'}, about ${Math.max(1, Math.round(mail.text.split(/\s+/).length / 200))} minute${Math.round(mail.text.split(/\s+/).length / 200) > 1 ? 's' : ''} to read`,
+      h('article', { class: 'email-preview brief-email', 'aria-label': `Email for ${m.audience.label}` },
+        h('div', { class: 'email-subject' }, h('span', { class: 'muted' }, 'Subject: '), m.subject),
+        h('p', null, 'Hello,'),
+        h('p', null, concise ? m.openingShort : m.opening),
+        h('p', { class: 'brief-short' }, h('strong', null, 'In short: '), m.inShort),
+        h('h3', null, concise ? 'What changes' : 'What changes, and what it means'),
+        h('ol', { class: 'brief-points' }, m.changes.map(point)),
+        concise ? null : h('h3', null, 'What stays the same'),
+        concise ? null : h('ul', { class: 'brief-points' }, m.same.map(point)),
+        concise ? null : h('h3', null, 'If something goes wrong'),
+        concise ? null : h('p', null, m.fallback.text, sourceLine(m.fallback.sources)),
+        h('h3', null, 'When'),
+        h('p', null, m.when),
+        h('h3', null, m.asksTitle),
+        h('ul', { class: 'bullets' }, m.asks.map((x) => h('li', null, x))),
+        concise ? null : h('h3', null, 'Read more (Microsoft Learn)'),
+        concise ? null : h('ul', { class: 'bullets' }, m.links.map((x) => h('li', null, externalLink(x.url, x.title)))),
+        h('p', null, m.closing),
+        h('p', null, 'Kind regards,', h('br'), m.sign || h('span', { class: 'muted' }, 'Your name, from Project setup')))),
     m.left.length ? h('p', { class: 'small muted' }, `Left out because you answered No in the questions: ${m.left.map((x) => `"${x.what.replace(/\.$/, '')}"`).join(', ')}.`) : null,
     emailActions(mail, { audit: 'briefing.copied', label: `Briefing for ${m.audience.label}`, short: [briefingEmail(m, { level: 1 }).text, briefingEmail(m, { level: 2 }).text] }),
+    concise ? h('p', { class: 'small muted' }, 'Kept short for leadership: headlines and what we need from them. Choose SOC team for the version that explains each change.') : null,
     h('p', { class: 'small muted' }, 'The email uses your project name, window, workspaces and signature from Project setup. Edit it as you like before sending. The full list of changes is in ', h('a', { href: '#/knowledge/changes' }, 'Feature changes'), '.'));
 }
 
@@ -383,8 +450,9 @@ export function briefingTool() {
 const weeksText = ([a, b]) => (a === b ? `${a} week${a === 1 ? '' : 's'}` : `${a} to ${b} weeks`);
 const addDays = (iso, days) => { const d = new Date(`${iso}T00:00:00Z`); d.setUTCDate(d.getUTCDate() + days); return d.toISOString().slice(0, 10); };
 const winDraft = { id: '', base: '', v: {} };
+let winEditing = '';
 
-export function windowTool() {
+export function windowTool({ setupPage = false } = {}) {
   const p = state.project;
   const plan = state.kb.reference.planning;
   const base = JSON.stringify([p.meta.startDate, p.meta.windowStart, p.meta.windowEnd]);
@@ -392,6 +460,7 @@ export function windowTool() {
   if (winDraft.id !== p.id || (!dirtyNow && winDraft.base !== base)) { winDraft.id = p.id; winDraft.v = { startDate: p.meta.startDate || '', windowStart: p.meta.windowStart || '', windowEnd: p.meta.windowEnd || '' }; winDraft.base = base; }
   const v = winDraft.v;
   const profile = planProfile(p);
+  const why = profileReasons(p);
   const chosenProfile = p.meta.planProfile || 'auto';
   const profileLabel = (id) => (plan.profiles.find((x) => x.id === id) || { label: id }).label;
   const testUsed = p.stages.test.availability === 'available' || (p.answers.test_env && p.answers.test_env.value === 'yes');
@@ -430,15 +499,19 @@ export function windowTool() {
           type: 'button', class: ['seg-btn', chosenProfile === x.id && 'active'], 'aria-pressed': chosenProfile === x.id ? 'true' : 'false', 'data-focus-key': `plan-${x.id}`,
           onclick: () => mutate((pr) => setPlanProfile(pr, x.id)),
         }, x.id === 'auto' ? `${x.label}: ${profileLabel(suggestedProfile(p))}` : x.label)))),
-      h('p', { class: 'small muted' }, chosenProfile === 'auto' ? plan[profile] : `You chose the ${profileLabel(profile).toLowerCase()} ranges.`),
+      h('p', { class: 'small muted profile-why' }, chosenProfile !== 'auto' ? `You chose the ${profileLabel(profile).toLowerCase()} ranges.`
+        : !why.known ? 'Not enough information yet, so the planner uses the standard ranges. Answer the questions or import the inventory, or pick the ranges that fit your team.'
+          : `${plan[profile]}${why.reasons.length ? ` Based on: ${why.reasons.join(', ')}.` : ''}`),
+      callout('caution', 'Example estimates only.', ' These ranges are typical examples from practice, not Microsoft guidance and not a commitment. Your own timeline can be shorter or longer: it depends on your environment, your team and your change process.'),
       h('div', { class: 'table-wrap' }, h('table', { class: 'table' },
-        h('thead', null, h('tr', null, h('th', { scope: 'col' }, 'Phase'), h('th', { scope: 'col', class: 'num' }, 'Typical time'))),
+        h('caption', { class: 'sr-only' }, 'Example time per phase'),
+        h('thead', null, h('tr', null, h('th', { scope: 'col' }, 'Phase'), h('th', { scope: 'col', class: 'num' }, 'Example time'))),
         h('tbody', null,
           ...before.map((ph) => h('tr', null, h('td', null, ph.label), h('td', { class: 'num' }, weeksText(ph.range)))),
           h('tr', null, h('td', null, plan.change), h('td', { class: 'num' }, '1 day')),
           h('tr', null, h('td', null, after.label), h('td', { class: 'num' }, weeksText(after.range)))))),
       v.windowStart && !invalid() ? h('ul', { class: 'bullets', style: { marginTop: '12px' } },
-        h('li', null, 'To reach your window with time to spare, start Prepare by ', h('strong', { class: 'tnum' }, startBy), startBy < today ? '. That date has passed: start now, or consider a later window.' : '.'),
+        h('li', null, 'With these example ranges, start Prepare by about ', h('strong', { class: 'tnum' }, startBy), startBy < today ? '. That date has passed: start now, or consider a later window.' : '.'),
         h('li', null, 'Expect to sign off around ', h('strong', { class: 'tnum' }, doneBy), doneBy > '2027-03-31' ? '. That is after 31 March 2027: consider an earlier window.' : ', comfortably before 31 March 2027.'))
         : h('p', { class: 'small' }, invalid() ? 'Fix the dates above to see when to start each phase.' : 'Enter your window above to see when to start each phase.'),
       h('p', { class: 'small' }, plan.changeDay),
@@ -449,10 +522,22 @@ export function windowTool() {
     if (invalid()) { toast('The window must end on or after the day it starts.', 'bad'); return; }
     mutate((pr) => { Object.assign(pr.meta, { startDate: v.startDate, windowStart: v.windowStart, windowEnd: v.windowEnd }); addAudit(pr, 'project.details', 'Planned transition window updated'); });
     winDraft.id = '';
+    winEditing = '';
     savedPulse('Window saved');
     render();
   }
-  function discard() { winDraft.id = ''; render(); }
+  function discard() { winDraft.id = ''; winEditing = ''; render(); }
+  // The window was given during setup: show it, do not ask again. "Change the dates" opens the fields.
+  const known = !setupPage && p.meta.windowStart && winEditing !== p.id && !dirtyNow;
+  if (known) {
+    refresh();
+    return h('div', { class: 'tool' },
+      h('div', { class: 'window-summary' }, icon('calendar', 'icon-sm'),
+        h('div', null, h('strong', null, p.meta.windowEnd && p.meta.windowEnd !== p.meta.windowStart ? `Your window: ${longDate(p.meta.windowStart)} to ${longDate(p.meta.windowEnd)}` : `Your window: ${longDate(p.meta.windowStart)}`),
+          h('div', { class: 'small muted' }, 'You entered it when you set up the project. Confirm it with whoever approves the change, then record that approval.')),
+        btn('Change the dates', () => { winEditing = p.id; render(); const el = document.querySelector('[data-focus-key="win-windowStart"]'); if (el) el.focus(); }, { small: true, iconName: 'edit' })),
+      planSlot);
+  }
   const grid = h('div', { class: 'tool-grid' }, date('startDate', 'Project start'), date('windowStart', 'Window from'), date('windowEnd', 'Window to'));
   refresh();
   return h('div', { class: 'tool' }, grid, msg, barSlot, planSlot);
@@ -552,7 +637,7 @@ export function decisionHelperTool(key, c, ctx = { kb: state.kb }) {
     return h('div', { class: ['helper-subject', perTenant && 'ws-card'] },
       perTenant ? h('div', { class: 'ws-card-head' }, h('strong', null, s.label || `Tenant ${i + 1}`),
         d.subjects.length > 1 ? h('button', { type: 'button', class: 'btn-icon', 'aria-label': `Remove ${s.label || `tenant ${i + 1}`}`, onclick: () => { d.subjects.splice(i, 1); render(); } }, icon('trash', 'icon-sm')) : null) : null,
-      perTenant ? h('div', { class: 'tool-grid two' }, nameInput('label', 'Tenant (alias)', { maxlength: '120', placeholder: 'For example: Contoso EU' }), helper.person ? nameInput('person', helper.person.label, { maxlength: '200', list: 'people-list', placeholder: 'Name or team' }, helper.person.hint) : null) : null,
+      perTenant ? h('div', { class: 'tool-grid two' }, nameInput('label', 'Tenant (alias)', { maxlength: '120', placeholder: 'For example: Contoso EU' }), helper.person ? field(helper.person.label, personPicker({ value: s.person, label: helper.person.label, focusKey: `${fk}-person`, onChange: (v) => { s.person = v; refresh(); } }), helper.person.hint ? { hint: rich(helper.person.hint, ctx) } : {}) : null) : null,
       h('div', { class: 'helper-questions' }, helper.questions.map(question)),
       h('div', { class: 'helper-findings', 'aria-live': 'polite' }, findings, ev.notes.length ? h('div', null, h('h3', null, icon('info', 'icon-sm'), 'Good to know'), renderList(ev.notes, ctx)) : null),
       h('fieldset', { class: 'helper-choices' }, h('legend', null, helper.choiceText || 'Your choice'),
@@ -590,11 +675,12 @@ function readyTextBlock(key, audit) {
   const t = readyText(key);
   return h('div', { class: 'ready-text stack' },
     h('h3', null, t.label),
-    h('article', { class: 'email-preview brief-email', 'aria-label': t.label },
-      h('div', { class: 'email-subject' }, h('span', { class: 'muted' }, 'Subject: '), t.subject),
-      h('p', null, 'Hello,'),
-      ...t.sections.map((s) => h('div', null, h('h3', null, s.title), s.text ? h('p', null, s.text) : null, s.points.length ? h('ul', { class: 'bullets' }, s.points.map((x) => h('li', null, x))) : null)),
-      t.closing ? h('p', null, t.closing) : null),
+    emailFold(`ready-${key}`, t.subject, `${t.sections.length} short section${t.sections.length === 1 ? '' : 's'}`,
+      h('article', { class: 'email-preview brief-email', 'aria-label': t.label },
+        h('div', { class: 'email-subject' }, h('span', { class: 'muted' }, 'Subject: '), t.subject),
+        h('p', null, 'Hello,'),
+        ...t.sections.map((s) => h('div', null, h('h3', null, s.title), s.text ? h('p', null, s.text) : null, s.points.length ? h('ul', { class: 'bullets' }, s.points.map((x) => h('li', null, x))) : null)),
+        t.closing ? h('p', null, t.closing) : null)),
     emailActions(t, { audit, label: t.label }));
 }
 export function commsTool() { return h('div', { class: 'tool stack' }, readyTextBlock('analystNotice', 'comms.copied'), readyTextBlock('liveNote', 'comms.copied')); }

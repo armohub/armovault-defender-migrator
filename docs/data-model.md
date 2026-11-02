@@ -70,6 +70,8 @@ Simplified mode adds to the knowledge base: `check.scope` (`needed` or `extra`, 
           approvers: [{ role, name }], plannedPrimary (no tenants), plannedPrimaries: { "<tenant>": alias },
           showExtras: boolean (default true), ownersWanted: 'yes' | 'later' | '',
           planProfile: 'auto' | 'lean' | 'smaller' | 'larger' (default 'auto': suggested from the answers and the workspace list; an unknown value on import becomes 'auto'),
+          people: [{ name, role }] (people added with "Add a new person" in a person list; up to 200, names unique regardless of case),
+          inventoryChoice: 'import' | 'manual' | '' (how the workspaces were added during setup; '' for older projects),
           helpers: { mdc | urbac | tenants: { subjects: [{ label, answers: { [questionId]: optionId | [optionId] }, choice, person }], by, at } } },  // decision helpers; ids only, one subject per tenant for "tenants"
   mode: 'tailored' | 'full',
   guidance: 'simple' | 'detailed',   // how the plan is shown; a view only. Missing on import means 'detailed'.

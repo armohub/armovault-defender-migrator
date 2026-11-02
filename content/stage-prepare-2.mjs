@@ -108,7 +108,7 @@ export const PREPARE_2 = [
       'With only the legacy connector and Defender XDR incident integration, you may receive Defender for Cloud incidents with empty alerts.',
       'Both connectors are hidden from the Defender portal\'s Data connectors page, so you configure them in the Azure portal.',
     ],
-    where: [at(AP, 'Microsoft Sentinel > Data connectors (Tenant-based Microsoft Defender for Cloud (Preview), Subscription-based Microsoft Defender for Cloud (Legacy))'), at(AP, 'Microsoft Sentinel > Content hub > Microsoft Defender for Cloud solution (version 3.0.0 or later)')],
+    where: [at(AP, 'Microsoft Sentinel > Data connectors (Tenant-based Microsoft Defender for Cloud (Preview), Subscription-based Microsoft Defender for Cloud (Legacy))'), at(AP, 'Microsoft Sentinel > Content management > Content hub > Microsoft Defender for Cloud solution (version 3.0.0 or later)')],
     steps: [
       'Note which Defender for Cloud connector or connectors each workspace uses today, in [[do:write-notes|this step\'s notes]].',
       'Run the Defender for Cloud alerts query.',
@@ -424,7 +424,7 @@ export const PREPARE_2 = [
       'They are not supported in the Defender portal, which has its own incident creation engine.',
       'Their filters (which alerts become incidents) and predetermined titles need replacements.',
     ],
-    where: [at(AP, 'Microsoft Sentinel > Analytics (rule type: Microsoft security)')],
+    where: [at(AP, 'Microsoft Sentinel > Analytics (rules created as "Microsoft incident creation rule")')],
     steps: [
       'List all rules of kind MicrosoftSecurityIncidentCreation, with their product, severity and name filters (use the analytics rule scan).',
       'For alert filtering, plan alert tuning in the Defender portal, or automation rules that suppress or close incidents.',

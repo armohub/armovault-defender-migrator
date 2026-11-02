@@ -22,7 +22,7 @@ export const QUESTIONS = [
   // Environment
   { id: 'onboarded_any', section: 'environment',
     text: 'Is any Sentinel workspace in this tenant already connected to the Defender portal?',
-    help: 'Look in Defender portal > System > Settings > Microsoft Sentinel > Workspaces. New customers who first enabled Sentinel on or after 1 July 2025 may have been connected automatically.',
+    help: 'Look in Defender portal (https://security.microsoft.com) > System > Settings > Microsoft Sentinel > Workspaces. You need at least Microsoft Sentinel Reader to see them. New customers who first enabled Sentinel on or after 1 July 2025 may have been connected automatically.',
     why: 'It tells the plan where you start. The step that [[PREP-SCOPE-04|checks which workspaces are connected]] applies either way and shows your answer.',
     sources: ['overview', 'onboard'] },
   { id: 'multi_workspace', section: 'environment', core: true,
@@ -166,9 +166,9 @@ export const QUESTIONS = [
   // Access
   { id: 'urbac', section: 'access',
     text: 'Is Microsoft Defender unified RBAC active, or planned, for Sentinel workspaces?',
-    help: 'Look in Defender portal > System > Permissions > Microsoft Defender XDR > Roles, or ask your identity team. Unified RBAC changes where Sentinel permissions are managed and has specific limitations.',
+    help: 'Look in Defender portal > System > Permissions (scroll to the bottom of the navigation pane), then Roles under Microsoft Defender XDR, and open Workload settings. Direct link: https://security.microsoft.com/mtp_roles. You need at least Security Administrator in Entra ID; otherwise ask your identity team.',
     why: 'Unified RBAC changes where Sentinel permissions are managed. Your answer tells [[PREP-ACC-03|the unified RBAC decision]] where you start; that step applies either way.',
-    sources: ['urbac'] },
+    sources: ['urbac', 'urbacactivate'] },
   { id: 'granular_rbac', section: 'access',
     text: 'Do you restrict access with table-level or resource-context RBAC?',
     detail: 'For example on the IdentityInfo table.',

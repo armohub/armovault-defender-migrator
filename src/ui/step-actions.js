@@ -4,7 +4,7 @@ import { h, toast, modal, field, saveBlob, reducedMotion, savedPulse } from './d
 import { state, mutate } from '../app/store.js';
 import { statusById, setCheckStatus, setEvidenceWaiver } from '../core/model.js';
 import { attachFiles, addNoteEvidence, addLinkEvidence } from './actions.js';
-import { editRegisterItem } from './views/records.js';
+import { editRegisterItem, CONTROL_FORM } from './views/records.js';
 import { importInventoryFlow } from './inventory.js';
 import { saveSnapshotFlow } from './views/reports.js';
 
@@ -30,7 +30,7 @@ export function downloadInventoryScript() {
 export function actionsFor(c) {
   const reg = (type) => () => editRegisterItem(null, { type, checkId: c.id, title: '' });
   return {
-    'add-decision': reg('decision'), 'add-risk': reg('risk'), 'add-issue': reg('issue'), 'add-action': reg('action'), 'add-exception': reg('exception'),
+    'add-decision': reg('decision'), 'add-control': () => editRegisterItem(null, { type: 'decision', checkId: c.id, title: '', form: CONTROL_FORM }), 'add-risk': reg('risk'), 'add-issue': reg('issue'), 'add-action': reg('action'), 'add-exception': reg('exception'),
     'add-note': () => addNoteEvidence(c), 'add-screenshot': () => attachFiles(c, 'image'), 'add-file': () => attachFiles(c, 'file'), 'add-link': () => addLinkEvidence(c),
     'set-owner': () => focusRecord(`owner-${c.id}`), 'set-due': () => focusRecord(`due-${c.id}`), 'write-notes': () => focusRecord(`notes-${c.id}`),
     'record-gate': () => focusRecord(`gate-dec-${c.id}`),

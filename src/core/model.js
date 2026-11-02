@@ -89,6 +89,8 @@ export function createProject({ meta = {}, mode = 'tailored', guidance = 'simple
       showExtras: true,
       ownersWanted: '',
       planProfile: 'auto',
+      people: [],
+      inventoryChoice: '',
       notes: '',
       ...meta,
     },
@@ -555,11 +557,57 @@ export function effectiveOwner(project, check) {
   return ws ? { name: ws, source: 'workstream' } : { name: '', source: '' };
 }
 
+// People added by name with their role, for example from "Add a new person" in an owner list.
+export const MAX_PEOPLE = 200;
+export const INVENTORY_CHOICES = ['import', 'manual', ''];
+export function cleanPeople(list) {
+  const seen = new Set();
+  const out = [];
+  for (const x of Array.isArray(list) ? list : []) {
+    if (!x || typeof x !== 'object') continue;
+    const name = String(x.name == null ? '' : x.name).trim().slice(0, 200);
+    const role = String(x.role == null ? '' : x.role).trim().slice(0, 200);
+    if (!name || seen.has(name.toLowerCase())) continue;
+    seen.add(name.toLowerCase());
+    out.push({ name, role });
+  }
+  return out.slice(0, MAX_PEOPLE);
+}
+
+export function addPerson(project, { name, role }) {
+  const n = String(name || '').trim().slice(0, 200);
+  if (!n) return { ok: false, error: 'Please enter a name.' };
+  const list = cleanPeople(project.meta.people);
+  const found = list.find((x) => x.name.toLowerCase() === n.toLowerCase());
+  if (found) { if (role && String(role).trim()) found.role = String(role).trim().slice(0, 200); } else list.push({ name: n, role: String(role || '').trim().slice(0, 200) });
+  project.meta.people = cleanPeople(list);
+  addAudit(project, 'project.people', `Person added: ${n}${role ? ` (${String(role).trim()})` : ''}`);
+  return { ok: true, name: found ? found.name : n };
+}
+
+// Every known person with the role or part they play, for owner lists: [{ name, role }].
+export function peopleWithRoles(project) {
+  const roles = new Map();
+  const add = (n, r) => { const v = String(n || '').trim(); if (!v) return; const cur = roles.get(v); if (!cur && r) roles.set(v, String(r).trim()); else if (!roles.has(v)) roles.set(v, ''); };
+  (project.meta.people || []).forEach((x) => add(x.name, x.role));
+  add(project.meta.operatorName, project.meta.operatorRole);
+  (project.meta.approvers || []).forEach((a) => add(a.name, a.role));
+  Object.values(project.meta.workstreamPeople || {}).forEach((l) => l.forEach((x) => add(x.name, x.covers)));
+  for (const n of knownPeople(project)) add(n, '');
+  return [...roles.entries()].map(([name, role]) => ({ name, role })).sort((a, b) => a.name.localeCompare(b.name));
+}
+
+export function setInventoryChoice(project, choice) {
+  project.meta.inventoryChoice = INVENTORY_CHOICES.includes(choice) ? choice : '';
+  return { ok: true };
+}
+
 // Every person the project already knows, for name suggestions in forms.
 export function knownPeople(project) {
   const names = new Set();
   const add = (n) => { const v = String(n || '').trim(); if (v) names.add(v); };
   add(project.meta.operatorName);
+  (project.meta.people || []).forEach((x) => add(x.name));
   Object.values(project.meta.workstreamOwners || {}).forEach(add);
   Object.values(project.meta.workstreamPeople || {}).forEach((l) => l.forEach((x) => add(x.name)));
   (project.meta.approvers || []).forEach((a) => add(a.name));

@@ -23,12 +23,24 @@
       Not yet validated against a live customer tenant by the authors. Review it before running.
     - Review the output file before importing or sharing it: rule and watchlist names can be sensitive.
 
+  FIND YOUR WORKSPACES FOR YOU (-Discover)
+    - Lists the subscriptions you can read, the Log Analytics workspaces in each, and keeps those where Microsoft
+      Sentinel is enabled (it has an onboarding state). GET requests only.
+    - Writes workspaces.json (the list it found) and one inventory-<name>.json per workspace to -OutFolder.
+    - The alias of each workspace is its workspace name. Change aliases later in the assistant if you prefer.
+    - Limit the search with -Subscriptions '<id>','<id>'.
+
   SEVERAL WORKSPACES IN ONE RUN
     - Pass -WorkspacesFile with a JSON list of workspaces, and optionally -OutFolder. The script writes one file per
       workspace, named inventory-<alias>.json, which you can import into the app together.
     - Each entry needs subscriptionId, resourceGroupName, workspaceName and alias. Aliases must be unique.
     - The list holds resource names only. Do not put secrets, tokens or passwords in it.
     - If one workspace fails, the others are still collected, and the run ends with a summary.
+
+.EXAMPLE
+  # Find every Sentinel workspace you can read, and collect each one:
+  Connect-AzAccount
+  .\Get-ArMoSentinelInventory.ps1 -Discover -OutFolder .\inventory
 
 .EXAMPLE
   Connect-AzAccount
@@ -51,7 +63,9 @@ param(
   [Parameter(ParameterSetName = 'One')][string] $WorkspaceAlias = '',
   [Parameter(ParameterSetName = 'One')][string] $OutFile = '.\armohub-inventory.json',
   [Parameter(Mandatory = $true, ParameterSetName = 'List')][string] $WorkspacesFile,
-  [Parameter(ParameterSetName = 'List')][string] $OutFolder = '.'
+  [Parameter(ParameterSetName = 'List')][Parameter(ParameterSetName = 'Discover')][string] $OutFolder = '.',
+  [Parameter(Mandatory = $true, ParameterSetName = 'Discover')][switch] $Discover,
+  [Parameter(ParameterSetName = 'Discover')][string[]] $Subscriptions = @()
 )
 
 Set-StrictMode -Version 2.0
@@ -94,7 +108,7 @@ function Get-Prop($Object, [string[]] $Path) {
 }
 
 # Collects one workspace and writes its file. Returns the number of failed requests.
-function Invoke-WorkspaceInventory([string] $SubscriptionId, [string] $ResourceGroupName, [string] $WorkspaceName, [string] $WorkspaceAlias, [string] $OutFile) {
+function Invoke-WorkspaceInventory([string] $SubscriptionId, [string] $ResourceGroupName, [string] $WorkspaceName, [string] $WorkspaceAlias, [string] $OutFile, [string] $Region = '') {
   $script:errors = New-Object System.Collections.Generic.List[string]
   $base = "/subscriptions/$SubscriptionId/resourceGroups/$ResourceGroupName/providers/Microsoft.OperationalInsights/workspaces/$WorkspaceName/providers/Microsoft.SecurityInsights"
 
@@ -150,7 +164,7 @@ function Invoke-WorkspaceInventory([string] $SubscriptionId, [string] $ResourceG
     schemaVersion   = 1
     tool            = [ordered]@{ name = 'Get-ArMoSentinelInventory.ps1'; version = '1.0.0' }
     collectedAt     = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ', [System.Globalization.CultureInfo]::InvariantCulture)
-    workspace       = [ordered]@{ alias = $WorkspaceAlias }
+    workspace       = [ordered]@{ alias = $WorkspaceAlias; region = $Region }
     analyticsRules  = @($rules.Values)
     automationRules = @($automation)
     dataConnectors  = @($connectors)
@@ -170,12 +184,43 @@ if ($PSCmdlet.ParameterSetName -eq 'One') {
   return
 }
 
-# Several workspaces from a list file: one inventory file per workspace.
-if (-not (Test-Path -LiteralPath $WorkspacesFile)) { throw "The workspaces file was not found: $WorkspacesFile" }
-# Windows PowerShell 5.1 passes a JSON array down the pipeline as one object, so enumerate it explicitly.
-$parsed = ConvertFrom-Json -InputObject (Get-Content -LiteralPath $WorkspacesFile -Raw)
-$list = @($parsed | ForEach-Object { $_ })
-if (-not $list.Count) { throw 'The workspaces file is empty. Add one entry per workspace.' }
+if ($PSCmdlet.ParameterSetName -eq 'Discover') {
+  # Find the Sentinel-enabled workspaces: subscriptions you can read, their workspaces, and an onboarding state each.
+  $script:errors = New-Object System.Collections.Generic.List[string]
+  $subs = @($Subscriptions | Where-Object { $_ })
+  if (-not $subs.Count) {
+    $subs = @(foreach ($sb in (Get-AllPages '/subscriptions?api-version=2022-12-01')) { if ([string](Get-Prop $sb @('state')) -eq 'Enabled') { [string](Get-Prop $sb @('subscriptionId')) } })
+  }
+  if (-not $subs.Count) { throw 'No subscription found. Check that Connect-AzAccount signed in to the right tenant.' }
+  Write-Host "Looking for Microsoft Sentinel workspaces in $($subs.Count) subscription(s) ..."
+  $found = New-Object System.Collections.Generic.List[object]
+  foreach ($sub in $subs) {
+    foreach ($ws in (Get-AllPages "/subscriptions/$sub/providers/Microsoft.OperationalInsights/workspaces?api-version=2025-07-01")) {
+      $wsName = [string](Get-Prop $ws @('name'))
+      $parts = ([string](Get-Prop $ws @('id'))).Split('/')
+      if (-not $wsName -or $parts.Count -lt 5) { continue }
+      $rg = $parts[4]
+      $state = Invoke-AzRestMethod -Path "/subscriptions/$sub/resourceGroups/$rg/providers/Microsoft.OperationalInsights/workspaces/$wsName/providers/Microsoft.SecurityInsights/onboardingStates?api-version=2025-09-01" -Method GET
+      if ($state.StatusCode -ne 200) { continue }
+      $states = Get-Prop ($state.Content | ConvertFrom-Json) @('value')
+      if (-not @($states).Count) { continue }
+      $found.Add([pscustomobject]@{ subscriptionId = $sub; resourceGroupName = $rg; workspaceName = $wsName; alias = $wsName; region = [string](Get-Prop $ws @('location')) })
+    }
+  }
+  if ($script:errors.Count) { Write-Warning ('Some requests failed while searching: ' + ($script:errors -join '; ')) }
+  if (-not $found.Count) { throw 'No Microsoft Sentinel workspace found in the subscriptions you can read.' }
+  if (-not (Test-Path -LiteralPath $OutFolder)) { New-Item -ItemType Directory -Path $OutFolder | Out-Null }
+  ConvertTo-Json -InputObject $found.ToArray() -Depth 4 | Out-File -FilePath (Join-Path $OutFolder 'workspaces.json') -Encoding utf8
+  Write-Host "Found $($found.Count) Sentinel workspace(s). The list is in workspaces.json. Collecting each one now."
+  $list = $found.ToArray()
+} else {
+  # Several workspaces from a list file: one inventory file per workspace.
+  if (-not (Test-Path -LiteralPath $WorkspacesFile)) { throw "The workspaces file was not found: $WorkspacesFile" }
+  # Windows PowerShell 5.1 passes a JSON array down the pipeline as one object, so enumerate it explicitly.
+  $parsed = ConvertFrom-Json -InputObject (Get-Content -LiteralPath $WorkspacesFile -Raw)
+  $list = @($parsed | ForEach-Object { $_ })
+  if (-not $list.Count) { throw 'The workspaces file is empty. Add one entry per workspace.' }
+}
 $names = @{}
 $n = 0
 foreach ($w in $list) {
@@ -198,7 +243,7 @@ foreach ($w in $list) {
   $file = Join-Path $OutFolder $w.fileName
   Write-Host "Collecting $alias ..."
   try {
-    $failedRequests = Invoke-WorkspaceInventory ([string]$w.subscriptionId) ([string]$w.resourceGroupName) ([string]$w.workspaceName) $alias $file
+    $failedRequests = Invoke-WorkspaceInventory ([string]$w.subscriptionId) ([string]$w.resourceGroupName) ([string]$w.workspaceName) $alias $file ([string](Get-Prop $w @('region')))
     if ($failedRequests) { $failed.Add("$alias ($failedRequests request(s) failed, file written)") } else { $done.Add($alias) }
   } catch {
     # Record only the alias and the message type - never the subscription, resource group or workspace path.
