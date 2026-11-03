@@ -28,6 +28,9 @@
       Sentinel is enabled (it has an onboarding state). GET requests only.
     - Writes workspaces.json (the list it found) and one inventory-<name>.json per workspace to -OutFolder.
     - The alias of each workspace is its workspace name. Change aliases later in the assistant if you prefer.
+    - Workspaces in different resource groups can share a name. The second one is saved as <name>-2, the third as
+      <name>-3, and so on; workspaces.json shows which is which.
+    - A workspace whose check fails (for example HTTP 403, no access) is named in a warning, not skipped silently.
     - Limit the search with -Subscriptions '<id>','<id>'.
 
   SEVERAL WORKSPACES IN ONE RUN
@@ -107,6 +110,11 @@ function Get-Prop($Object, [string[]] $Path) {
   return $cur
 }
 
+# The file-name part for an alias: letters, digits, dots, underscores and hyphens. Anything else becomes a hyphen.
+function ConvertTo-SafeName([string] $Alias) {
+  return ($Alias -replace '[^A-Za-z0-9._-]+', '-').Trim('-')
+}
+
 # Collects one workspace and writes its file. Returns the number of failed requests.
 function Invoke-WorkspaceInventory([string] $SubscriptionId, [string] $ResourceGroupName, [string] $WorkspaceName, [string] $WorkspaceAlias, [string] $OutFile, [string] $Region = '') {
   $script:errors = New-Object System.Collections.Generic.List[string]
@@ -184,6 +192,7 @@ if ($PSCmdlet.ParameterSetName -eq 'One') {
   return
 }
 
+$unchecked = New-Object System.Collections.Generic.List[string]
 if ($PSCmdlet.ParameterSetName -eq 'Discover') {
   # Find the Sentinel-enabled workspaces: subscriptions you can read, their workspaces, and an onboarding state each.
   $script:errors = New-Object System.Collections.Generic.List[string]
@@ -194,6 +203,8 @@ if ($PSCmdlet.ParameterSetName -eq 'Discover') {
   if (-not $subs.Count) { throw 'No subscription found. Check that Connect-AzAccount signed in to the right tenant.' }
   Write-Host "Looking for Microsoft Sentinel workspaces in $($subs.Count) subscription(s) ..."
   $found = New-Object System.Collections.Generic.List[object]
+  $taken = @{}
+  $renamed = New-Object System.Collections.Generic.List[string]
   foreach ($sub in $subs) {
     foreach ($ws in (Get-AllPages "/subscriptions/$sub/providers/Microsoft.OperationalInsights/workspaces?api-version=2025-07-01")) {
       $wsName = [string](Get-Prop $ws @('name'))
@@ -201,16 +212,29 @@ if ($PSCmdlet.ParameterSetName -eq 'Discover') {
       if (-not $wsName -or $parts.Count -lt 5) { continue }
       $rg = $parts[4]
       $state = Invoke-AzRestMethod -Path "/subscriptions/$sub/resourceGroups/$rg/providers/Microsoft.OperationalInsights/workspaces/$wsName/providers/Microsoft.SecurityInsights/onboardingStates?api-version=2025-09-01" -Method GET
-      if ($state.StatusCode -ne 200) { continue }
+      # 404 means the workspace has no Microsoft Sentinel. Any other failure (for example 403, no access) is reported.
+      if ($state.StatusCode -eq 404) { continue }
+      if ($state.StatusCode -ne 200) { $unchecked.Add("$wsName (HTTP $($state.StatusCode))"); continue }
       $states = Get-Prop ($state.Content | ConvertFrom-Json) @('value')
       if (-not @($states).Count) { continue }
-      $found.Add([pscustomobject]@{ subscriptionId = $sub; resourceGroupName = $rg; workspaceName = $wsName; alias = $wsName; region = [string](Get-Prop $ws @('location')) })
+      # Workspace names are unique only within a resource group, so give each workspace its own alias and file.
+      $alias = $wsName
+      $k = 1
+      while ($taken.ContainsKey((ConvertTo-SafeName $alias).ToLowerInvariant())) { $k += 1; $alias = "$wsName-$k" }
+      $taken[(ConvertTo-SafeName $alias).ToLowerInvariant()] = $true
+      if ($k -gt 1) { $renamed.Add($alias) }
+      $found.Add([pscustomobject]@{ subscriptionId = $sub; resourceGroupName = $rg; workspaceName = $wsName; alias = $alias; region = [string](Get-Prop $ws @('location')) })
     }
   }
   if ($script:errors.Count) { Write-Warning ('Some requests failed while searching: ' + ($script:errors -join '; ')) }
-  if (-not $found.Count) { throw 'No Microsoft Sentinel workspace found in the subscriptions you can read.' }
+  if ($unchecked.Count) { Write-Warning ('These workspaces could not be checked for Microsoft Sentinel, so they are not in the list: ' + ($unchecked -join '; ') + '. If one of them runs Sentinel, check that you can read it (Microsoft Sentinel Reader), or list it in a workspaces file and run again with -WorkspacesFile.') }
+  if (-not $found.Count) {
+    if ($unchecked.Count) { throw "No Microsoft Sentinel workspace found, and $($unchecked.Count) workspace(s) could not be checked. See the warning above." }
+    throw 'No Microsoft Sentinel workspace found in the subscriptions you can read.'
+  }
   if (-not (Test-Path -LiteralPath $OutFolder)) { New-Item -ItemType Directory -Path $OutFolder | Out-Null }
   ConvertTo-Json -InputObject $found.ToArray() -Depth 4 | Out-File -FilePath (Join-Path $OutFolder 'workspaces.json') -Encoding utf8
+  if ($renamed.Count) { Write-Warning ('Some workspaces share a name, so they are saved as ' + ($renamed -join ', ') + '. workspaces.json shows which is which. To use other aliases, edit them there and run again with -WorkspacesFile.') }
   Write-Host "Found $($found.Count) Sentinel workspace(s). The list is in workspaces.json. Collecting each one now."
   $list = $found.ToArray()
 } else {
@@ -228,7 +252,7 @@ foreach ($w in $list) {
   foreach ($field in @('subscriptionId', 'resourceGroupName', 'workspaceName', 'alias')) {
     if (-not [string](Get-Prop $w @($field))) { throw "Entry $n in the workspaces file has no $field." }
   }
-  $safe = ([string]$w.alias -replace '[^A-Za-z0-9._-]+', '-').Trim('-')
+  $safe = ConvertTo-SafeName ([string]$w.alias)
   if (-not $safe) { $safe = "workspace-$n" }
   $key = $safe.ToLowerInvariant()
   if ($names.ContainsKey($key)) { throw "Entry $n gives the same file name as an earlier entry (inventory-$safe.json). Make the aliases unique." }
@@ -252,5 +276,6 @@ foreach ($w in $list) {
   }
 }
 Write-Host "Done: $($done.Count) of $($list.Count) workspace(s) collected without errors."
+foreach ($u in $unchecked) { $failed.Add("$u not checked for Microsoft Sentinel") }
 if ($failed.Count) { Write-Warning ('Check these: ' + ($failed -join '; ')) }
 Write-Host 'Review the file before importing it into the app or sharing it.'
