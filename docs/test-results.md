@@ -8,17 +8,17 @@ Only results that were recorded in files are reported as results here. Where no 
 
 | Suite | Command | Recorded result |
 |---|---|---|
-| End-to-end, Edge | `npm run test:e2e` | ✔ **42 of 42 steps passed** on 2026-10-26 at 21:26 UTC, against the 1.0.0 build with knowledge base 2026.10.26 (`test-results/e2e-results-msedge.json`) |
-| Network requests and console errors during those runs | recorded by the end-to-end runner (step 42) | ✔ **none**, in Edge and in Chrome |
-| End-to-end, Chrome | `npm run test:e2e:chrome` | ✔ **42 of 42 steps passed** on 2026-10-26 at 21:27 UTC, against the same build (`test-results/e2e-results-chrome.json`) |
-| Unit tests | `npm run test:unit` | ✔ **136 of 136 passed** on 2026-10-26 against the same source |
-| Knowledge base integrity and writing rules | `npm run validate-kb` (also runs in every build) | No stored result. Every build runs it and stops on any error. The knowledge base has 110 steps, 35 questions, 120 sources and 33 snippets. |
-| Inventory script parse and mock run | `powershell -File tests/tools/mock-inventory-run.ps1` (plus `-Fail automationRules`), and `tests/tools/mock-inventory-multi.ps1` for several workspaces | ✔ **all three passed** on 2026-10-26 at 21:29 UTC in Windows PowerShell 5.1, against a mocked API (`test-results/mock-inventory-*.txt`). The multi-workspace run checks one file per workspace, a failing workspace that does not stop the others, no resource paths in the output, and refusal of duplicate or missing aliases before any request. |
+| End-to-end, Edge | `npm run test:e2e` | ✔ **43 of 43 steps passed** on 2026-11-03 at 22:34 UTC, against the 1.0.0 build with knowledge base 2026.11.03 (`test-results/e2e-results-msedge.json`) |
+| Network requests and console errors during those runs | recorded by the end-to-end runner (step 43) | ✔ **none**, in Edge and in Chrome |
+| End-to-end, Chrome | `npm run test:e2e:chrome` | ✔ **43 of 43 steps passed** on 2026-11-03 at 22:37 UTC, against the same build (`test-results/e2e-results-chrome.json`) |
+| Unit tests | `npm run test:unit` | ✔ **141 of 141 passed** on 2026-11-03 against the same source |
+| Knowledge base integrity and writing rules | `npm run validate-kb` (also runs in every build) | No stored result. Every build runs it and stops on any error. The knowledge base has 110 steps, 35 questions, 127 sources and 33 snippets. |
+| Inventory script parse and mock run | `powershell -File tests/tools/mock-inventory-run.ps1` (plus `-Fail automationRules`), and `tests/tools/mock-inventory-multi.ps1` for several workspaces, and `tests/tools/mock-inventory-discover.ps1` for `-Discover` | ✔ **all four passed** on 2026-11-03 at 22:31 UTC in Windows PowerShell 5.1, against a mocked API (`test-results/mock-inventory-*.txt`). The multi-workspace run checks one file per workspace, a failing workspace that does not stop the others, no resource paths in the output, and refusal of duplicate or missing aliases before any request. The Discover run checks that only Sentinel workspaces are collected, with their region and no resource path, that disabled subscriptions are not searched, that workspaces sharing a name get their own alias and file, and that a workspace whose check fails is reported, not skipped. |
 | Platform prototypes P1 to P3 | `node prototypes/run-p1-platform.mjs` and the others | Stored results in `prototypes/*.json`. See [prototypes/README.md](../prototypes/README.md). |
 
 The Edge run also generated `test-results/report-prepare-msedge.pdf` and `test-results/report-final-demo-msedge.pdf`. The `test-results/` folder is git-ignored and is rewritten on each run.
 
-## End-to-end journey (42 steps, Edge and Chrome runs of 2026-10-26)
+## End-to-end journey (43 steps, Edge and Chrome runs of 2026-11-03)
 
 1. First launch plays the introduction with its six promises, and it can be skipped.
 2. The welcome page has a strict CSP, and the introduction does not return on the next start.
@@ -60,8 +60,9 @@ The Edge run also generated `test-results/report-prepare-msedge.pdf` and `test-r
 38. Reduced motion: the introduction shows everything at once, and the assistant stays usable.
 39. Simplified: six questions, missions with progress, a real Ctrl+V screenshot as proof right after arriving, Done opening the next row with no Detailed-only hint, a text-and-image paste staying text in a field, recording a decision from its row, proof from a copied ready text, a mission question that sets checks aside, hiding extras, the gate inside its mission, the Simplified and Detailed stage pages, reopening a mission question from "Your answers", and good practice reported apart.
 40. Several inventory files import together, one dialog per workspace, and **Skip this file** leaves a file out.
-41. Explainers: the Defender table review says first that nothing is lost, the ⓘ opens and closes with Escape or a click elsewhere, practical tips say they are practice, and the planner offers a small-team profile.
-42. No network request was made during the whole run, and no console errors occurred.
+41. Setup: import the inventory, choose the workspaces in scope, and the questions show which answers were filled in from it.
+42. Explainers: the Defender table review says first that nothing is lost, the ⓘ opens and closes with Escape or a click elsewhere, practical tips say they are practice, and the planner offers a small-team profile.
+43. No network request was made during the whole run, and no console errors occurred.
 
 ## What the unit tests cover
 
@@ -110,6 +111,7 @@ There is no stored result for the unit tests, so this lists what they check, by 
 - **`eml.test.mjs`:** Outlook drafts open unsent, keep non-ASCII text intact, cannot gain headers from a line break, and get safe file names.
 - **`proof.test.mjs`:** only pastes with files become proof, and a copy with text into a field stays text; proof generated from your entries comes only from what the forms hold, and reports label it.
 - **`review-additions.test.mjs`:** the additions from the comparison with public migration guides: the Defender table review (a recommended extra that says first that nothing is deleted, with the retention, advanced hunting and portal sources), fewer-incidents guidance on validation, the default Entra roles review, practical tips labelled as practice, the validator's rules for explainers, and the planner profiles (suggested, chosen, and safe on import).
+- **`onboarding-review.test.mjs`:** the onboarding review: a new person added with a role is offered in every person list; people and the way workspaces were added travel in project packages; the planner says when it has nothing to go on and why it suggests longer ranges; inventory files can carry the workspace region and older files still import; and the portal path corrections are in the knowledge base.
 - **`review-fixes.test.mjs`: regression tests for the findings of the independent review** (see the history below).
 - **`contrast.test.mjs`:** WCAG AA (4.5:1) for 14 text and background token pairs, in the light and the dark theme.
 - **`static.test.mjs`: static safety.**

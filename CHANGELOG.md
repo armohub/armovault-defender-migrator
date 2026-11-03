@@ -2,6 +2,9 @@
 
 ## Unreleased: onboarding and guidance review (29 October 2026)
 
+### Version
+- Knowledge base version `2026.11.03` (it was `2026.10.26`), because the guidance, the sources (now 127) and the embedded inventory script changed. The app version stays 1.0.0 until the release.
+
 ### Setup
 - The wizard has five steps. **Timing** restates that Sentinel is available only in the Defender portal after 31 March 2027, with the days left.
 - **Your workspaces** is its own step: run the inventory script and import its files, or type the names in (an explainer says where to find them). Imported workspaces are listed with their region and counts; you tick the ones in scope and rename them if you like. The answers the import can give are shown, ticked, for you to confirm, and the questions show which answers came from the inventory.

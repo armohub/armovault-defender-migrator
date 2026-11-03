@@ -2,7 +2,7 @@
 
 Generated from the knowledge base by `scripts/gen-research.mjs`. Do not edit by hand.
 
-Maps each knowledge object to its stage, workstream, applicability questions, provenance, validation status, sources and open gaps. Knowledge base **2026.10.26** (reviewed 2026-10-19).
+Maps each knowledge object to its stage, workstream, applicability questions, provenance, validation status, sources and open gaps. Knowledge base **2026.11.03** (reviewed 2026-10-19).
 
 Legend. Provenance: **official** = derived from current Microsoft Learn documentation; **practice** = practical guidance from the makers, not a Microsoft requirement. Validation: **docs-verified** = consistent with the cited current pages; **needs-review** = Microsoft sources conflict or are ambiguous (the gap is shown in the app).
 

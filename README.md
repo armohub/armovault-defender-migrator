@@ -33,7 +33,7 @@ Microsoft states that *"After March 31, 2027, Microsoft Sentinel will no longer 
 
 ## What you'll see
 
-- **A short introduction on first start.** About four seconds, with six promises: no internet needed, processed on this device, your data stays with you, grounded in Microsoft Learn (120 pages), built by practitioners, open for review. It closes with "Your data is yours." and the makers' words, "Built to make your migration journey easy." Focus starts on **Skip intro**, and Escape closes it too. With reduced motion, everything appears at once. Replay it from **About** or **Settings and data**. Later starts show a short splash.
+- **A short introduction on first start.** About four seconds, with six promises: no internet needed, processed on this device, your data stays with you, grounded in Microsoft Learn (127 pages), built by practitioners, open for review. It closes with "Your data is yours." and the makers' words, "Built to make your migration journey easy." Focus starts on **Skip intro**, and Escape closes it too. With reduced motion, everything appears at once. Replay it from **About** or **Settings and data**. Later starts show a short splash.
 - **A welcome page** with three ways in: **Start my project**, **Open a saved project** and **Try the demo**.
 - **A new project in five steps:** about the project, timing (with the 31 March 2027 date restated), your workspaces, where to keep your work, and how to work (Simplified or Detailed, tailored or full checklist).
 - **Workspaces imported or typed in.** Run the read-only inventory script with `-Discover` and import its files: the assistant lists the Sentinel workspaces it found, you tick the ones in scope, and the answers it can fill in are shown for you to confirm. Or type the names in, with help on where to find them.
@@ -95,7 +95,7 @@ Details: [docs/security-and-privacy.md](docs/security-and-privacy.md).
 ## Knowledge base and provenance
 
 - The content lives in [`content/`](content/), separate from the UI. It is checked at build time and published as `dist/kb.json`.
-- Knowledge base version **2026.10.26**: 120 Microsoft Learn sources (115 verified on 2026-10-19, 3 on 2026-10-20, 2 on 2026-10-26), 33 read-only snippets, and 13 steps marked "Sources differ" where Microsoft sources conflict or are unclear.
+- Knowledge base version **2026.11.03**: 127 Microsoft Learn sources (114 verified on 2026-10-19, 3 on 2026-10-20, 2 on 2026-10-26, 8 on 2026-10-29), 33 read-only snippets, and 13 steps marked "Sources differ" where Microsoft sources conflict or are unclear.
 - Every step states its provenance:
   - **Microsoft documentation:** derived from current pages.
   - **Practical guidance:** the makers' good practice, *not* a Microsoft requirement.
