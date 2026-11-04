@@ -2,6 +2,7 @@
 // It only reflects what is recorded in the project. It never invents evidence, dates, approvals or sign-offs.
 
 import { applicabilityMap } from './applicability.js';
+import { planSummary } from './depth.js';
 import { assessStage, summariseStage, CONCLUSION_CRITERIA, exceptionsByCheck, overallAssessment } from './readiness.js';
 import { statusById, answerLabel, actor, effectiveOwner, plannedRole } from './model.js';
 import { sha256Hex } from './files.js';
@@ -143,6 +144,7 @@ export function buildReportModel(kind, kb, project, { appVersion }) {
     appVersion,
     kbVersion: kb.meta.version,
     kbReviewed: kb.meta.lastReviewed,
+    plan: (() => { const n = kb.checks.filter((c) => appMap.get(c.id).source === 'plan').length; return { leftOut: n, text: planSummary(project, n) }; })(),
     project: {
       id: project.id, name: project.meta.name, organisation: project.meta.organisation, operatorName: project.meta.operatorName, operatorRole: project.meta.operatorRole,
       startDate: project.meta.startDate, windowStart: project.meta.windowStart, windowEnd: project.meta.windowEnd, environments: (project.meta.environments || []).map((e) => ({ ...e, plannedRole: plannedRole(project, e) })), plannedPrimary: project.meta.plannedPrimary || '', mode: project.mode, isDemo: !!project.isDemo,

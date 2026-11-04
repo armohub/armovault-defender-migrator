@@ -8,6 +8,7 @@
 //   detail  optional: examples or a clarification, one short sentence shown under the question
 //   help    "Where to find the answer": where to look and who to ask
 //   why     "Why we ask": one sentence on what the answer changes in the plan
+// `informs` lists the steps a question informs without deciding them; it sets the question's importance.
 
 export const QUESTION_SECTIONS = [
   { id: 'environment', title: 'Your environment', intro: 'Your tenants, your workspaces and what\'s already connected.' },
@@ -20,7 +21,7 @@ export const QUESTION_SECTIONS = [
 
 export const QUESTIONS = [
   // Environment
-  { id: 'onboarded_any', section: 'environment',
+  { id: 'onboarded_any', section: 'environment', informs: ['PREP-SCOPE-04'],
     text: 'Is any Sentinel workspace in this tenant already connected to the Defender portal?',
     help: 'Look in Defender portal (https://security.microsoft.com) > System > Settings > Microsoft Sentinel > Workspaces. You need at least Microsoft Sentinel Reader to see them. New customers who first enabled Sentinel on or after 1 July 2025 may have been connected automatically.',
     why: 'It tells the plan where you start. The step that [[PREP-SCOPE-04|checks which workspaces are connected]] applies either way and shows your answer.',
@@ -54,12 +55,12 @@ export const QUESTIONS = [
     help: 'Ask your licensing owner or the team that runs your Defender services. Sentinel works in the Defender portal without Defender XDR or an E5 licence, but some capabilities are limited without Defender services.',
     why: 'If yes, the plan covers the Defender XDR connector, a decision on custom detections and a check for duplicate or empty incidents.',
     sources: ['defportal', 'onboard'] },
-  { id: 'test_env', section: 'environment', core: true,
+  { id: 'test_env', section: 'environment', core: true, informs: ['TEST-01'],
     text: 'Do you have a non-production Sentinel environment to test the transition first?',
     help: 'Ask your platform or SOC engineering team. A test environment is optional: without one you can still transition, and the plan adds compensating controls.',
     why: 'Your answer sets the optional test stage: Yes turns it on, No skips it and adds compensating controls to the change. You can change this later on the [[go:stage:test|Test stage]] page.',
     sources: [] },
-  { id: 'test_separate_tenant', section: 'environment', showIf: { q: 'test_env' },
+  { id: 'test_separate_tenant', section: 'environment', showIf: { q: 'test_env' }, informs: ['TEST-01'],
     text: 'Is that test environment in a separate tenant from production?',
     help: 'Check which tenant the test workspace belongs to. Connecting a test workspace in the production tenant interacts with primary-workspace selection and the Defender XDR connector, which serve production.',
     why: 'Testing in the production tenant touches settings that serve production. The first test step, [[TEST-01|confirming the test environment]], uses your answer.',
@@ -117,7 +118,7 @@ export const QUESTIONS = [
     help: 'Open each rule in Azure portal > Microsoft Sentinel > Analytics and check its Incident settings. Alerts from these rules are not visible in the Defender portal.',
     why: 'If yes, the plan adds a step to decide, rule by rule, whether to turn on incident creation or accept that their alerts won\'t be visible in the Defender portal.',
     sources: ['move'] },
-  { id: 'grouping_dependency', section: 'detections',
+  { id: 'grouping_dependency', section: 'detections', informs: ['PREP-DET-05'],
     text: 'Do processes, automation or reports rely on incident titles, alert grouping or reopened incidents?',
     help: 'Ask your SOC leads and the owners of your automation and reports. Correlation can rename and merge incidents, and "Re-open closed matching incidents" is not available after connection.',
     why: 'Correlation can rename and merge incidents after the change. Your answer shows how much work [[PREP-DET-05|the step on correlation, grouping and titles]] will be; that step applies either way.',
@@ -170,7 +171,7 @@ export const QUESTIONS = [
     sources: ['move', 'defportal'] },
 
   // Access
-  { id: 'urbac', section: 'access',
+  { id: 'urbac', section: 'access', informs: ['PREP-ACC-03'],
     text: 'Is Microsoft Defender unified RBAC active, or planned, for Sentinel workspaces?',
     help: 'Look in Defender portal > System > Permissions (scroll to the bottom of the navigation pane), then Roles under Microsoft Defender XDR, and open Workload settings. Direct link: https://security.microsoft.com/mtp_roles. You need at least Security Administrator in Entra ID; otherwise ask your identity team.',
     why: 'Unified RBAC changes where Sentinel permissions are managed. Your answer tells [[PREP-ACC-03|the unified RBAC decision]] where you start; that step applies either way.',

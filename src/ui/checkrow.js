@@ -7,7 +7,7 @@ import { state } from '../app/store.js';
 import { statusById } from '../core/model.js';
 import { generatedProof } from '../core/generated-proof.js';
 import { rich, renderSteps, renderPath } from './rich.js';
-import { btn, infoTip, stepExplainer } from './components.js';
+import { btn, infoTip, stepExplainer, tierBadge } from './components.js';
 import { TOOLS } from './tools.js';
 import { attachFiles, addNoteEvidence, addLinkEvidence, addGeneratedProof, removeEvidenceFlow } from './actions.js';
 import { setStatusFlow } from './step-actions.js';
@@ -62,7 +62,7 @@ export function checkRow(row, { open, onToggle, onDone, ctx }) {
   const head = h('button', { type: 'button', class: 'crow-head', 'aria-expanded': open ? 'true' : 'false', 'aria-controls': `crow-${c.id}`, 'data-focus-key': `crow-${c.id}`, onclick: () => onToggle(c.id) },
     h('span', { class: ['status-ic', `pill-${s.tone}`], title: s.label }, icon(ICON[row.status] || 'circle', 'icon-xs')),
     h('span', { class: 'crow-title' }, c.short.title),
-    c.scope === 'extra' ? h('span', { class: 'chip chip-muted' }, 'Good practice') : null,
+    tierBadge(c),
     h('span', { class: ['crow-proof', proven && 'yes'] }, proofs ? `${proofs} proof${proofs === 1 ? '' : 's'}` : st.evidenceWaiver ? 'No proof needed' : ''),
     icon('chevron', 'icon-sm'));
   if (!open) return h('li', { class: ['crow', `st-${row.status}`] }, head);

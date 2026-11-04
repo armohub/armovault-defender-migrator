@@ -11,6 +11,7 @@
 // is shown as "applicability uncertain: needs investigation" and stays in scope.
 
 import { answerLabel } from './model.js';
+import { leftOutByPlan, questionImportance, sortByImportance } from './depth.js';
 
 const T = 'T';
 const F = 'F';
@@ -86,11 +87,23 @@ export function evaluateApplicability(check, project, kb, qIndex = questionIndex
       trace: [],
     };
   }
+  if (project.mode === 'full') {
+    if (!check.applicability) return { value: 'applies', source: 'always', reasons: ['Applies to every Sentinel environment that is transitioning.'], trace: [] };
+    return { value: 'applies', source: 'full-mode', reasons: ['Shown because the full checklist was selected (no tailoring). Review whether it applies to you.'], trace: [] };
+  }
+  // After the answers, the plan: a step it leaves out is set aside with that reason. A step the answers already set
+  // aside keeps the answers' reason, which is more specific.
+  const res = byAnswers(check, project, qIndex);
+  if (res.value !== 'not_applicable') {
+    const out = leftOutByPlan(check, project);
+    if (out) return { value: 'not_applicable', source: 'plan', reasons: [out], trace: res.trace };
+  }
+  return res;
+}
+
+function byAnswers(check, project, qIndex) {
   if (!check.applicability) {
     return { value: 'applies', source: 'always', reasons: ['Applies to every Sentinel environment that is transitioning.'], trace: [] };
-  }
-  if (project.mode === 'full') {
-    return { value: 'applies', source: 'full-mode', reasons: ['Shown because the full checklist was selected (no tailoring). Review whether it applies to you.'], trace: [] };
   }
   const trace = [];
   const r = evalNode(check.applicability, project.answers, qIndex, trace);
@@ -140,11 +153,12 @@ export function diffApplicability(before, after) {
 // Questions shown in this project: follow-ups appear only when their parent answer asks for them.
 export function visibleQuestions(kb, project) {
   const qIdx = questionIndex(kb);
-  return kb.questions.filter((q) => !q.derived).filter((q) => !q.showIf || evaluateApplicability({ id: '_', applicability: q.showIf }, { ...project, mode: 'tailored', checks: {} }, kb, qIdx).value !== 'not_applicable');
+  return kb.questions.filter((q) => !q.derived && questionImportance(kb, project, q) !== 'hidden').filter((q) => !q.showIf || evaluateApplicability({ id: '_', applicability: q.showIf }, { ...project, mode: 'tailored', checks: {} }, kb, qIdx).value !== 'not_applicable');
 }
 
-// Simplified mode asks only the core questions up front; the others come up in the missions they affect.
+// Simplified mode asks only the core questions up front; the others come up in the missions they affect. Both
+// ask the most important first, and only what decides a step the plan keeps.
 export function upfrontQuestions(kb, project) {
   const qs = visibleQuestions(kb, project);
-  return project.guidance === 'simple' ? qs.filter((q) => q.core) : qs;
+  return sortByImportance(kb, project, project.guidance === 'simple' ? qs.filter((q) => q.core) : qs);
 }

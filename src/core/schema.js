@@ -80,6 +80,8 @@ export function validateProject(input, { kb } = {}) {
     workstreamOwners: {},
     workstreamPeople: {},
     plannedPrimary: str(m.plannedPrimary, 120),
+    planDepth: oneOf(m.planDepth, ['essentials', 'recommended', 'thorough'], 'thorough'),
+    planTopics: Object.fromEntries(['backups', 'rehearsal', 'verification'].map((t) => [t, !(isPlainObject(m.planTopics) && m.planTopics[t] === false)])),
     plannedPrimaries: {},
     approvers: Array.isArray(m.approvers) ? m.approvers.slice(0, 30).filter(isPlainObject).map((a) => ({ role: str(a.role, 200), name: str(a.name, 200) })).filter((a) => a.role && a.name) : [],
     helpers: {},

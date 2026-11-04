@@ -209,6 +209,13 @@ strong { font-weight: 640; }
 .badge-high { background: var(--caution-soft); color: var(--caution); }
 .badge-medium { background: var(--neutral-soft); color: var(--neutral); }
 .badge-low { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+/* Question importance: must answer, important, optional. */
+.q-imp { font-size: .72rem; font-weight: 600; letter-spacing: .02em; }
+.q-imp.imp-must { background: var(--bad-soft); color: var(--bad); }
+.q-imp.imp-important { background: var(--caution-soft); color: var(--caution); }
+.q-imp.imp-optional { background: var(--neutral-soft); color: var(--neutral); }
+.mq-head .q-imp { flex: none; align-self: flex-start; }
+.plan-topics { border: 0; padding: 0; margin: 0; }
 .item-chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .state-pill { font-size: .78rem; font-weight: 640; border: 1px solid currentColor; border-radius: 999px; padding: 1px 10px; white-space: nowrap; }
 .tone-bad { color: var(--bad); } .tone-caution { color: var(--caution); } .tone-accent { color: var(--accent-strong); } .tone-good { color: var(--good); } .tone-muted { color: var(--muted); }

@@ -2,6 +2,7 @@
 // workstream's checks over the same records as Detailed mode. Nothing here changes a record.
 import { questionsUsed, visibleQuestions } from './applicability.js';
 import { effectiveStatus } from './readiness.js';
+import { leftOutByPlan } from './depth.js';
 
 export const DONE_STATUSES = new Set(['passed', 'not_verified', 'not_applicable']);
 const ATTENTION_STATUSES = new Set(['failed', 'blocked', 'needs_review']);
@@ -11,7 +12,7 @@ const testUsed = (project) => project.stages.test.availability === 'available';
 export function missionQuestions(kb, project, checks) {
   if (project.mode === 'full') return [];
   const used = new Set();
-  for (const c of checks) if (c.applicability) questionsUsed(c.applicability, used);
+  for (const c of checks) if (c.applicability && !leftOutByPlan(c, project)) questionsUsed(c.applicability, used);
   const visible = new Set(visibleQuestions(kb, project).map((q) => q.id));
   return kb.questions.filter((q) => used.has(q.id) && visible.has(q.id) && !project.answers[q.id]);
 }

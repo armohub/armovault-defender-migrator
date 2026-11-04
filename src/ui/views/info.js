@@ -3,7 +3,7 @@ import { h, icon, toast, modal, confirmDialog, field, saveBlob, pickFile, extern
 import { state, updateSettings, setStorageMode, clearEverything, deleteBrowserProject, settingsExportBlob, importSettings, closeProject, autosaveEnabled } from '../../app/store.js';
 import { route, render, go } from '../shell.js';
 import { confirmLeaveProject } from '../actions.js';
-import { pageHead, btn, linkBtn, callout, critBadge, provenanceChip, validationChip, kv } from '../components.js';
+import { pageHead, btn, linkBtn, callout, tierBadge, provenanceChip, validationChip, kv } from '../components.js';
 import { BRAND, APP_VERSION } from '../../brand.js';
 import { DISCLAIMER_FULL, DISCLAIMER_SHORT } from '../../core/report.js';
 import { formatDate, bytesLabel, groupBy } from '../../core/util.js';
@@ -40,7 +40,7 @@ route('knowledge', ({ params }) => {
       const q = kTab.query.toLowerCase();
       const items = kb.checks.filter((c) => !q || `${c.title} ${plain(c.objective, kb)}`.toLowerCase().includes(q));
       body = h('div', null, h('label', { class: 'search' }, icon('search', 'icon-sm'), h('span', { class: 'sr-only' }, 'Search all steps'), h('input', { type: 'search', value: kTab.query, placeholder: 'Search all steps', 'data-focus-key': 'kb-search', oninput: (e) => { kTab.query = e.target.value; render(); } })),
-        ...kb.stages.map((s) => h('section', null, h('h2', { style: { marginTop: '22px' } }, s.title), h('ul', { class: 'list' }, items.filter((c) => c.stage === s.id).map((c) => h('li', { class: 'list-row' }, h('div', null, state.project ? h('a', { href: `#/item/${c.id}` }, c.title) : h('strong', null, c.title), h('div', { class: 'small muted' }, plain(c.objective, kb))), h('div', { class: 'item-chips' }, critBadge(c.criticality), provenanceChip(c), validationChip(c))))))));
+        ...kb.stages.map((s) => h('section', null, h('h2', { style: { marginTop: '22px' } }, s.title), h('ul', { class: 'list' }, items.filter((c) => c.stage === s.id).map((c) => h('li', { class: 'list-row' }, h('div', null, state.project ? h('a', { href: `#/item/${c.id}` }, c.title) : h('strong', null, c.title), h('div', { class: 'small muted' }, plain(c.objective, kb))), h('div', { class: 'item-chips' }, tierBadge(c), provenanceChip(c), validationChip(c))))))));
       break;
     }
     case 'coverage': {

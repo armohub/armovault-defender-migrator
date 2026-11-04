@@ -3,6 +3,7 @@
 // timestamps are always "now" at the moment the user acts, and people are whoever the user typed.
 
 import { uid, nowIso } from './util.js';
+import { DEPTHS, TOPICS, topicPreset, planOf, REHEARSAL_OFF } from './depth.js';
 
 export const PROJECT_SCHEMA = 'armohub.dma.project';
 export const PROJECT_SCHEMA_VERSION = 1;
@@ -395,6 +396,23 @@ export function recordGate(project, gateId, { decision, decidedBy, decidedRole, 
   };
   addAudit(project, 'gate.decision', `${gateId}: ${decision} by ${decidedBy}`, { ref: gateId });
   return { ok: true };
+}
+
+// The plan's depth and topics. A test rehearsal switched off skips the Test stage; switched back on, the test
+// question decides again. A Test stage skipped for another reason stays skipped.
+export function setPlanDepth(project, depth, topics = {}) {
+  if (!DEPTHS.some((d) => d.id === depth)) return { ok: false, error: 'Unknown plan depth.' };
+  const preset = topicPreset(depth);
+  const next = Object.fromEntries(TOPICS.map((t) => [t.id, typeof topics[t.id] === 'boolean' ? topics[t.id] : preset[t.id]]));
+  const before = JSON.stringify(planOf(project));
+  project.meta.planDepth = depth;
+  project.meta.planTopics = next;
+  const t = project.stages.test;
+  if (!next.rehearsal && t.availability !== 'unavailable') setTestAvailability(project, 'unavailable', REHEARSAL_OFF);
+  else if (next.rehearsal && t.availability === 'unavailable' && t.reason === REHEARSAL_OFF) setTestAvailability(project, 'undecided', '');
+  const changed = before !== JSON.stringify(planOf(project));
+  if (changed) addAudit(project, 'project.plan', `Plan depth: ${(DEPTHS.find((d) => d.id === depth) || {}).label}; topics: ${TOPICS.map((x) => `${x.label} ${next[x.id] ? 'on' : 'off'}`).join(', ')}`);
+  return { ok: true, changed };
 }
 
 export function setTestAvailability(project, availability, reason) {

@@ -7,7 +7,7 @@ import { applicabilityMap } from '../../core/applicability.js';
 import { effectiveStatus } from '../../core/readiness.js';
 import { missionContext, journey } from '../../core/missions.js';
 import { STATUSES, statusById, setCheckStatus, setCheckField, setApplicabilityOverride, recordGate, GATE_DECISIONS, setEvidenceWaiver, clearEvidenceWaiver, workstreamTeam } from '../../core/model.js';
-import { statusPill, critBadge, kindChip, applicabilityChip, provenanceChip, validationChip, callout, emptyState, sourceLine, btn, linkBtn, kv, stepExplainer } from '../components.js';
+import { statusPill, tierBadge, kindChip, applicabilityChip, provenanceChip, validationChip, callout, emptyState, sourceLine, btn, linkBtn, kv, stepExplainer } from '../components.js';
 import { attachFiles, addNoteEvidence, addLinkEvidence, removeEvidenceFlow } from '../actions.js';
 import { formatDate, bytesLabel } from '../../core/util.js';
 import { extensionFor } from '../../core/files.js';
@@ -60,7 +60,7 @@ route('item', ({ params }) => {
         next ? h('a', { href: `#/item/${next.id}`, class: 'btn btn-sm', 'data-focus-key': 'next-step-top' }, 'Next step', icon('arrow', 'icon-sm')) : h('a', { href: '#/overview', class: 'btn btn-sm' }, 'Back to the overview', icon('arrow', 'icon-sm')))),
     h('div', { class: 'item-head' },
       h('h1', { id: 'page-title', tabindex: '-1' }, c.title),
-      h('div', { class: 'item-chips' }, statusPill(effectiveStatus(p, c.id)), critBadge(c.criticality), c.scope === 'extra' ? h('span', { class: 'chip chip-muted', title: 'Useful, but not needed for the move. It never affects readiness.' }, 'Good practice') : null, c.kind !== 'check' ? kindChip(c.kind) : null, provenanceChip(c), validationChip(c), applicabilityChip(app),
+      h('div', { class: 'item-chips' }, statusPill(effectiveStatus(p, c.id)), tierBadge(c), c.kind !== 'check' ? kindChip(c.kind) : null, provenanceChip(c), validationChip(c), applicabilityChip(app),
         c.changesState ? h('span', { class: 'chip chip-warn' }, icon('edit', 'icon-xs'), 'Changes configuration: follow your change process') : null),
       h('p', { class: 'item-lead' }, rich(c.objective, ctx)),
       c.short ? stepExplainer(c.short.info, `step-${c.id}`) : null),
@@ -97,7 +97,7 @@ function missionStep(c, app, ctx, mc, appMap) {
         h('a', { href: nextHref, class: 'btn btn-sm btn-primary', 'data-focus-key': 'next-in-mission' }, nextText, icon('arrow', 'icon-sm')))),
     h('div', { class: 'item-head' },
       h('h1', { id: 'page-title', tabindex: '-1' }, c.title),
-      h('div', { class: 'item-chips' }, statusPill(effectiveStatus(p, c.id)), critBadge(c.criticality), c.scope === 'extra' ? h('span', { class: 'chip chip-muted', title: 'Useful, but not needed for the move. It never affects readiness.' }, 'Good practice') : null, c.kind !== 'check' ? kindChip(c.kind) : null, provenanceChip(c), validationChip(c), applicabilityChip(app),
+      h('div', { class: 'item-chips' }, statusPill(effectiveStatus(p, c.id)), tierBadge(c), c.kind !== 'check' ? kindChip(c.kind) : null, provenanceChip(c), validationChip(c), applicabilityChip(app),
         c.changesState ? h('span', { class: 'chip chip-warn' }, icon('edit', 'icon-xs'), 'Changes configuration: follow your change process') : null),
       h('p', { class: 'item-lead' }, rich(c.objective, ctx)),
       c.short ? stepExplainer(c.short.info, `step-${c.id}`) : null),

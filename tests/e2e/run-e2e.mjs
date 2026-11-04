@@ -758,6 +758,8 @@ await step('Simplified: six questions, missions with progress, a mission questio
   await btn(pg, 'Continue').click();
   await btn(pg, 'Continue').click();
   await pg.locator('label.choice.selected', { hasText: 'Simplified (recommended)' }).waitFor();
+  // This step covers missions in full, so it keeps every step.
+  await pg.locator('[data-focus-key="wiz-depth-thorough"]').check();
   await pg.getByLabel(/I understand this assistant gives guidance only/).check();
   await btn(pg, 'Create my project').click();
   // Six core questions: Yes to the first (several workspaces), No to the rest.
@@ -1014,6 +1016,52 @@ await step('Connection check: a secondary needs a primary, all connected offers 
   await go(pg, '#/item/PREP-ACC-01');
   await pg.getByText('already connected', { exact: false }).first().waitFor();
   await c7.close();
+});
+
+await step('Plan depth: how thorough, with topics; questions most important first, optional ones skippable; tags on steps', async () => {
+  const c8 = await chromium.launch({ channel, headless });
+  const ctx8 = await c8.newContext({ viewport: { width: 1440, height: 1000 } });
+  ctx8.on('request', (r) => { const u = r.url(); if (/^(https?|wss?):/i.test(u)) network.push(u); });
+  const pg = await ctx8.newPage();
+  watch(pg);
+  await pg.goto(appUrl);
+  await pg.getByRole('button', { name: 'Skip intro' }).click();
+  await pg.getByRole('button', { name: 'Start my project' }).click();
+  await pg.getByLabel('Project or customer label').fill('Depth E2E');
+  await pg.getByLabel('Your name').fill('Dana');
+  await btn(pg, 'Continue').click();
+  await btn(pg, 'Continue').click();
+  await pg.getByText('Type them in myself', { exact: true }).click();
+  await btn(pg, 'Continue').click();
+  await btn(pg, 'Continue').click();
+  await pg.locator('label.choice', { has: pg.getByText('Detailed', { exact: true }) }).click();
+  // Recommended is the default; Thorough asks the optional questions too, last.
+  assert.equal(await pg.locator('[data-focus-key="wiz-depth-recommended"]').isChecked(), true);
+  await pg.locator('[data-focus-key="wiz-depth-thorough"]').check();
+  await pg.getByLabel(/I understand this assistant gives guidance only/).check();
+  await btn(pg, 'Create my project').click();
+  const groups = await pg.locator('.q-section-intro ol.steps > li strong').allTextContents();
+  assert.deepEqual(groups, ['Must answer', 'Important', 'Optional'], 'the intro lists the groups, most important first');
+  await btn(pg, 'Start the questions').click();
+  await pg.locator('.q-meta .q-imp', { hasText: 'Must answer' }).waitFor();
+  await pg.locator('[data-focus-key="q-skip-optional"]').click();
+  await pg.getByRole('heading', { name: 'Nearly there' }).waitFor();
+  await pg.getByText(/Their steps stay in your plan until you answer/).waitFor();
+  // Tags on steps.
+  await go(pg, '#/stage/prepare');
+  assert.ok(await pg.locator('.tier-badge', { hasText: 'Must do' }).count() > 0, 'must-do steps are tagged');
+  assert.ok(await pg.locator('.tier-badge', { hasText: 'Useful' }).count() > 0, 'Thorough keeps useful steps');
+  // Essentials in Project setup: fewer steps, set aside with the reason; backups switched back on keep a baseline.
+  await go(pg, '#/project');
+  await pg.locator('[data-focus-key="proj-depth-essentials"]').check();
+  await pg.getByText(/Your plan now has \d+ steps? \(\d+ fewer\)/).waitFor();
+  await go(pg, '#/item/PREP-CON-05');
+  await pg.locator('.item-chips').getByText('Left out by your plan').waitFor();
+  await go(pg, '#/project');
+  await pg.locator('[data-focus-key="proj-depth-topic-backups"]').check();
+  await go(pg, '#/item/PREP-CON-05');
+  assert.equal(await pg.locator('.item-chips').getByText('Left out by your plan').count(), 0, 'the backups topic keeps the baseline');
+  await c8.close();
 });
 
 await step('No network request was made during the whole run, and no console errors occurred', async () => {

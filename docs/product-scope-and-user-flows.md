@@ -16,6 +16,7 @@ Version 1.0.0 is the first public version, released as one final version (no rel
 **In scope**
 - A first-run introduction (about four seconds, skippable), a short splash on later starts, a welcome page and a four-step new-project wizard.
 - The choice between Simplified and Detailed. Both tailor the plan with questions; Detailed can skip them and show the full checklist.
+- How thorough the plan is: Essentials, Recommended or Thorough, with switches for backups and baselines, a test rehearsal and extra verification. Questions are asked most important first; the optional ones can be skipped.
 - Four stages with 109 guided steps:
   - Prepare: 62
   - Test (optional): 11

@@ -4,8 +4,9 @@ import { h, icon, toast, field, copyText, savedPulse, externalLink, modal } from
 import { state, mutate } from '../app/store.js';
 import { render } from './shell.js';
 import { readyText, emailActions } from './templates.js';
-import { setPlanProfile, setOwnersWanted, setEnvironments, setPlannedPrimary, plannedPrimaryOf, plannedRole, setWorkstreamOwners, setWorkstreamPeople, cleanWorkstreamPeople, setApprovers, setCheckField, DEFENDER_STATES, ENV_KINDS, workstreamKey, knownPeople, addAudit, setHelper, MAX_HELPER_SUBJECTS, addPerson, peopleWithRoles, setAnswer, connectionState, syncConnectionAnswer, tenantConnected } from '../core/model.js';
+import { setPlanProfile, setOwnersWanted, setEnvironments, setPlannedPrimary, plannedPrimaryOf, plannedRole, setWorkstreamOwners, setWorkstreamPeople, cleanWorkstreamPeople, setApprovers, setCheckField, DEFENDER_STATES, ENV_KINDS, workstreamKey, knownPeople, addAudit, setHelper, MAX_HELPER_SUBJECTS, addPerson, peopleWithRoles, setAnswer, setPlanDepth, connectionState, syncConnectionAnswer, tenantConnected } from '../core/model.js';
 import { applicabilityMap } from '../core/applicability.js';
+import { DEPTHS, TOPICS, tierOf, topicPreset, planOf, planSummary } from '../core/depth.js';
 import { evaluateHelper, decisionDraft } from '../core/decision-helper.js';
 import { formatDate } from '../core/util.js';
 import { btn, callout, infoTip } from './components.js';
@@ -68,6 +69,50 @@ function saveBar(dirty, onSave, onDiscard, savedText) {
     h('span', { class: 'small muted' }, dirty ? 'Changes not saved yet.' : savedText),
     dirty ? btn('Discard', onDiscard, { kind: 'ghost', small: true }) : null,
     h('button', { type: 'button', class: 'btn btn-primary btn-sm', disabled: !dirty, onclick: onSave }, icon('check', 'icon-sm'), 'Save'));
+}
+
+// ───────── How thorough: the plan depth and its topics ─────────
+const TOPIC_HINT = {
+  backups: 'the configuration backup, the pre-change snapshot and the baselines',
+  rehearsal: 'the optional Test stage, in a non-production environment',
+  verification: 'the checks after the change and in Validate, beyond the must-do ones',
+};
+// The choices, used in setup (a draft) and in Project setup (the project). onDepth(id), onTopic(id, on).
+export function planChoices({ depth, topics, onDepth, onTopic, name = 'plan-depth' }) {
+  const kb = state.kb;
+  const upTo = (keeps) => kb.checks.filter((c) => keeps.includes(tierOf(c))).length;
+  const desc = {
+    essentials: `Only the must-do steps: up to ${upTo(['must'])}. For a simple environment or a tight timeline.`,
+    recommended: `Must-do and recommended steps: up to ${upTo(['must', 'recommended'])}, plus the good-practice extras, which you can hide.`,
+    thorough: `Every step: up to ${kb.checks.length}, the useful ones included.`,
+  };
+  return h('div', { class: 'stack plan-choices' },
+    h('fieldset', { class: 'choices' }, h('legend', { class: 'small muted' }, 'How thorough should your plan be?'),
+      DEPTHS.map((d) => h('label', { class: ['choice', depth === d.id && 'selected'] },
+        h('input', { type: 'radio', name, value: d.id, checked: depth === d.id, 'data-focus-key': `${name}-${d.id}`, onchange: () => onDepth(d.id) }),
+        h('div', null, h('strong', null, d.id === 'recommended' ? 'Recommended (default)' : d.label), h('p', { class: 'small' }, desc[d.id]))))),
+    h('fieldset', { class: 'plan-topics stack' }, h('legend', { class: 'small muted' }, 'Also include'),
+      TOPICS.map((t) => h('label', { class: 'check-line' },
+        h('input', { type: 'checkbox', checked: !!topics[t.id], 'data-focus-key': `${name}-topic-${t.id}`, onchange: (e) => onTopic(t.id, e.target.checked) }),
+        h('span', null, ` ${t.label}`, h('span', { class: 'small muted' }, `: ${TOPIC_HINT[t.id]}`))))),
+    h('p', { class: 'small muted' }, 'Your answers and your inventory still decide what applies, so your plan is often shorter. Must-do steps always stay. Steps left out are set aside with the reason, never deleted, and you can change this later in Project setup.'));
+}
+
+// Project setup: the same choices, applied at once, with what they mean for the plan.
+export function planTool() {
+  const p = state.project;
+  if (p.mode === 'full') return h('div', { class: 'tool' }, callout('info', 'This project uses the full checklist.', ' Every step is shown, so the plan depth does not apply. Switch to tailoring in Your answers to use it.'));
+  const { depth, topics } = planOf(p);
+  const count = () => { const app = applicabilityMap(state.kb, state.project); return { inPlan: state.kb.checks.filter((c) => app.get(c.id).value !== 'not_applicable').length, out: state.kb.checks.filter((c) => app.get(c.id).source === 'plan').length }; };
+  const apply = (d, t) => {
+    const before = count().inPlan;
+    mutate((pr) => setPlanDepth(pr, d, t));
+    const after = count();
+    toast(`Your plan now has ${after.inPlan} step${after.inPlan === 1 ? '' : 's'} (${after.inPlan >= before ? `${after.inPlan - before} more` : `${before - after.inPlan} fewer`}). ${after.out} left out by the plan.`, 'good', 7000);
+  };
+  return h('div', { class: 'tool' },
+    h('p', { class: 'small' }, planSummary(p, count().out)),
+    planChoices({ depth, topics, name: 'proj-depth', onDepth: (d) => apply(d, topicPreset(d)), onTopic: (id, on) => apply(depth, { ...topics, [id]: on }) }));
 }
 
 // ───────── Workspace inventory ─────────

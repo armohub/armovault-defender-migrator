@@ -1,5 +1,6 @@
 // Reusable presentational components.
 import { h, icon, externalLink } from './dom.js';
+import { tierOf, TIERS } from '../core/depth.js';
 import { statusById } from '../core/model.js';
 
 export const STAGE_ICONS = { prepare: 'prepare', test: 'test', transition: 'transition', validate: 'validate' };
@@ -15,6 +16,13 @@ export function critBadge(c) {
   return h('span', { class: ['badge', `badge-${c}`], title: `Criticality: ${c}` }, c);
 }
 
+// A step's tag: Must do, Recommended, Useful or Good practice.
+const TIER_BADGE = { must: 'critical', recommended: 'high', useful: 'medium', extra: 'low' };
+export function tierBadge(check) {
+  const t = tierOf(check);
+  return h('span', { class: ['badge', `badge-${TIER_BADGE[t]}`, 'tier-badge'], title: `${TIERS[t]} (criticality: ${check.criticality})` }, TIERS[t]);
+}
+
 export function kindChip(kind) {
   const label = { check: 'Check', task: 'Task', decision: 'Decision', gate: 'Gate' }[kind] || kind;
   return h('span', { class: 'chip chip-kind' }, label);
@@ -23,7 +31,7 @@ export function kindChip(kind) {
 export function applicabilityChip(app) {
   if (!app) return null;
   if (app.value === 'unknown') return h('span', { class: 'chip chip-caution', title: app.reasons.join('\n') }, icon('question', 'icon-xs'), 'Applicability uncertain');
-  if (app.value === 'not_applicable') return h('span', { class: 'chip chip-muted', title: app.reasons.join('\n') }, 'Not applicable to your answers');
+  if (app.value === 'not_applicable') return h('span', { class: 'chip chip-muted', title: app.reasons.join('\n') }, app.source === 'plan' ? 'Left out by your plan' : 'Not applicable to your answers');
   if (app.source === 'override') return h('span', { class: 'chip chip-info', title: app.reasons.join('\n') }, 'Applies (reviewer decision)');
   return null;
 }

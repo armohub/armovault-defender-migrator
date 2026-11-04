@@ -64,7 +64,7 @@ export const TEST = [
     sources: [src('migrategrouping', 'Microsoft validation list for incident behaviour')],
   }),
   k({
-    id: 'TEST-03', stage: 'test', workstream: 'test-setup', order: 30, kind: 'task', criticality: 'high',
+    id: 'TEST-03', topics: ['backups'], stage: 'test', workstream: 'test-setup', order: 30, kind: 'task', criticality: 'high',
     title: 'Capture a test baseline',
     objective: 'Record ingestion, alert, incident and health baselines in the test workspace before you connect it.',
     why: 'Without a baseline, you cannot tell whether a difference after connection is caused by the transition.',

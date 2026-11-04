@@ -3,13 +3,15 @@ import { h, icon, field, toast, confirmDialog, externalLink, pickFile, copyText,
 import { state, setProject, updateSettings, openBrowserProject, deleteBrowserProject, setStorageMode, mutate } from '../../app/store.js';
 import { go, route } from '../shell.js';
 import { BRAND, APP_VERSION } from '../../brand.js';
-import { createProject, addAudit, setAnswer, setInventoryChoice } from '../../core/model.js';
-import { applicabilityMap } from '../../core/applicability.js';
+import { createProject, addAudit, setAnswer, setInventoryChoice, setPlanDepth } from '../../core/model.js';
+import { applicabilityMap, upfrontQuestions } from '../../core/applicability.js';
 import { summariseStage } from '../../core/readiness.js';
 import { openProjectFileFlow, startDemo, confirmLeaveProject } from '../actions.js';
 import { btn, callout, daysUntil, infoTip } from '../components.js';
 import { readInventoryFiles, applyInventory } from '../inventory.js';
 import { suggestAnswers } from '../../core/inventory.js';
+import { topicPreset } from '../../core/depth.js';
+import { planChoices } from '../tools.js';
 import { downloadInventoryScript } from '../step-actions.js';
 import { formatDate, bytesLabel, nowIso } from '../../core/util.js';
 import { DISCLAIMER_SHORT } from '../../core/report.js';
@@ -103,6 +105,7 @@ function resetDraft() {
     guidance: 'simple', name: '', organisation: '', operatorName: state.settings.operatorName || '', operatorRole: state.settings.operatorRole || '',
     startDate: new Date().toISOString().slice(0, 10), windowStart: '', windowEnd: '', environments: [blankRow()],
     wsMode: '', imports: [], importErrors: [], suggest: [], storageMode: state.settings.storageMode, mode: 'tailored', disclaimer: false,
+    planDepth: 'recommended', planTopics: topicPreset('recommended'),
   });
 }
 resetDraft();
@@ -269,7 +272,8 @@ route('setup', ({ params }) => {
     next = () => { if (!draft.storageMode) { toast('Choose how to save your work.', 'bad'); return false; } return true; };
   } else {
     const qs = state.kb.questions.filter((q) => !q.derived);
-    const core = qs.filter((q) => q.core).length;
+    // How many core questions Simplified asks up front with the plan chosen here (Essentials asks fewer).
+    const core = upfrontQuestions(state.kb, { mode: 'tailored', guidance: 'simple', answers: {}, checks: {}, stages: { test: { availability: 'undecided' } }, meta: { planDepth: draft.planDepth, planTopics: draft.planTopics } }).length;
     const filled = draft.wsMode === 'import' ? draft.suggest.filter((x) => x.on).length : 0;
     const guideChoice = (value, title, desc, extra) => h('label', { class: ['choice', draft.guidance === value && 'selected'] },
       h('input', { type: 'radio', name: 'guidance', value, checked: draft.guidance === value, 'data-focus-key': `guidance-${value}`, onchange: () => { draft.guidance = value; if (value === 'simple') draft.mode = 'tailored'; go(`#/setup/${LAST}`); } }),
@@ -281,8 +285,11 @@ route('setup', ({ params }) => {
     body = h('div', { class: 'stack' },
       h('fieldset', { class: 'choices' }, h('legend', { class: 'small muted' }, 'How do you want to work?'),
         guideChoice('simple', 'Simplified (recommended)', `Missions with short checklists. You answer ${core} questions now, and the others come up inside the missions they affect. Each check says what to do and what counts as proof.`),
-        guideChoice('detailed', 'Detailed', `Every step in full, with background and sources. You answer all ${qs.length} questions up front, grouped in ${state.kb.questionSections.length} short sections. For consultants and audit-heavy projects.`, fullOption)),
-      h('p', { class: 'small muted' }, `${draft.mode === 'full' ? 'You will see every step, and decide what applies as you go.' : 'Your answers tailor the plan. Steps that do not apply are set aside with a reason, never deleted, and "I don\'t know yet" keeps them in your plan.'}${filled && draft.mode !== 'full' ? ` ${filled} answer${filled === 1 ? ' is' : 's are'} already filled in from your inventory.` : ''}`),
+        guideChoice('detailed', 'Detailed', `Every step in full, with background and sources. You answer the questions up front, most important first. For consultants and audit-heavy projects.`, fullOption)),
+      draft.mode === 'full' ? null : planChoices({ depth: draft.planDepth, topics: draft.planTopics, name: 'wiz-depth',
+        onDepth: (d) => { draft.planDepth = d; draft.planTopics = topicPreset(d); go(`#/setup/${LAST}`); },
+        onTopic: (id, on) => { draft.planTopics = { ...draft.planTopics, [id]: on }; go(`#/setup/${LAST}`); } }),
+      draft.mode === 'full' ? h('p', { class: 'small muted' }, 'You will see every step, and decide what applies as you go.') : filled ? h('p', { class: 'small muted' }, `${filled} answer${filled === 1 ? ' is' : 's are'} already filled in from your inventory.`) : null,
       h('div', { class: 'card card-muted' }, h('h2', { class: 'card-title' }, 'Before you start'), h('p', null, DISCLAIMER_SHORT),
         h('label', { class: 'check-line' }, h('input', { type: 'checkbox', checked: draft.disclaimer, onchange: (e) => { draft.disclaimer = e.target.checked; } }), ' I understand this assistant gives guidance only, and my organisation stays responsible for checking instructions, approvals and change decisions.')));
     next = () => { if (!draft.disclaimer) { toast('Please confirm the responsibility statement to continue.', 'bad'); return false; } return true; };
@@ -302,6 +309,7 @@ route('setup', ({ params }) => {
       startDate: draft.startDate, windowStart: draft.windowStart, windowEnd: draft.windowEnd, environments: envs,
     });
     setInventoryChoice(p, draft.wsMode);
+    if (draft.mode !== 'full') setPlanDepth(p, draft.planDepth, draft.planTopics);
     p.audit[0].by = p.meta.operatorName;
     addAudit(p, 'disclaimer.acknowledged', 'Operator acknowledged the responsibility statement');
     updateSettings({ operatorName: p.meta.operatorName, operatorRole: p.meta.operatorRole, welcomeSeen: true, disclaimerAcknowledgedAt: nowIso() }, { silent: true });

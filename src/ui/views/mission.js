@@ -11,6 +11,7 @@ import { btn, linkBtn, emptyState, infoTip } from '../components.js';
 import { actionsFor } from '../step-actions.js';
 import { changeAnswer } from './questionnaire.js';
 import { checkRow } from '../checkrow.js';
+import { questionImportance, IMPORTANCE } from '../../core/depth.js';
 import { peopleList, personPicker } from '../tools.js';
 import { rich } from '../rich.js';
 import { revokeObjectUrls } from './work.js';
@@ -40,7 +41,7 @@ function missionQuestion(q, kb) {
     q.help ? h('div', null, h('strong', null, 'Where to find the answer'), h('p', null, rich(q.help, { kb }))) : null,
     q.why ? h('div', null, h('strong', null, 'Why we ask'), h('p', null, rich(q.why, { kb }))) : null) : null;
   return h('div', { class: 'mq' },
-    h('div', { class: 'mq-head' }, h('p', { class: 'mq-text' }, q.text), help),
+    h('div', { class: 'mq-head' }, h('span', { class: ['chip', 'q-imp', `imp-${questionImportance(kb, state.project, q)}`] }, IMPORTANCE[questionImportance(kb, state.project, q)] || 'Optional'), h('p', { class: 'mq-text' }, q.text), help),
     q.detail ? h('p', { class: 'small muted mq-detail' }, q.detail) : null,
     h('div', { class: 'row-actions' },
       btn('Yes', () => changeAnswer(q, 'yes'), { small: true }),
@@ -120,7 +121,7 @@ route('mission', ({ params }) => {
           h('div', { class: 'row' }, h('h2', null, 'Recommended extras'), infoTip({ key: 'extras', title: 'Recommended extras' }, h('p', null, 'Good practice that Microsoft does not require for the move. They never count against your progress or readiness. Do them when they help you, or hide them with the switch.')), h('span', { class: 'small muted' }, 'Good practice, not needed for the move.'),
             h('label', { class: 'toggle small' }, h('input', { type: 'checkbox', checked: showExtras, 'data-focus-key': 'show-extras', onchange: (e) => mutate((pr) => setShowExtras(pr, e.target.checked)) }), 'Show')),
           showExtras ? h('ul', { class: 'crow-list' }, m.extras.map(rowFor)) : null) : null,
-        m.setAside.length ? h('details', { class: 'disclose mission-aside' }, h('summary', null, icon('chevron', 'icon-sm'), `Set aside because of your answers (${m.setAside.length})`),
+        m.setAside.length ? h('details', { class: 'disclose mission-aside' }, h('summary', null, icon('chevron', 'icon-sm'), `Set aside by your answers or your plan (${m.setAside.length})`),
           h('ul', { class: 'bullets small' }, m.setAside.map((r) => h('li', null, r.check.short.title, h('span', { class: 'muted' }, r.app.reasons[0] ? `: ${r.app.reasons[0]}` : ''))))) : null),
       journeyRail(j, m.key)));
 });

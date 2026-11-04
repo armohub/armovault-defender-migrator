@@ -69,6 +69,8 @@ Simplified mode adds to the knowledge base: `check.scope` (`needed` or `extra`, 
           workstreamOwners: { "<stage>:<workstream>": lead name }, workstreamPeople: { "<stage>:<workstream>": [{ name, covers }] },
           approvers: [{ role, name }], plannedPrimary (no tenants), plannedPrimaries: { "<tenant>": alias },
           showExtras: boolean (default true), ownersWanted: 'yes' | 'later' | '',
+          planDepth: 'essentials' | 'recommended' | 'thorough' (default 'thorough' for projects created before 4 November 2026 and for odd values on import; new projects choose in setup),
+          planTopics: { backups, rehearsal, verification } (booleans, default true),
           planProfile: 'auto' | 'lean' | 'smaller' | 'larger' (default 'auto': suggested from the answers and the workspace list; an unknown value on import becomes 'auto'),
           people: [{ name, role }] (people added with "Add a new person" in a person list; up to 200, names unique regardless of case),
           inventoryChoice: 'import' | 'manual' | '' (how the workspaces were added during setup; '' for older projects),
@@ -175,6 +177,13 @@ Produced by `tools/Get-ArMoSentinelInventory.ps1`, which sends GET requests only
 - `collected` { part: true | false }: whether every request of a part succeeded; `errors[]`
 
 The assistant maps the file to imported evidence notes on specific steps, and to answer suggestions for the workspaces in scope (`suggestAnswers` in `src/core/inventory.js`). Yes when any workspace shows it. No only for the 12 questions that allow it, and only when every workspace in scope was collected for that part and none has it. A finding that is absent in one workspace never becomes "No" on its own.
+
+## Plan depth (`src/core/depth.js`)
+
+- A step's tag comes from the knowledge base: criticality critical is Must do, high is Recommended, medium or low is Useful, and the extras (`scope: 'extra'`) are Good practice.
+- `leftOutByPlan(check, project)` applies after the answers: a step the answers keep is set aside (`source: 'plan'`) when the plan leaves it out. Reviewer decisions win; the full checklist ignores the plan. Must-do steps are only ever left out with the test rehearsal switched off, which skips the whole Test stage.
+- Topics: backups are the steps with `topics: ['backups']` in the knowledge base; the test rehearsal is the Test stage; extra verification is Validate and the Transition checks after the change.
+- A question's importance is the best tag among the steps it decides (applicability) or informs (`informs` in the knowledge base), among those the plan keeps. A question whose steps are all left out is not asked.
 
 ## Schema evolution
 

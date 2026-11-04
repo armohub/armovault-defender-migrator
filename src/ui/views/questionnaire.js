@@ -10,6 +10,7 @@ import { formatDate } from '../../core/util.js';
 import { rich } from '../rich.js';
 import { questionStrip } from '../route.js';
 import { INVENTORY_QUESTIONS } from '../../core/inventory.js';
+import { questionImportance, IMPORTANCE, IMPORTANCE_ORDER } from '../../core/depth.js';
 
 // Questions the read-only inventory script can suggest answers for (see src/core/inventory.js).
 const INVENTORY_QS = new Set(INVENTORY_QUESTIONS);
@@ -118,15 +119,19 @@ route('questionnaire', ({ params }) => {
         }, { small: true, iconName: 'plus' }))) : null);
   }
 
+  // Asked most important first: the strip shows the three groups, and the optional ones can be skipped.
+  const imp = questionImportance(kb, p, q);
+  const groups = IMPORTANCE_ORDER.map((g) => ({ id: g, qs: qs.filter((x) => questionImportance(kb, p, x) === g) })).filter((g) => g.qs.length);
   const progress = questionStrip({
-    sections: sections.map((s) => { const inSec = qs.filter((x) => x.section === s.id); return { title: s.title, done: inSec.length > 0 && inSec.every((x) => p.answers[x.id]), current: s.id === q.section }; }),
+    sections: groups.map((g) => ({ title: IMPORTANCE[g.id], done: g.qs.every((x) => p.answers[x.id]), current: g.id === imp })),
     position: qs.length ? (i + 0.5) / qs.length : 0,
   });
+  const optionalLeft = qs.filter((x) => questionImportance(kb, p, x) === 'optional' && !p.answers[x.id]).length;
 
   return h('div', { class: 'q-screen' },
     progress,
     h('div', { class: 'q-meta' },
-      h('span', null, h('strong', null, section ? section.title : ''), sections.length > 1 ? ` · section ${sIdx + 1} of ${sections.length}` : ''),
+      h('span', null, h('span', { class: ['chip', 'q-imp', `imp-${imp}`] }, IMPORTANCE[imp] || 'Optional'), ' ', h('strong', null, section ? section.title : '')),
       left ? h('span', { class: 'tnum' }, `${left} question${left === 1 ? '' : 's'} left`) : h('span', null, 'All answered')),
     h('div', { class: ['q-card', firstPaint && (direction === 'back' ? 'q-back' : 'q-forward')] },
       h('h1', { id: 'page-title', tabindex: '-1' }, q.text),
@@ -144,6 +149,7 @@ route('questionnaire', ({ params }) => {
       prev ? btn('Back', goPrev, { iconName: 'back' }) : linkBtn('Back to the overview', '#/overview', { iconName: 'back', kind: 'ghost' }),
       h('button', { type: 'button', class: ['btn', a ? 'btn-primary' : null], onclick: goNext, 'data-focus-key': 'q-next' }, a ? (next ? 'Next question' : 'Finish') : 'Skip for now', icon('arrow', 'icon-sm')),
       h('span', { class: 'spacer' }),
+      optionalLeft ? h('button', { type: 'button', class: 'btn btn-ghost btn-sm', 'data-focus-key': 'q-skip-optional', onclick: () => { direction = 'forward'; go('#/questionnaire/done'); } }, `Skip the ${optionalLeft} optional question${optionalLeft === 1 ? '' : 's'}`) : null,
       h('a', { href: '#/answers', class: 'small' }, 'See all answers')),
     h('p', { class: 'q-keys', style: { marginTop: '12px' } }, icon('keyboard', 'icon-sm'), 'Keys 1 to 4 answer, Enter goes to the next question.'));
 });
@@ -158,13 +164,13 @@ function introScreen(qs) {
   const filled = qs.filter((q) => p.answers[q.id] && /^From imported inventory/.test(p.answers[q.id].reason || '')).length;
   const listed = simple
     ? h('ol', { class: 'steps', style: { marginTop: '26px' } }, qs.map((q) => h('li', null, h('div', { class: 'step-text' }, q.text))))
-    : h('ol', { class: 'steps', style: { marginTop: '26px' } }, sections.map((s) => { const n = qs.filter((q) => q.section === s.id).length; return h('li', null, h('div', { class: 'step-text' }, h('strong', null, s.title), h('span', { class: 'small muted' }, ` ${n} question${n === 1 ? '' : 's'}`)), h('div', { class: 'small muted' }, s.intro)); }));
+    : h('ol', { class: 'steps', style: { marginTop: '26px' } }, IMPORTANCE_ORDER.map((g) => ({ g, n: qs.filter((q) => questionImportance(kb, p, q) === g).length })).filter((x) => x.n).map(({ g, n }) => h('li', null, h('div', { class: 'step-text' }, h('strong', null, IMPORTANCE[g]), h('span', { class: 'small muted' }, ` ${n} question${n === 1 ? '' : 's'}`)), h('div', { class: 'small muted' }, { must: 'They decide must-do steps. Answer these first.', important: 'They decide recommended steps.', optional: 'They decide useful steps only. You can skip them: their steps stay in your plan until you answer.' }[g]))));
   return h('div', { class: 'q-screen' },
     h('div', { class: 'q-section-intro' },
       h('h1', { id: 'page-title', tabindex: '-1' }, simple ? `${qs.length} questions to tailor your plan` : 'A few questions to tailor your plan'),
       h('p', { class: 'q-detail' }, simple
         ? `${qs.length} questions, one per screen, about your environment. Answer what you know: "I don't know yet" is a good answer, and it keeps the related steps in your plan. The other questions come up later, inside the missions they affect.`
-        : `${qs.length} questions, one per screen, in ${sections.length} short sections. Answer what you know: "I don't know yet" is a good answer, and it keeps the related steps in your plan.`),
+        : `${qs.length} questions, one per screen, most important first. Answer what you know: "I don't know yet" is a good answer, and it keeps the related steps in your plan.`),
       listed,
       filled ? callout('good', `${filled} answer${filled === 1 ? ' is' : 's are'} already filled in from your inventory.`, ' You will see them as you go, and you can change any of them.') : null,
       callout('info', 'Nothing is hidden for good.', ' Steps that do not apply are set aside with the reason, and you can change any answer later in "Your answers".'),
@@ -172,7 +178,7 @@ function introScreen(qs) {
       h('div', { class: 'hero-actions' },
         h('button', { type: 'button', class: 'btn btn-primary btn-lg', 'data-focus-key': 'q-start', onclick: () => { direction = 'forward'; go(`#/questionnaire/q/${(qs.find((q) => !p.answers[q.id]) || qs[0]).id}`); } }, 'Start the questions', icon('arrow', 'icon-sm')),
         linkBtn('Skip, show the full plan', '#/overview', { kind: 'ghost' })),
-      h('p', { class: 'q-keys', style: { marginTop: '14px' } }, icon('keyboard', 'icon-sm'), 'Tip: keys 1 to 4 answer. After Yes or No you move on by yourself; you can turn that off.')));
+      h('p', { class: 'q-keys', style: { marginTop: '14px' } }, icon('keyboard', 'icon-sm'), 'Tip: keys 1 to 4 choose an answer, and Enter moves on.')));
 }
 
 function planCounts() {

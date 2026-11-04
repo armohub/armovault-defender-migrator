@@ -6,7 +6,7 @@ import { applicabilityMap, evaluateApplicability, questionIndex, upfrontQuestion
 import { assessStage, summariseStage, dependencyStatus, CONCLUSION_CRITERIA, effectiveStatus } from '../../core/readiness.js';
 import { setTestAvailability, effectiveOwner, setGuidance } from '../../core/model.js';
 import { missionsForStage, nextMission } from '../../core/missions.js';
-import { statusPill, critBadge, kindChip, applicabilityChip, progressBar, conclusionBadge, callout, emptyState, btn, linkBtn, daysUntil, infoTip } from '../components.js';
+import { statusPill, tierBadge, kindChip, applicabilityChip, progressBar, conclusionBadge, callout, emptyState, btn, linkBtn, daysUntil, infoTip } from '../components.js';
 import { formatDate } from '../../core/util.js';
 import { importInventoryFlow } from '../inventory.js';
 import { routeView, routeModel } from '../route.js';
@@ -179,7 +179,7 @@ route('overview', () => {
     hero = h('div', { class: 'next-head' },
       h('div', null,
         h('h1', { id: 'page-title', tabindex: '-1' }, c.title),
-        h('div', { class: 'next-context' }, h('span', null, 'Your next step'), h('span', { class: 'sep' }, '·'), h('span', null, next.stage.short), ws ? [h('span', { class: 'sep' }, '·'), h('span', null, ws.title)] : null, h('span', { class: 'sep' }, '·'), critBadge(c.criticality)),
+        h('div', { class: 'next-context' }, h('span', null, 'Your next step'), h('span', { class: 'sep' }, '·'), h('span', null, next.stage.short), ws ? [h('span', { class: 'sep' }, '·'), h('span', null, ws.title)] : null, h('span', { class: 'sep' }, '·'), tierBadge(c)),
         h('p', { class: 'objective-lead' }, plain(c.objective, kb)),
         whyOpen ? h('div', { class: 'next-why', id: 'why-next' }, h('ul', { class: 'bullets', style: { margin: 0 } }, reasons.map((r) => h('li', null, r)))) : null,
         h('div', { class: 'next-actions' },
@@ -370,7 +370,7 @@ function itemRow(i, appMap, seq) {
       h('span', { class: 'item-main' },
         h('span', { class: 'item-title' }, c.title),
         h('span', { class: 'item-meta' },
-          critBadge(c.criticality),
+          tierBadge(c),
           c.scope === 'extra' ? h('span', { class: 'chip chip-muted', title: 'Useful, but not needed for the move. It never affects readiness.' }, 'Good practice') : null,
           c.kind !== 'check' ? kindChip(c.kind) : null,
           applicabilityChip(i.app),
@@ -421,7 +421,7 @@ function testAvailabilityPanel(appMap) {
       h('ul', null, controls.map((c) => h('li', null, h('a', { href: `#/item/${c.id}` }, c.title)))))) : null,
     t.availability === 'available' ? h('details', { class: 'disclose', open: true, style: { marginTop: '14px' } }, h('summary', null, icon('chevron', 'icon-sm'), `Prepare steps worth testing in your environment (${testable.length})`),
       h('p', { class: 'small muted' }, 'Use these to scope the test plan. Failed or uncertain steps are the best candidates.'),
-      h('ul', { class: 'item-list compact' }, testable.map((c) => h('li', { class: 'item-row' }, h('a', { href: `#/item/${c.id}`, class: 'item-link' }, statusPill(effectiveStatus(p, c.id)), h('span', { class: 'item-main' }, h('span', { class: 'item-title' }, c.title)), critBadge(c.criticality)))))) : null);
+      h('ul', { class: 'item-list compact' }, testable.map((c) => h('li', { class: 'item-row' }, h('a', { href: `#/item/${c.id}`, class: 'item-link' }, statusPill(effectiveStatus(p, c.id)), h('span', { class: 'item-main' }, h('span', { class: 'item-title' }, c.title)), tierBadge(c)))))) : null);
 }
 
 export { rich };

@@ -5,6 +5,14 @@
 ### Version
 - Knowledge base version `2026.11.04` (it was `2026.11.03`): new questions logic, 18 new sources and a larger inventory script. The app version stays 1.0.0 until the release.
 
+### Plan depth
+- Setup asks how thorough the plan should be: **Essentials** (must-do steps only), **Recommended** (the default: must-do and recommended steps, and the good-practice extras) or **Thorough** (every step). It works on top of tailoring, so your answers and your inventory still decide what applies. Must-do steps always stay. Steps left out are set aside with the reason, never deleted. Change it at any time in Project setup.
+- "Also include" switches, preset by the level: backups and baselines, a test rehearsal (the Test stage), and extra verification after the move. On keeps the topic's steps whatever their tag; off leaves its non-must steps out. Switching the rehearsal off skips the Test stage.
+- Every step shows its tag: Must do, Recommended, Useful or Good practice. The working order stays.
+- Questions are tagged Must answer, Important or Optional by the most important step they decide, asked in that order, and not asked when the plan keeps none of their steps. **Skip the optional questions** moves to the end; their steps stay in the plan until you answer. Essentials asks 3 of the 6 core questions in Simplified.
+- Reports state the plan and how many steps it left out. Projects created before keep every step (Thorough, every topic on).
+- The full checklist ignores the plan. The questionnaire tip no longer mentions auto-advance.
+
 ### Inventory script
 - Run with no parameters, it finds every Sentinel workspace you can read (`-Discover` still works). Before, it asked for a subscription and a workspace and saw only that one.
 - The alias is the workspace name unless you give one, so an imported file never shows as `armohub-inventory`. Older files without a name ask you to type it.

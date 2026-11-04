@@ -53,7 +53,7 @@ export const VALIDATE = [
     sources: [src('onboard', 'Roles in the Defender portal'), src('runplaybooks', 'Playbook Operator for manual runs'), src('ah', 'Advanced hunting role requirement')],
   }),
   k({
-    id: 'VAL-03', stage: 'validate', workstream: 'data', order: 30, kind: 'check', criticality: 'critical', dependsOn: ['PREP-CON-04', 'PREP-PLN-02'],
+    id: 'VAL-03', topics: ['backups'], stage: 'validate', workstream: 'data', order: 30, kind: 'check', criticality: 'critical', dependsOn: ['PREP-CON-04', 'PREP-PLN-02'],
     title: 'Check data ingestion matches the baseline',
     objective: 'Prove that tables are still receiving data at the expected freshness.',
     why: 'Connector changes during the transition can create silent gaps. They include the Defender XDR connector, disconnected standalone connectors and Defender for Cloud changes.',

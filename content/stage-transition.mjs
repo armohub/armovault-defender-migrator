@@ -61,7 +61,7 @@ export const TRANSITION = [
     sources: [src('move', 'Finish all prerequisites before onboarding')],
   }),
   k({
-    id: 'TRN-03', stage: 'transition', workstream: 'pre-change', phase: 'pre', order: 30, kind: 'task', criticality: 'critical', applicability: not(q('all_connected')), dependsOn: ['PREP-PLN-01'],
+    id: 'TRN-03', topics: ['backups'], stage: 'transition', workstream: 'pre-change', phase: 'pre', order: 30, kind: 'task', criticality: 'critical', applicability: not(q('all_connected')), dependsOn: ['PREP-PLN-01'],
     title: 'Refresh the configuration backup',
     objective: 'Take a final backup immediately before the change.',
     why: 'Configuration may have changed since Stage 1. The backup is your restoration reference.',
@@ -176,7 +176,7 @@ export const TRANSITION = [
     sources: [src('onboard', 'Required roles')],
   }),
   k({
-    id: 'TRN-09', stage: 'transition', workstream: 'pre-change', phase: 'pre', order: 90, kind: 'task', criticality: 'high', applicability: not(q('all_connected')), dependsOn: ['PREP-CON-04', 'PREP-CON-05'],
+    id: 'TRN-09', topics: ['backups'], stage: 'transition', workstream: 'pre-change', phase: 'pre', order: 90, kind: 'task', criticality: 'high', applicability: not(q('all_connected')), dependsOn: ['PREP-CON-04', 'PREP-CON-05'],
     title: 'Capture a pre-change snapshot',
     objective: 'Record the state immediately before you connect.',
     why: 'A snapshot from minutes before the change lets you separate transition effects from normal variation.',

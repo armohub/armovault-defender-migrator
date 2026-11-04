@@ -7,7 +7,7 @@ import { route, render, freshRoute } from '../shell.js';
 import { addAudit, setShowExtras } from '../../core/model.js';
 import { guidanceSwitch } from './work.js';
 import { btn, linkBtn, callout } from '../components.js';
-import { windowTool, workspaceTool, ownersTool, peopleList } from '../tools.js';
+import { windowTool, workspaceTool, ownersTool, peopleList, planTool } from '../tools.js';
 
 let form = null; // the draft being edited; survives re-renders until saved or discarded
 let formFor = '';
@@ -60,6 +60,7 @@ route('project', ({ params }) => {
       field('Project notes', (() => { const t = h('textarea', { rows: '3', maxlength: '20000', 'data-focus-key': 'proj-notes', oninput: (e) => { m.notes = e.target.value; refreshBar(); } }); t.value = m.notes || ''; return t; })()),
       bar),
     h('section', { class: 'card form-section stack', id: 'sec-window' }, h('h2', { class: 'card-title' }, icon('calendar', 'icon-sm'), 'Planned transition window'), windowTool({ setupPage: true })),
+    h('section', { class: 'card form-section stack', id: 'sec-plan' }, h('h2', { class: 'card-title' }, 'How thorough your plan is'), planTool()),
     h('section', { class: 'card form-section stack', id: 'sec-environments' }, h('h2', { class: 'card-title' }, 'Workspaces in scope'), workspaceTool()),
     h('section', { class: 'card form-section stack', id: 'sec-owners' }, h('h2', { class: 'card-title' }, icon('users', 'icon-sm'), 'Owners and approvers'), ownersTool({ simple: false, setupPage: true })));
 

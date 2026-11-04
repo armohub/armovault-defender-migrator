@@ -171,7 +171,7 @@ export const PREPARE_2 = [
     sources: [src('onboard', 'Insider Risk Management prerequisite')],
   }),
   k({
-    id: 'PREP-CON-04', stage: 'prepare', workstream: 'connectors', order: 40, kind: 'task', criticality: 'critical',
+    id: 'PREP-CON-04', topics: ['backups'], stage: 'prepare', workstream: 'connectors', order: 40, kind: 'task', criticality: 'critical',
     title: 'Capture an ingestion baseline',
     objective: 'Record which tables receive data, how much, and how fresh it is. After the transition, you can then prove that monitoring coverage did not change.',
     why: 'Connecting to the Defender portal is not supposed to change log ingestion for non-Microsoft connectors. But standalone Microsoft connectors are replaced or disconnected in some workspaces. A dated baseline is the only reliable way to detect gaps afterwards.',
@@ -200,7 +200,7 @@ export const PREPARE_2 = [
     practiceNotes: ['Name evidence files consistently, for example "baseline-ingestion-<workspace>-<yyyymmdd>.csv". You will compare them in [[go:stage:validate|Stage 3]].'],
   }),
   k({
-    id: 'PREP-CON-05', stage: 'prepare', workstream: 'connectors', order: 50, kind: 'task', criticality: 'high',
+    id: 'PREP-CON-05', topics: ['backups'], stage: 'prepare', workstream: 'connectors', order: 50, kind: 'task', criticality: 'high',
     title: 'Capture an alert and incident baseline',
     objective: 'Record alert and incident volumes by product, provider and analytics rule before the transition.',
     why: [
@@ -565,7 +565,7 @@ export const PREPARE_2 = [
     sources: [src('move', 'Alert promotion; review rules for duplicates'), src('investigatealerts', 'Alert promotion sources and duplicates; alert tuning'), src('exportrules', 'Export from the Analytics page; the file includes the query of scheduled rules')],
   }),
   k({
-    id: 'PREP-DET-07', stage: 'prepare', workstream: 'detections', order: 70, kind: 'task', criticality: 'medium', dependsOn: ['PREP-CON-06'],
+    id: 'PREP-DET-07', topics: ['backups'], stage: 'prepare', workstream: 'detections', order: 70, kind: 'task', criticality: 'medium', dependsOn: ['PREP-CON-06'],
     title: 'Capture an analytics rule health baseline',
     objective: 'Record how analytics rules are running before the transition.',
     why: 'Failures that already exist should not be blamed on the transition, and new failures after the transition should be visible.',
@@ -778,7 +778,7 @@ export const PREPARE_2 = [
     sources: [src('automation', 'Up to 10 minutes; batching window; up to 5 minutes for Defender incidents'), src('move', 'Up to 5 minutes for Defender incidents')],
   }),
   k({
-    id: 'PREP-AUT-06', stage: 'prepare', workstream: 'automation', order: 60, kind: 'task', criticality: 'medium', applicability: any(q('automation_rules'), q('playbooks')), dependsOn: ['PREP-CON-06'],
+    id: 'PREP-AUT-06', topics: ['backups'], stage: 'prepare', workstream: 'automation', order: 60, kind: 'task', criticality: 'medium', applicability: any(q('automation_rules'), q('playbooks')), dependsOn: ['PREP-CON-06'],
     title: 'Capture an automation health baseline',
     objective: 'Record automation rule and playbook health before the transition.',
     why: 'Knowing the failures that exist today makes new failures after the transition stand out.',
