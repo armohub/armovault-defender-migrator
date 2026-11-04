@@ -61,6 +61,9 @@ test('a version 1 file still imports, and only its four original parts count as 
   const s = byQ(suggestAnswers([{ alias: 'OLD', kind: 'production', inv, res: analyseInventory(inv) }]));
   assert.equal(s.fusion.value, 'no');
   assert.equal(s.automation_rules, undefined, 'a part that failed gives no answer');
+  // Version 1 read the stable connector list only, which lacks kinds such as OfficeIRM and OfficeATP.
+  assert.equal(s.irm, undefined, 'no No for Insider Risk Management from a version 1 file');
+  assert.equal(s.standalone_connectors, undefined, 'no No for standalone connectors from a version 1 file');
   assert.equal(s.ueba, undefined, 'a part a version 1 file never had gives no answer');
 });
 
@@ -77,6 +80,12 @@ test('one busy workspace suggests Yes for every question the import can answer',
   for (const f of findings) assert.ok(ids.has(f.checkId), `${f.checkId} exists`);
   for (const id of ['PREP-GOV-03', 'PREP-CNT-06', 'PREP-TOP-06', 'PREP-CNT-07', 'PREP-CNT-03', 'PREP-CNT-01', 'PREP-ACC-06', 'PREP-ACC-04', 'PREP-SCOPE-05', 'PREP-TOP-05', 'PREP-CON-03', 'PREP-INT-01']) assert.ok(findings.some((f) => f.checkId === id), `a finding for ${id}`);
   assert.ok(!JSON.stringify(findings).includes('t-0000000b'), 'the tenant fingerprint is not shown as evidence');
+});
+
+test('no Sentinel playbook found in the Logic Apps you can read is said so, with the permission caveat', () => {
+  const f = item(quiet()).res.findings.find((x) => x.checkId === 'PREP-AUT-03');
+  assert.match(f.text, /No Logic App that uses the Microsoft Sentinel connector was found/);
+  assert.match(f.text, /Microsoft Sentinel Reader/);
 });
 
 test('Logic Apps that could not be read are said so, instead of looking like no playbooks', () => {
@@ -121,13 +130,19 @@ test('the workspace list answers the workspace and tenant questions', () => {
   const test2 = byQ(suggestAnswers([item(quiet()), item(other, 'test')]));
   assert.equal(test2.test_separate_tenant.value, 'yes');
   assert.equal(byQ(suggestAnswers([item(quiet())])).test_env, undefined, 'no test workspace does not prove there is none');
+  // Without a tenant fingerprint the tenant is unknown, so the workspace count per tenant is too.
+  const unknownTenant = { ...quiet(), workspace: { ...quiet().workspace, alias: 'SOC-OLD', tenantRef: '' } };
+  assert.equal(byQ(suggestAnswers([item(quiet()), item(unknownTenant)])).multi_workspace, undefined, 'one workspace without a fingerprint: no answer');
+  assert.equal(byQ(suggestAnswers([item(unknownTenant), item({ ...unknownTenant, workspace: { ...unknownTenant.workspace, alias: 'SOC-OLD2' } })])).multi_workspace, undefined);
+  assert.equal(byQ(suggestAnswers([item(quiet()), item(sameTenant), item(unknownTenant)])).multi_workspace.value, 'yes', 'two in one known tenant is enough for Yes');
 });
 
 test('every suggested question exists, and the questions only people can answer are never suggested', () => {
   const ids = new Set(KB.questions.map((q) => q.id));
   for (const q of INVENTORY_QUESTIONS) assert.ok(ids.has(q), q);
   assert.equal(INVENTORY_QUESTIONS.length, 28);
-  assert.equal(YES_OR_NO_QUESTIONS.length, 13);
+  assert.equal(YES_OR_NO_QUESTIONS.length, 12);
+  assert.ok(!YES_OR_NO_QUESTIONS.includes('cmk'), 'a key added after onboarding may not show, so CMK is never answered No');
   for (const q of ['onboarded_any', 'data_residency', 'data_lake', 'manual_incidents', 'manual_playbooks', 'urbac', 'identityinfo']) assert.ok(!INVENTORY_QUESTIONS.includes(q), q);
   const all = suggestAnswers([item(busy()), item(quiet(), 'test')]);
   for (const s of all) assert.ok(INVENTORY_QUESTIONS.includes(s.questionId), s.questionId);

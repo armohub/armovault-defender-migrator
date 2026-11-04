@@ -12,8 +12,17 @@
 - Tested against mocks: one workspace (every part, a refused part, the name), several workspaces, and discovery (tenant fingerprints, shared names, refused checks).
 
 ### Answers from the import
-- The import can suggest answers to 28 of the 35 questions, up from 9. Yes when any workspace in scope shows it. No, for the 13 questions that allow it, only when every workspace in scope was read for that part and none has it. Setup shows each suggestion with Yes or No and why.
+- The import can suggest answers to 28 of the 35 questions, up from 9. Yes when any workspace in scope shows it. No, for the 12 questions that allow it, only when every workspace in scope was read for that part and none has it. Setup shows each suggestion with Yes or No and why.
 - The workspace list answers several workspaces, several tenants, a test workspace and whether it is in a separate tenant. Workspaces from different tenants get tenant labels.
+
+### Fixes from an independent review of these changes
+- A Logic App with empty parameters no longer stops the script under Windows PowerShell 5.1 (a property lookup that is safe on empty objects).
+- Version 1 inventory files no longer suggest No for Insider Risk Management or standalone connectors: they read the stable connector list, which lacks those kinds.
+- "More than one workspace in this tenant" gets No only when every workspace in scope has a tenant fingerprint. A failed subscription lookup is tried again for the next workspace.
+- Service principals count as holding Sentinel access by what their role allows (Owner, Contributor, Reader, custom roles with Sentinel or Log Analytics actions), not only by the role name.
+- Customer-managed keys are suggested as Yes only: a key added after onboarding may not show in the onboarding state, and a wrong No would set aside a must-do step.
+- When no Sentinel playbook is found in the Logic Apps you can read, the evidence says so, with the permission caveat.
+- "Keep the full plan" records no answer, and the connection check offers Focus on checking again while every production workspace is connected. Reports leave out gates that are set aside.
 
 ### Setup and questions
 - How to start is one choice: Simplified or Detailed. Both tailor the plan. Under Detailed, "Skip the questions and show all 110 steps" keeps the full checklist.

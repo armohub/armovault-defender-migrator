@@ -131,7 +131,11 @@ function Get-Prop($Object, [string[]] $Path) {
   $cur = $Object
   foreach ($p in $Path) {
     if ($null -eq $cur) { return $null }
-    if ($cur.PSObject.Properties.Name -contains $p) { $cur = $cur.$p } else { return $null }
+    # Properties[name] is safe on an object with no properties (for example "parameters": {}), where reading
+    # .Properties.Name throws under StrictMode in Windows PowerShell 5.1.
+    $prop = $cur.PSObject.Properties[$p]
+    if ($null -eq $prop) { return $null }
+    $cur = $prop.Value
   }
   return $cur
 }
@@ -155,7 +159,10 @@ function Get-SubscriptionInfo([string] $Id) {
   if (-not $script:subscriptionInfo.ContainsKey($Id)) {
     $sub = Get-One "/subscriptions/${Id}?api-version=2022-12-01" 'subscription'
     $managed = Get-Prop $sub @('managedByTenants')
-    $script:subscriptionInfo[$Id] = @{ tenantRef = (Get-TenantRef ([string](Get-Prop $sub @('tenantId')))); delegated = [bool]($managed -and @($managed).Count) }
+    $info = @{ tenantRef = (Get-TenantRef ([string](Get-Prop $sub @('tenantId')))); delegated = [bool]($managed -and @($managed).Count) }
+    # A failed lookup is not remembered: the next workspace in this subscription tries again.
+    if ($null -eq $sub) { return $info }
+    $script:subscriptionInfo[$Id] = $info
   }
   return $script:subscriptionInfo[$Id]
 }
@@ -316,13 +323,16 @@ function Invoke-WorkspaceInventory([string] $SubscriptionId, [string] $ResourceG
       if (-not $roles.ContainsKey($defId)) {
         $def = Get-One "${defId}?api-version=2022-04-01" 'roleDefinitions'
         $actions = @(@(Get-Prop $def @('properties', 'permissions')) | ForEach-Object { @(Get-Prop $_ @('actions')) } | Where-Object { $_ })
-        $roles[$defId] = @{ name = [string](Get-Prop $def @('properties', 'roleName')); tableActions = [bool](@($actions | Where-Object { $_ -match '^Microsoft\.OperationalInsights/workspaces/query/[^*/]+/read$' }).Count) }
+        $roles[$defId] = @{ name = [string](Get-Prop $def @('properties', 'roleName')); actions = $actions; tableActions = [bool](@($actions | Where-Object { $_ -match '^Microsoft\.OperationalInsights/workspaces/query/[^*/]+/read$' }).Count) }
       }
       $role = $roles[$defId]
     }
-    if ([string](Get-Prop $p @('principalType')) -eq 'ServicePrincipal' -and $role -and $role.name -match 'Sentinel|Log Analytics') {
+    # A role gives Sentinel access when it is a Sentinel or Log Analytics role, or allows everything (Owner,
+    # Contributor, Reader) or Sentinel or Log Analytics actions (custom roles). Read-only: every action is a read.
+    $grants = $role -and (($role.name -match 'Sentinel|Log Analytics') -or @($role.actions | Where-Object { $_ -eq '*' -or $_ -eq '*/read' -or $_ -match '^Microsoft\.(SecurityInsights|OperationalInsights)/' }).Count)
+    if ([string](Get-Prop $p @('principalType')) -eq 'ServicePrincipal' -and $grants) {
       $access.spWithSentinelRoles += 1
-      if ($role.name -match 'Reader') { $access.spWithReadOnlyRoles += 1 }
+      if (@($role.actions).Count -and -not @($role.actions | Where-Object { $_ -notmatch '/read$' }).Count) { $access.spWithReadOnlyRoles += 1 }
     }
     if (([string](Get-Prop $p @('condition')) -match 'Microsoft\.OperationalInsights/workspaces/tables') -or ($role -and $role.tableActions)) { $access.tableLevelRestrictions += 1 }
   }

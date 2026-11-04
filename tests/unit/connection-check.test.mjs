@@ -6,6 +6,7 @@ import { KB } from '../../content/kb.mjs';
 import { createProject, setEnvironments, setAnswer, connectionState, syncConnectionAnswer, tenantConnected } from '../../src/core/model.js';
 import { applicabilityMap, visibleQuestions, upfrontQuestions } from '../../src/core/applicability.js';
 import { missionsForStage } from '../../src/core/missions.js';
+import { buildReportModel } from '../../src/core/report.js';
 
 const fresh = (guidance = 'simple') => { const p = createProject({ mode: 'tailored', guidance, appVersion: 't', kbVersion: 't' }); p.meta.operatorName = 'Sam'; return p; };
 const CONNECT_STEPS = ['PREP-ACC-01', 'PREP-SCOPE-03', 'TRN-01', 'TRN-02', 'TRN-03', 'TRN-04', 'TRN-05', 'TRN-06', 'TRN-07', 'TRN-08', 'TRN-09', 'TRN-10', 'TRN-11'];
@@ -59,8 +60,11 @@ test('focusing on checking sets aside the steps for connecting, and keeps the ch
     assert.match(after.get(id).reasons.join(' '), /already connected/i);
   }
   for (const id of ['TRN-12', 'TRN-13', 'TRN-14', 'TRN-16', 'PREP-SCOPE-04', 'PREP-ACC-05', 'VAL-01', 'VAL-18']) assert.equal(after.get(id).value, 'applies', `${id} stays`);
+  const gates = buildReportModel('transition', KB, p, { appVersion: 't' }).gates.map((g) => g.id);
+  assert.ok(!gates.includes('TRN-01'), 'a gate that is set aside is not listed as "not recorded"');
   setAnswer(p, 'all_connected', 'no', 'Not every workspace is connected');
   assert.equal(applicabilityMap(KB, p).get('TRN-10').value, 'applies');
+  assert.ok(buildReportModel('transition', KB, p, { appVersion: 't' }).gates.some((g) => g.id === 'TRN-01'));
 });
 
 test('the derived answer is never asked, in the questions or in a mission', () => {

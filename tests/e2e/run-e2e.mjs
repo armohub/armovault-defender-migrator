@@ -905,7 +905,8 @@ await step('Setup: import the inventory, choose the workspaces in scope, and the
   await pg.getByRole('heading', { name: 'Answers the import fills in for you' }).waitFor();
   await pg.locator('.list-row', { hasText: 'Is more than one Sentinel-enabled workspace in scope in this tenant?' }).waitFor();
   // No is suggested only when every workspace in scope was read for it; Yes names what was found.
-  assert.match(await pg.locator('.list-row', { hasText: 'customer-managed keys' }).innerText(), /No \(none found in the 2 workspaces checked\)/);
+  assert.match(await pg.locator('.list-row', { hasText: 'Do you use Sentinel workspace manager?' }).innerText(), /No \(none found in the 2 workspaces checked\)/);
+  assert.equal(await pg.locator('.list-row', { hasText: 'customer-managed keys' }).count(), 0, 'customer-managed keys are never answered No, and the sample has none');
   assert.match(await pg.locator('.list-row', { hasText: 'Is UEBA enabled?' }).innerText(), /Yes/);
   await pg.locator('.list-row', { hasText: 'Do you use workbooks?' }).waitFor();
   assert.equal(await pg.locator('.list-row', { hasText: 'data lake' }).count(), 0, 'questions only people can answer are not suggested');

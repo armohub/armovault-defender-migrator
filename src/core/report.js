@@ -113,7 +113,7 @@ export function buildReportModel(kind, kb, project, { appVersion }) {
   // Unlinked items, and items linked to something no longer in the knowledge base, appear in every report.
   const inReport = (r) => !r.checkId || !checkStage.has(r.checkId) || stageIds.has(checkStage.get(r.checkId)) || kind === 'final';
   const register = project.register.filter(inReport).map((r) => ({ ...r }));
-  const gates = kb.checks.filter((c) => c.kind === 'gate' && stageIds.has(c.stage)).map((c) => {
+  const gates = kb.checks.filter((c) => c.kind === 'gate' && stageIds.has(c.stage) && appMap.get(c.id).value !== 'not_applicable').map((c) => {
     const g = project.gates[c.id];
     return { id: c.id, title: c.title, decision: g ? g.decision : '', decidedBy: g ? g.decidedBy : '', decidedRole: g ? g.decidedRole : '', at: g ? g.at : '', rationale: g ? g.rationale : '' };
   });

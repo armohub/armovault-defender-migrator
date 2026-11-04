@@ -14,7 +14,7 @@ export const MAX_INVENTORY_BYTES = 5 * 1024 * 1024;
 export const INVENTORY_QUESTIONS = ['multi_workspace', 'multi_tenant', 'sovereign_cloud', 'defender_xdr', 'test_env', 'test_separate_tenant', 'cmk', 'mdc', 'standalone_connectors', 'irm',
   'fusion', 'ms_incident_rules', 'alert_only_rules', 'grouping_dependency', 'automation_rules', 'playbooks', 'itsm', 'api_consumers', 'cicd', 'workspace_manager', 'granular_rbac', 'sp_roles',
   'workbooks', 'hunting', 'watchlists', 'ti', 'ueba', 'soc_workflows'];
-export const YES_OR_NO_QUESTIONS = ['multi_workspace', 'test_separate_tenant', 'cmk', 'standalone_connectors', 'irm', 'fusion', 'ms_incident_rules', 'alert_only_rules', 'automation_rules',
+export const YES_OR_NO_QUESTIONS = ['multi_workspace', 'test_separate_tenant', 'standalone_connectors', 'irm', 'fusion', 'ms_incident_rules', 'alert_only_rules', 'automation_rules',
   'workspace_manager', 'sp_roles', 'watchlists', 'ueba'];
 
 const PARTS = ['analyticsRules', 'automationRules', 'dataConnectors', 'watchlists', 'onboarding', 'settings', 'workspaceManager', 'repositories', 'bookmarks', 'hunts', 'installedContent', 'logicApps', 'access'];
@@ -51,7 +51,8 @@ export function parseInventory(text) {
   const failedV1 = (type) => errors.some((e) => e.includes(type));
   const c = plain(obj.collected);
   const collected = Object.fromEntries(PARTS.map((p) => [p, version === 2 ? c[p] === true
-    : ({ analyticsRules: !failedV1('alertRules'), automationRules: !failedV1('automationRules'), dataConnectors: !failedV1('dataConnectors'), watchlists: !failedV1('watchlists') })[p] === true]));
+    // Version 1 read data connectors from the stable API only, which lacks kinds such as OfficeIRM and OfficeATP.
+    : ({ analyticsRules: !failedV1('alertRules'), automationRules: !failedV1('automationRules'), dataConnectors: false, watchlists: !failedV1('watchlists') })[p] === true]));
   const settings = plain(obj.settings);
   const manager = plain(obj.workspaceManager);
   const repos = plain(obj.repositories);
@@ -159,6 +160,7 @@ export function analyseInventory(inv) {
 
   const playbooks = inv.sentinelPlaybooks;
   if (playbooks.length) add('PREP-AUT-03', `${playbooks.length} Logic App(s) use the Microsoft Sentinel connector`, `In the workspace's subscription:\n${list(playbooks, (p) => `${p.name}${p.ticketing ? ' (also uses a ticketing connector)' : ''}`)}`);
+  else if (inv.schemaVersion === 2 && got.logicApps) add('PREP-AUT-03', 'no Sentinel playbook found in the Logic Apps you can read', 'No Logic App that uses the Microsoft Sentinel connector was found in the workspace\'s subscription. Microsoft Sentinel Reader does not include Logic Apps, and a list you cannot read can come back empty rather than refused, so this proves nothing on its own. List your playbooks by hand, or run the script again with Reader on their resource group.');
   else if (inv.schemaVersion === 2 && !got.logicApps) add('PREP-AUT-03', 'Logic Apps could not be read', 'The script could not list the Logic Apps in the workspace\'s subscription. Microsoft Sentinel Reader does not include Logic Apps; Reader on their resource group does. List your playbooks by hand, or run the script again with Reader.');
   ev('playbooks', pb.length || playbooks.length || inv.installedContent.playbooks, [pb.length ? `${pb.length} automation rule(s) run playbooks` : '', playbooks.length ? `${playbooks.length} Logic App(s) use the Sentinel connector` : '', inv.installedContent.playbooks ? `${inv.installedContent.playbooks} playbook(s) installed from the content hub` : ''].filter(Boolean).join(', '));
   const ticketing = playbooks.filter((p) => p.ticketing);
@@ -239,9 +241,11 @@ export function suggestAnswers(items) {
   // From the workspace list: tenants, workspaces per tenant, and test workspaces.
   const tenantOf = (it) => it.inv.tenantRef || '';
   const perTenant = new Map();
-  for (const it of items) perTenant.set(tenantOf(it), (perTenant.get(tenantOf(it)) || 0) + 1);
+  for (const it of items.filter(tenantOf)) perTenant.set(tenantOf(it), (perTenant.get(tenantOf(it)) || 0) + 1);
   const crowded = [...perTenant.values()].some((x) => x > 1);
-  out.set('multi_workspace', { questionId: 'multi_workspace', value: crowded ? 'yes' : 'no', reasons: [crowded ? `${n} workspaces in scope, several in one tenant` : n === 1 ? 'one workspace in scope' : `${n} workspaces in scope, one per tenant`] });
+  // Without a fingerprint for every workspace, "one per tenant" is not known; Yes still is when two share one.
+  if (crowded) out.set('multi_workspace', { questionId: 'multi_workspace', value: 'yes', reasons: [`${n} workspaces in scope, several in one tenant`] });
+  else if (items.every(tenantOf)) out.set('multi_workspace', { questionId: 'multi_workspace', value: 'no', reasons: [n === 1 ? 'one workspace in scope' : `${n} workspaces in scope, one per tenant`] });
   const tenants = new Set(items.map(tenantOf).filter(Boolean));
   if (tenants.size > 1) {
     const cur = out.get('multi_tenant');

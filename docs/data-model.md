@@ -174,7 +174,7 @@ Produced by `tools/Get-ArMoSentinelInventory.ps1`, which sends GET requests only
 - `access` { spWithSentinelRoles, spWithReadOnlyRoles, tableLevelRestrictions }: counts only
 - `collected` { part: true | false }: whether every request of a part succeeded; `errors[]`
 
-The assistant maps the file to imported evidence notes on specific steps, and to answer suggestions for the workspaces in scope (`suggestAnswers` in `src/core/inventory.js`). Yes when any workspace shows it. No only for the 13 questions that allow it, and only when every workspace in scope was collected for that part and none has it. A finding that is absent in one workspace never becomes "No" on its own.
+The assistant maps the file to imported evidence notes on specific steps, and to answer suggestions for the workspaces in scope (`suggestAnswers` in `src/core/inventory.js`). Yes when any workspace shows it. No only for the 12 questions that allow it, and only when every workspace in scope was collected for that part and none has it. A finding that is absent in one workspace never becomes "No" on its own.
 
 ## Schema evolution
 

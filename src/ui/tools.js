@@ -109,6 +109,8 @@ export function workspaceTool({ show = 'all' } = {}) {
     show === 'connection' ? null : h('div', { class: ['tool-grid', multiTenant ? null : 'two'] }, multiTenant ? inp(r, 'tenant', 'Tenant (alias)', { maxlength: '120', placeholder: 'For example: Contoso EU' }) : null, inp(r, 'owner', 'Owner (team or person)'), inp(r, 'notes', 'Notes', { maxlength: '2000' }))));
   const ans = state.project.answers.onboarded_any;
   const wrap = h('div', { class: 'tool' },
+    show === 'connection' && connectionState(state.project).all && !(state.project.answers.all_connected && state.project.answers.all_connected.value === 'yes')
+      ? callout('info', 'Every production workspace is connected.', ' Your plan can skip the steps for connecting and focus on checking. ', btn('Focus on checking', () => offerCheckingFocus(), { small: true })) : null,
     show === 'connection' && ans ? callout('info', `In the questions you answered: ${ans.value === 'yes' ? 'Yes, a workspace is already connected' : ans.value === 'no' ? 'No workspace is connected yet' : ans.value === 'unknown' ? 'I don\'t know yet' : 'Not applicable'}.`, ' Confirm it here for each workspace.') : null,
     h('p', { class: 'small muted' }, 'One list for the whole project. What you enter here also appears in Project setup, in the steps that need it, and in your reports. No secrets: names, aliases and IDs only.'),
     ...cards,
@@ -154,8 +156,6 @@ async function offerCheckingFocus() {
     const after = applicabilityMap(state.kb, state.project);
     const n = state.kb.checks.filter((c) => before.get(c.id).value !== 'not_applicable' && after.get(c.id).value === 'not_applicable').length;
     toast(`${n} step${n === 1 ? '' : 's'} for connecting set aside. Next: check that everything works.`, 'good', 8000);
-  } else if (choice === 'keep') {
-    mutate((pr) => setAnswer(pr, 'all_connected', 'no', 'Every production workspace is connected, and the full plan was kept'));
   }
 }
 
