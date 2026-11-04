@@ -9,9 +9,13 @@ function global:Invoke-AzRestMethod {
   param([string] $Path, [string] $Method)
   $global:ArMoMockCalls.Add("$Method $Path")
   if ($Method -ne 'GET') { throw "Mock refuses non-GET method $Method" }
+  # The subscription (for the tenant fingerprint) answers first; it has no workspace in its path.
+  if ($Path -match '^/subscriptions/[^/?]+\?api-version=') { return [pscustomobject]@{ StatusCode = 200; Content = '{"subscriptionId":"s","tenantId":"aaaaaaaa-0000-0000-0000-000000000001"}' } }
   $ws = $Path.Split('/')[8]
-  $label = @{ 'ws-one' = 'Rule A'; 'ws-two' = 'Rule B'; 'one' = 'Rule C' }[$ws]
+  $label = if ($ws) { @{ 'ws-one' = 'Rule A'; 'ws-two' = 'Rule B'; 'one' = 'Rule C' }[$ws] } else { '' }
   if ($ws -eq 'ws-down') { throw [System.Net.WebException]::new('mock network failure') }
+  # The newer parts answer with nothing to report.
+  if ($Path -match '/(settings|workspaceManagerConfigurations|workspaceManagerMembers|sourcecontrols|bookmarks|hunts|metadata|roleAssignments)\?|Microsoft\.Logic/workflows\?' -or $Path -like '*onboardingStates*') { return [pscustomobject]@{ StatusCode = 200; Content = '{"value":[]}' } }
   $content = switch -Wildcard ($Path) {
     '*alertRules*' { '{"value":[{"name":"r1","kind":"Scheduled","properties":{"displayName":"' + $label + '","enabled":true,"query":"SigninLogs","incidentConfiguration":{"createIncident":true}}}]}' }
     '*automationRules*' { '{"value":[]}' }

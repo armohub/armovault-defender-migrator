@@ -1,39 +1,56 @@
 <#
 .SYNOPSIS
-  Read-only inventory of a Microsoft Sentinel workspace for the ArMo MS Defender Migration Assistant.
+  Read-only inventory of your Microsoft Sentinel workspaces for the ArMo MS Defender Migration Assistant.
 
 .DESCRIPTION
-  Collects the names and transition-relevant flags of analytics rules, automation rules, data connectors and
-  watchlists using HTTP GET requests to the Microsoft Sentinel (SecurityInsights) REST API through Invoke-AzRestMethod.
+  Run it with no parameters: it finds every workspace with Microsoft Sentinel that you can read, and writes one
+  inventory file per workspace. The assistant uses the files to fill in your workspace list and to suggest answers
+  to its questions. You confirm every suggestion.
+
+  WHAT IT COLLECTS, PER WORKSPACE
+    - Analytics rules and data connectors (both API versions), automation rules and watchlists.
+    - The Sentinel onboarding state (customer-managed keys), the Sentinel settings (UEBA, entity analytics,
+      anomalies), workspace manager, repositories, bookmarks, hunts, and the workbooks and playbooks installed from
+      the content hub.
+    - Logic Apps in the workspace's subscription that use the Microsoft Sentinel connector, and whether they also use
+      a ticketing connector. This part needs Reader on the Logic Apps: Microsoft Sentinel Reader does not include it.
+    - Role assignments at or above the workspace, as counts only.
+    - The tenant as a short fingerprint (never its ID), whether the subscription is delegated through Azure
+      Lighthouse, and the Azure cloud you signed in to.
 
   WHAT IT DOES
-    - Sends GET requests only. It never creates, changes or deletes anything.
-    - Computes flags locally (for example "uses the Incident provider condition") and writes ONLY names, kinds and flags
-      to a JSON file. It does not write rule queries, incident data, entities or credentials.
+    - Sends GET requests only, through Invoke-AzRestMethod. It never creates, changes or deletes anything.
+    - Computes flags locally and writes ONLY names, kinds, flags and counts. It does not write rule queries, Logic App
+      definitions, incident data, entities, principal IDs, tenant, subscription or resource group IDs, or credentials.
+    - If one part fails (for example HTTP 403), the file says which part, and the other parts are still collected.
   WHAT IT DOES NOT DO
     - It does not sign you in, store tokens, or send data anywhere other than Azure Resource Manager.
-    - It does not check Defender portal settings (no documented API was verified for those).
+    - It does not read Defender portal settings (no documented API was found for those).
 
   REQUIREMENTS
     - PowerShell 7+ or Windows PowerShell 5.1 with the Az.Accounts module, and an existing session: Connect-AzAccount
-    - Microsoft Sentinel Reader (or higher) on the workspace's resource group.
+    - Microsoft Sentinel Reader (or higher) on the workspaces' resource groups. Reader also covers the Logic Apps.
 
   STATUS
-    - Composed for this project from the documented REST API (api-version 2025-09-01 and 2025-07-01-preview).
+    - Composed for this project from the documented REST APIs (Microsoft Sentinel 2025-09-01 and 2025-07-01-preview).
       Not yet validated against a live customer tenant by the authors. Review it before running.
-    - Review the output file before importing or sharing it: rule and watchlist names can be sensitive.
+    - Review the output files before importing or sharing them: rule, watchlist and playbook names can be sensitive.
 
-  FIND YOUR WORKSPACES FOR YOU (-Discover)
+  FIND YOUR WORKSPACES (THE DEFAULT)
     - Lists the subscriptions you can read, the Log Analytics workspaces in each, and keeps those where Microsoft
-      Sentinel is enabled (it has an onboarding state). GET requests only.
+      Sentinel is enabled (it has an onboarding state).
     - Writes workspaces.json (the list it found) and one inventory-<name>.json per workspace to -OutFolder.
     - The alias of each workspace is its workspace name. Change aliases later in the assistant if you prefer.
     - Workspaces in different resource groups can share a name. The second one is saved as <name>-2, the third as
       <name>-3, and so on; workspaces.json shows which is which.
     - A workspace whose check fails (for example HTTP 403, no access) is named in a warning, not skipped silently.
-    - Limit the search with -Subscriptions '<id>','<id>'.
+    - Limit the search with -Subscriptions '<id>','<id>'. -Discover is still accepted.
 
-  SEVERAL WORKSPACES IN ONE RUN
+  ONE WORKSPACE
+    - Pass -SubscriptionId, -ResourceGroupName and -WorkspaceName. The alias is the workspace name unless you pass
+      -WorkspaceAlias, and the file is inventory-<alias>.json unless you pass -OutFile.
+
+  SEVERAL WORKSPACES FROM A LIST
     - Pass -WorkspacesFile with a JSON list of workspaces, and optionally -OutFolder. The script writes one file per
       workspace, named inventory-<alias>.json, which you can import into the app together.
     - Each entry needs subscriptionId, resourceGroupName, workspaceName and alias. Aliases must be unique.
@@ -43,11 +60,11 @@
 .EXAMPLE
   # Find every Sentinel workspace you can read, and collect each one:
   Connect-AzAccount
-  .\Get-ArMoSentinelInventory.ps1 -Discover -OutFolder .\inventory
+  .\Get-ArMoSentinelInventory.ps1 -OutFolder .\inventory
 
 .EXAMPLE
   Connect-AzAccount
-  .\Get-ArMoSentinelInventory.ps1 -SubscriptionId '<id>' -ResourceGroupName '<rg>' -WorkspaceName '<ws>' -WorkspaceAlias 'SOC-PROD' -OutFile .\inventory-soc-prod.json
+  .\Get-ArMoSentinelInventory.ps1 -SubscriptionId '<id>' -ResourceGroupName '<rg>' -WorkspaceName '<ws>'
 
 .EXAMPLE
   # workspaces.json:
@@ -58,16 +75,16 @@
   Connect-AzAccount
   .\Get-ArMoSentinelInventory.ps1 -WorkspacesFile .\workspaces.json -OutFolder .\inventory
 #>
-[CmdletBinding(DefaultParameterSetName = 'One')]
+[CmdletBinding(DefaultParameterSetName = 'Discover')]
 param(
   [Parameter(Mandatory = $true, ParameterSetName = 'One')][string] $SubscriptionId,
   [Parameter(Mandatory = $true, ParameterSetName = 'One')][string] $ResourceGroupName,
   [Parameter(Mandatory = $true, ParameterSetName = 'One')][string] $WorkspaceName,
   [Parameter(ParameterSetName = 'One')][string] $WorkspaceAlias = '',
-  [Parameter(ParameterSetName = 'One')][string] $OutFile = '.\armohub-inventory.json',
+  [Parameter(ParameterSetName = 'One')][string] $OutFile = '',
   [Parameter(Mandatory = $true, ParameterSetName = 'List')][string] $WorkspacesFile,
   [Parameter(ParameterSetName = 'List')][Parameter(ParameterSetName = 'Discover')][string] $OutFolder = '.',
-  [Parameter(Mandatory = $true, ParameterSetName = 'Discover')][switch] $Discover,
+  [Parameter(ParameterSetName = 'Discover')][switch] $Discover,
   [Parameter(ParameterSetName = 'Discover')][string[]] $Subscriptions = @()
 )
 
@@ -79,6 +96,8 @@ if (-not (Get-Command Invoke-AzRestMethod -ErrorAction SilentlyContinue)) {
 }
 
 $script:errors = New-Object System.Collections.Generic.List[string]
+# Managed API names of ticketing connectors, as in their Logic Apps connector reference pages.
+$script:ticketingApis = @('service-now', 'jira')
 
 function Get-AllPages([string] $Path) {
   $items = @()
@@ -101,6 +120,13 @@ function Get-AllPages([string] $Path) {
   return ,$items
 }
 
+# One resource. Failures are recorded under the label given, never under the path.
+function Get-One([string] $Path, [string] $Label) {
+  $resp = Invoke-AzRestMethod -Path $Path -Method GET
+  if ($resp.StatusCode -ne 200) { $script:errors.Add("GET $Label returned HTTP $($resp.StatusCode)"); return $null }
+  return ($resp.Content | ConvertFrom-Json)
+}
+
 function Get-Prop($Object, [string[]] $Path) {
   $cur = $Object
   foreach ($p in $Path) {
@@ -115,12 +141,46 @@ function ConvertTo-SafeName([string] $Alias) {
   return ($Alias -replace '[^A-Za-z0-9._-]+', '-').Trim('-')
 }
 
+# The tenant as a short fingerprint: the first 8 hex characters of the SHA-256 of its ID. It tells tenants apart
+# without writing the ID.
+function Get-TenantRef([string] $TenantId) {
+  if (-not $TenantId) { return '' }
+  $sha = [System.Security.Cryptography.SHA256]::Create()
+  try { $bytes = $sha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($TenantId.ToLowerInvariant())) } finally { $sha.Dispose() }
+  return 't-' + (($bytes[0..3] | ForEach-Object { $_.ToString('x2') }) -join '')
+}
+
+$script:subscriptionInfo = @{}
+function Get-SubscriptionInfo([string] $Id) {
+  if (-not $script:subscriptionInfo.ContainsKey($Id)) {
+    $sub = Get-One "/subscriptions/${Id}?api-version=2022-12-01" 'subscription'
+    $managed = Get-Prop $sub @('managedByTenants')
+    $script:subscriptionInfo[$Id] = @{ tenantRef = (Get-TenantRef ([string](Get-Prop $sub @('tenantId')))); delegated = [bool]($managed -and @($managed).Count) }
+  }
+  return $script:subscriptionInfo[$Id]
+}
+
+# The Azure cloud of your Az sign-in (AzureCloud, AzureUSGovernment, AzureChinaCloud). Read locally, no request.
+function Get-CloudName {
+  $ctx = $null
+  if (Get-Command Get-AzContext -ErrorAction SilentlyContinue) { try { $ctx = Get-AzContext } catch { $ctx = $null } }
+  return [string](Get-Prop (Get-Prop $ctx @('Environment')) @('Name'))
+}
+$script:cloud = Get-CloudName
+
 # Collects one workspace and writes its file. Returns the number of failed requests.
 function Invoke-WorkspaceInventory([string] $SubscriptionId, [string] $ResourceGroupName, [string] $WorkspaceName, [string] $WorkspaceAlias, [string] $OutFile, [string] $Region = '') {
   $script:errors = New-Object System.Collections.Generic.List[string]
-  $base = "/subscriptions/$SubscriptionId/resourceGroups/$ResourceGroupName/providers/Microsoft.OperationalInsights/workspaces/$WorkspaceName/providers/Microsoft.SecurityInsights"
+  if (-not $WorkspaceAlias) { $WorkspaceAlias = $WorkspaceName }
+  $wsPath = "/subscriptions/$SubscriptionId/resourceGroups/$ResourceGroupName/providers/Microsoft.OperationalInsights/workspaces/$WorkspaceName"
+  $base = "$wsPath/providers/Microsoft.SecurityInsights"
+  $sub = Get-SubscriptionInfo $SubscriptionId
+  # The alias defaults to the workspace name. An alias you give keeps the real name out of the file.
+  # Each part records whether all its requests succeeded, so the assistant knows what a missing finding means.
+  $collected = [ordered]@{}
 
   # Analytics rules: query both API versions because the stable version enumerates fewer rule kinds.
+  $n = $script:errors.Count
   $rules = @{}
   foreach ($api in @('2025-09-01', '2025-07-01-preview')) {
     foreach ($r in (Get-AllPages "$base/alertRules?api-version=$api")) {
@@ -141,13 +201,16 @@ function Invoke-WorkspaceInventory([string] $SubscriptionId, [string] $ResourceG
         correlationTag   = $tag
         usesIdentityInfo = [bool]($query -match 'IdentityInfo')
         usesLegacyTI     = [bool]($query -match 'ThreatIntelligenceIndicator')
+        usesTI           = [bool]($query -match 'ThreatIntelligenceIndicator|ThreatIntelIndicators|ThreatIntelObjects')
         productFilter    = [string](Get-Prop $p @('productFilter'))
         apiVersion       = $api
       }
     }
   }
+  $collected.analyticsRules = ($script:errors.Count -eq $n)
 
   # Automation rules
+  $n = $script:errors.Count
   $risky = @('IncidentProviderName', 'IncidentTitle', 'IncidentDescription', 'IncidentUpdatedBySource')
   $automation = foreach ($a in (Get-AllPages "$base/automationRules?api-version=2025-09-01")) {
     $logic = Get-Prop $a @('properties', 'triggeringLogic')
@@ -163,31 +226,141 @@ function Invoke-WorkspaceInventory([string] $SubscriptionId, [string] $ResourceG
       taskActions     = @($actions | Where-Object { (Get-Prop $_ @('actionType')) -eq 'AddIncidentTask' }).Count
     }
   }
+  $collected.automationRules = ($script:errors.Count -eq $n)
 
-  $connectors = foreach ($c in (Get-AllPages "$base/dataConnectors?api-version=2025-09-01")) { [ordered]@{ kind = [string](Get-Prop $c @('kind')); name = [string](Get-Prop $c @('name')) } }
+  # Data connectors: both API versions, because the stable version lists fewer kinds (for example not OfficeIRM).
+  $n = $script:errors.Count
+  $byName = [ordered]@{}
+  foreach ($api in @('2025-09-01', '2025-07-01-preview')) {
+    foreach ($c in (Get-AllPages "$base/dataConnectors?api-version=$api")) {
+      $cn = [string](Get-Prop $c @('name'))
+      if (-not $cn -or $byName.Contains($cn)) { continue }
+      $byName[$cn] = [ordered]@{ kind = [string](Get-Prop $c @('kind')); name = $cn }
+    }
+  }
+  $connectors = @($byName.Values)
+  $collected.dataConnectors = ($script:errors.Count -eq $n)
+
+  $n = $script:errors.Count
   $watchlists = foreach ($w in (Get-AllPages "$base/watchlists?api-version=2025-09-01")) { [ordered]@{ alias = [string](Get-Prop $w @('properties', 'watchlistAlias')); name = [string](Get-Prop $w @('properties', 'displayName')) } }
+  $collected.watchlists = ($script:errors.Count -eq $n)
+
+  # Onboarding state: whether the workspace uses customer-managed keys.
+  $n = $script:errors.Count
+  $cmk = $false
+  foreach ($st in (Get-AllPages "$base/onboardingStates?api-version=2025-09-01")) { if ((Get-Prop $st @('properties', 'customerManagedKey')) -eq $true) { $cmk = $true } }
+  $collected.onboarding = ($script:errors.Count -eq $n)
+
+  # Sentinel settings (preview API). UEBA counts as on when it has data sources, entity analytics when it has providers.
+  $n = $script:errors.Count
+  $settings = [ordered]@{ ueba = $false; entityAnalytics = $false; anomalies = $false }
+  foreach ($st in (Get-AllPages "$base/settings?api-version=2025-07-01-preview")) {
+    $kind = [string](Get-Prop $st @('kind'))
+    if ($kind -eq 'Ueba' -and @(Get-Prop $st @('properties', 'dataSources') | Where-Object { $_ }).Count) { $settings.ueba = $true }
+    if ($kind -eq 'EntityAnalytics' -and @(Get-Prop $st @('properties', 'entityProviders') | Where-Object { $_ }).Count) { $settings.entityAnalytics = $true }
+    if ($kind -eq 'Anomalies' -and (Get-Prop $st @('properties', 'isEnabled')) -eq $true) { $settings.anomalies = $true }
+  }
+  $collected.settings = ($script:errors.Count -eq $n)
+
+  # Workspace manager (preview API).
+  $n = $script:errors.Count
+  $manager = [ordered]@{ enabled = $false; members = 0 }
+  foreach ($cfg in (Get-AllPages "$base/workspaceManagerConfigurations?api-version=2025-07-01-preview")) { if ([string](Get-Prop $cfg @('properties', 'mode')) -eq 'Enabled') { $manager.enabled = $true } }
+  $members = Get-AllPages "$base/workspaceManagerMembers?api-version=2025-07-01-preview"
+  $manager.members = @($members).Count
+  $collected.workspaceManager = ($script:errors.Count -eq $n)
+
+  # Repositories (content as code).
+  $n = $script:errors.Count
+  $repos = Get-AllPages "$base/sourcecontrols?api-version=2025-09-01"
+  $repositories = [ordered]@{ count = @($repos).Count; huntingQueries = [bool](@($repos | Where-Object { @(Get-Prop $_ @('properties', 'contentTypes')) -contains 'HuntingQuery' }).Count) }
+  $collected.repositories = ($script:errors.Count -eq $n)
+
+  $n = $script:errors.Count
+  $bookmarks = Get-AllPages "$base/bookmarks?api-version=2025-09-01"
+  $collected.bookmarks = ($script:errors.Count -eq $n)
+  $n = $script:errors.Count
+  $hunts = Get-AllPages "$base/hunts?api-version=2025-07-01-preview"
+  $collected.hunts = ($script:errors.Count -eq $n)
+
+  # Content installed from the content hub or a repository, from the Sentinel metadata.
+  $n = $script:errors.Count
+  $meta = Get-AllPages "$base/metadata?api-version=2025-09-01"
+  $installed = [ordered]@{
+    workbooks = @($meta | Where-Object { [string](Get-Prop $_ @('properties', 'kind')) -eq 'Workbook' }).Count
+    playbooks = @($meta | Where-Object { [string](Get-Prop $_ @('properties', 'kind')) -eq 'Playbook' }).Count
+  }
+  $collected.installedContent = ($script:errors.Count -eq $n)
+
+  # Logic Apps in the subscription that use the Microsoft Sentinel connector. Only names and connector names are read.
+  $n = $script:errors.Count
+  $playbooks = New-Object System.Collections.Generic.List[object]
+  foreach ($la in (Get-AllPages "/subscriptions/$SubscriptionId/providers/Microsoft.Logic/workflows?api-version=2019-05-01")) {
+    $conns = Get-Prop $la @('properties', 'parameters', '$connections', 'value')
+    if ($null -eq $conns) { continue }
+    $apis = @($conns.PSObject.Properties | ForEach-Object { ([string](Get-Prop $_.Value @('id'))).Split('/')[-1].ToLowerInvariant() })
+    if ($apis -notcontains 'azuresentinel') { continue }
+    $playbooks.Add([ordered]@{ name = [string](Get-Prop $la @('name')); ticketing = [bool](@($apis | Where-Object { $script:ticketingApis -contains $_ }).Count) })
+  }
+  $collected.logicApps = ($script:errors.Count -eq $n)
+
+  # Role assignments at or above the workspace, as counts. Principal IDs and role names are never written.
+  $n = $script:errors.Count
+  $roles = @{}
+  $access = [ordered]@{ spWithSentinelRoles = 0; spWithReadOnlyRoles = 0; tableLevelRestrictions = 0 }
+  foreach ($ra in (Get-AllPages "$wsPath/providers/Microsoft.Authorization/roleAssignments?api-version=2022-04-01&`$filter=atScope()")) {
+    $p = Get-Prop $ra @('properties')
+    $defId = [string](Get-Prop $p @('roleDefinitionId'))
+    $role = $null
+    if ($defId) {
+      if (-not $roles.ContainsKey($defId)) {
+        $def = Get-One "${defId}?api-version=2022-04-01" 'roleDefinitions'
+        $actions = @(@(Get-Prop $def @('properties', 'permissions')) | ForEach-Object { @(Get-Prop $_ @('actions')) } | Where-Object { $_ })
+        $roles[$defId] = @{ name = [string](Get-Prop $def @('properties', 'roleName')); tableActions = [bool](@($actions | Where-Object { $_ -match '^Microsoft\.OperationalInsights/workspaces/query/[^*/]+/read$' }).Count) }
+      }
+      $role = $roles[$defId]
+    }
+    if ([string](Get-Prop $p @('principalType')) -eq 'ServicePrincipal' -and $role -and $role.name -match 'Sentinel|Log Analytics') {
+      $access.spWithSentinelRoles += 1
+      if ($role.name -match 'Reader') { $access.spWithReadOnlyRoles += 1 }
+    }
+    if (([string](Get-Prop $p @('condition')) -match 'Microsoft\.OperationalInsights/workspaces/tables') -or ($role -and $role.tableActions)) { $access.tableLevelRestrictions += 1 }
+  }
+  $collected.access = ($script:errors.Count -eq $n)
 
   $result = [ordered]@{
-    schema          = 'armohub.dma.inventory'
-    schemaVersion   = 1
-    tool            = [ordered]@{ name = 'Get-ArMoSentinelInventory.ps1'; version = '1.0.0' }
-    collectedAt     = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ', [System.Globalization.CultureInfo]::InvariantCulture)
-    workspace       = [ordered]@{ alias = $WorkspaceAlias; region = $Region }
-    analyticsRules  = @($rules.Values)
-    automationRules = @($automation)
-    dataConnectors  = @($connectors)
-    watchlists      = @($watchlists)
-    errors          = @($script:errors)
+    schema           = 'armohub.dma.inventory'
+    schemaVersion    = 2
+    tool             = [ordered]@{ name = 'Get-ArMoSentinelInventory.ps1'; version = '1.0.0' }
+    collectedAt      = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ', [System.Globalization.CultureInfo]::InvariantCulture)
+    workspace        = [ordered]@{ alias = $WorkspaceAlias; region = $Region; tenantRef = $sub.tenantRef; delegated = $sub.delegated; cloud = $script:cloud; customerManagedKey = $cmk }
+    analyticsRules   = @($rules.Values)
+    automationRules  = @($automation)
+    dataConnectors   = @($connectors)
+    watchlists       = @($watchlists)
+    settings         = $settings
+    workspaceManager = $manager
+    repositories     = $repositories
+    bookmarks        = @($bookmarks).Count
+    hunts            = @($hunts).Count
+    installedContent = $installed
+    logicApps        = [ordered]@{ sentinelPlaybooks = $playbooks.ToArray() }
+    access           = $access
+    collected        = $collected
+    errors           = @($script:errors)
   }
 
   $result | ConvertTo-Json -Depth 8 | Out-File -FilePath $OutFile -Encoding utf8
-  Write-Host "Inventory written to $OutFile - $($rules.Count) analytics rules, $(@($automation).Count) automation rules, $(@($connectors).Count) connectors, $(@($watchlists).Count) watchlists."
-  if ($script:errors.Count) { Write-Warning ("Some requests failed: " + ($script:errors -join '; ')) }
+  Write-Host "Inventory written to $OutFile - $($rules.Count) analytics rules, $(@($automation).Count) automation rules, $(@($connectors).Count) connectors, $(@($watchlists).Count) watchlists, $($playbooks.Count) Sentinel playbooks."
+  $missing = @($collected.Keys | Where-Object { -not $collected[$_] })
+  if ($script:errors.Count) { Write-Warning ("Some requests failed: " + ($script:errors -join '; ') + '. Not collected: ' + ($missing -join ', ') + '.') }
   return $script:errors.Count
 }
 
 if ($PSCmdlet.ParameterSetName -eq 'One') {
-  [void](Invoke-WorkspaceInventory $SubscriptionId $ResourceGroupName $WorkspaceName $WorkspaceAlias $OutFile)
+  $alias = if ($WorkspaceAlias) { $WorkspaceAlias } else { $WorkspaceName }
+  if (-not $OutFile) { $OutFile = ".\inventory-$(ConvertTo-SafeName $alias).json" }
+  [void](Invoke-WorkspaceInventory $SubscriptionId $ResourceGroupName $WorkspaceName $alias $OutFile)
   Write-Host 'Review the file before importing it into the app or sharing it.'
   return
 }

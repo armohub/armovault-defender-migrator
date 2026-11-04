@@ -182,7 +182,8 @@ await step('Create a tailored project with browser autosave', async () => {
   await page.getByText('The data is not encrypted.', { exact: false }).waitFor();
   await btn(page, 'Continue').click();
   await page.locator('label.choice', { has: page.getByText('Detailed', { exact: true }) }).click();
-  await page.getByText('Tailor the plan to my environment (recommended)').click();
+  assert.equal(await page.getByText('Show me the full checklist').count(), 0, 'one choice: Simplified or Detailed');
+  await page.locator('[data-focus-key="full-checklist"]').waitFor();
   await btn(page, 'Create my project').click();
   await page.getByText('Please confirm the responsibility statement').waitFor();
   await page.getByLabel(/I understand this assistant gives guidance only/).check();
@@ -192,14 +193,19 @@ await step('Create a tailored project with browser autosave', async () => {
   assert.equal(await page.locator('.project-chip-name').textContent(), 'E2E transition <b>bold?</b>');
 });
 
-await step('Questionnaire: one question per screen, keys 1 to 4, auto-advance after Yes or No only', async () => {
+await step('Questionnaire: one question per screen, keys 1 to 4 choose, and only Next or Enter moves on', async () => {
   await btn(page, 'Start the questions').click();
   await page.waitForURL(/#\/questionnaire\/q\/onboarded_any$/);
   await page.locator('.answer-tile').first().waitFor();
   assert.equal(await page.locator('.answer-tile').count(), 4);
-  await page.keyboard.press('2'); // No
+  assert.equal(await page.getByText('Move on after Yes or No').count(), 0, 'no auto-advance switch');
+  await page.keyboard.press('2'); // No: chosen, and the question stays
+  await page.locator('[data-answer="no"][aria-checked="true"]').waitFor();
+  await page.waitForTimeout(900);
+  assert.match(page.url(), /onboarded_any$/, 'choosing an answer does not move on');
+  await page.keyboard.press('Enter');
   await page.waitForURL(/#\/questionnaire\/q\/multi_workspace$/, { timeout: 4000 });
-  await page.keyboard.press('3'); // I don't know yet: no auto-advance, follow-up appears
+  await page.keyboard.press('3'); // I don't know yet: the follow-up appears
   await page.waitForTimeout(700);
   assert.match(page.url(), /multi_workspace$/);
   await page.getByLabel('What needs finding out').fill('Ask the platform team');
@@ -598,6 +604,10 @@ await step('Exports: JSON data, checklist CSV, register CSV and evidence index C
   const csv = fs.readFileSync(c, 'utf8');
   assert.ok(csv.startsWith('﻿stage,workstream,id'));
   await go(page, '#/register');
+  // The status filter offers each choice once, and starts on what is not finished.
+  const statusLabels = await page.locator('select[aria-label="Filter by status"] option').allTextContents();
+  assert.equal(new Set(statusLabels.map((x) => x.toLowerCase())).size, statusLabels.length, `no repeated status filter: ${statusLabels.join(', ')}`);
+  assert.equal(await page.locator('select[aria-label="Filter by status"]').inputValue(), 'unresolved');
   const r = await download(page, () => btn(page, 'Export CSV').click());
   assert.match(fs.readFileSync(r, 'utf8'), /CISO Example/);
   await go(page, '#/evidence');
@@ -688,7 +698,7 @@ await step('Full-checklist project without autosave warns about unsaved work', a
   await page.getByText('I save project packages myself (default)', { exact: true }).click();
   await btn(page, 'Continue').click();
   await page.locator('label.choice', { has: page.getByText('Detailed', { exact: true }) }).click();
-  await page.getByText('Show me the full checklist').click();
+  await page.locator('[data-focus-key="full-checklist"]').check();
   await page.getByLabel(/I understand this assistant gives guidance only/).check();
   await btn(page, 'Create my project').click();
   await page.locator('.next-panel').waitFor();
@@ -752,7 +762,7 @@ await step('Simplified: six questions, missions with progress, a mission questio
   await btn(pg, 'Create my project').click();
   // Six core questions: Yes to the first (several workspaces), No to the rest.
   await pg.getByRole('button', { name: 'Start the questions' }).click();
-  for (let i = 0; i < 6; i++) { await pg.locator('.q-screen .answer-tile').first().waitFor(); await pg.keyboard.press(i === 0 ? '1' : '2'); await pg.waitForTimeout(900); }
+  for (let i = 0; i < 6; i++) { await pg.locator('.q-screen .answer-tile').first().waitFor(); await pg.keyboard.press(i === 0 ? '1' : '2'); await pg.keyboard.press('Enter'); await pg.waitForTimeout(400); }
   await pg.getByRole('button', { name: 'Build my plan' }).click();
   await pg.locator('.mission-row').first().waitFor();
   assert.ok((await pg.locator('.mission-row').count()) >= 11, 'Prepare shows its missions');
@@ -870,7 +880,7 @@ await step('Setup: import the inventory, choose the workspaces in scope, and the
   const sample = JSON.parse(fs.readFileSync(path.resolve('samples/sample-inventory.json'), 'utf8'));
   const files = [['law-soc-weu', 'westeurope'], ['law-soc-neu', 'northeurope'], ['law-lab', 'westeurope']].map(([alias, region]) => {
     const f = path.join(work, `inventory-${alias}.json`);
-    fs.writeFileSync(f, JSON.stringify({ ...sample, workspace: { alias, region } }));
+    fs.writeFileSync(f, JSON.stringify({ ...sample, workspace: { ...sample.workspace, alias, region } }));
     return f;
   });
   const c6 = await chromium.launch({ channel, headless });
@@ -886,13 +896,19 @@ await step('Setup: import the inventory, choose the workspaces in scope, and the
   await btn(pg, 'Continue').click();
   await btn(pg, 'Continue').click();
   await pg.getByText('Run the inventory script and import its results (recommended)').click();
-  await pg.locator('pre.code', { hasText: '-Discover' }).waitFor();
+  await pg.locator('pre.code', { hasText: 'Get-ArMoSentinelInventory.ps1 -OutFolder' }).waitFor();
+  assert.equal(await pg.locator('pre.code', { hasText: '-Discover' }).count(), 0, 'no parameter needed to find every workspace');
   await chooseFile(pg, () => btn(pg, 'Choose the inventory files').click(), files);
   await pg.getByRole('heading', { name: 'Found 3 workspaces. Which are in scope?' }).waitFor();
   assert.equal(await pg.locator('.import-ws').nth(2).locator('select').inputValue(), 'test', 'a lab workspace is proposed as test');
   await pg.locator('[data-focus-key="imp-scope-2"]').uncheck();
   await pg.getByRole('heading', { name: 'Answers the import fills in for you' }).waitFor();
   await pg.locator('.list-row', { hasText: 'Is more than one Sentinel-enabled workspace in scope in this tenant?' }).waitFor();
+  // No is suggested only when every workspace in scope was read for it; Yes names what was found.
+  assert.match(await pg.locator('.list-row', { hasText: 'customer-managed keys' }).innerText(), /No \(none found in the 2 workspaces checked\)/);
+  assert.match(await pg.locator('.list-row', { hasText: 'Is UEBA enabled?' }).innerText(), /Yes/);
+  await pg.locator('.list-row', { hasText: 'Do you use workbooks?' }).waitFor();
+  assert.equal(await pg.locator('.list-row', { hasText: 'data lake' }).count(), 0, 'questions only people can answer are not suggested');
   await btn(pg, 'Continue').click();
   await btn(pg, 'Continue').click();
   await pg.getByText(/already filled in from your inventory/).waitFor();
@@ -956,6 +972,47 @@ await step('Explainers: the Defender table review says first that nothing is los
   assert.match(await pg.locator('#do-it-here tbody tr').first().textContent(), /1 to 2 weeks/);
   await pg.locator('[data-focus-key="plan-auto"]').click();
   await c4.close();
+});
+
+await step('Connection check: a secondary needs a primary, all connected offers a checking focus, and Details stays in its mission', async () => {
+  const c7 = await chromium.launch({ channel, headless });
+  const ctx7 = await c7.newContext({ viewport: { width: 1440, height: 1000 } });
+  ctx7.on('request', (r) => { const u = r.url(); if (/^(https?|wss?):/i.test(u)) network.push(u); });
+  const pg = await ctx7.newPage();
+  watch(pg);
+  await pg.goto(`${appUrl}?demo=1`);
+  await pg.getByText('You are exploring a demo.').waitFor();
+  // The rail shows what is done in each mission.
+  await go(pg, '#/mission/prepare/scope');
+  assert.match(await pg.locator('.rail-mission a').first().getAttribute('aria-label'), /\d+ of \d+ done/);
+  assert.ok(await pg.locator('.rail-count').count() > 5, 'missions show done/total');
+  // Details: the step opens inside its mission.
+  await go(pg, '#/item/PREP-SCOPE-02');
+  await pg.locator('.mission-strip').getByText('Agree scope, timing and approvals').waitFor();
+  await pg.locator('.mission-strip').getByText(/of \d+ done in this mission/).waitFor();
+  await pg.locator('.mission-strip').getByRole('link', { name: 'Next in this mission' }).click();
+  await pg.waitForURL(/#\/item\/PREP-SCOPE-03$/);
+  await pg.locator('.mission-strip').getByRole('link', { name: 'Back to the mission' }).click();
+  await pg.waitForURL(/#\/mission\/prepare\/scope$/);
+  // A lone secondary is refused.
+  await go(pg, '#/item/PREP-SCOPE-04');
+  const states = pg.locator('select[aria-label="Defender portal connection"]');
+  await states.nth(0).selectOption('secondary');
+  await states.nth(1).selectOption('not_connected');
+  await pg.locator('.tool').getByRole('button', { name: 'Save', exact: true }).click();
+  await pg.getByText('A secondary workspace needs a primary in the same tenant', { exact: false }).waitFor();
+  // Every production workspace connected: the plan can focus on checking.
+  await states.nth(0).selectOption('primary');
+  await states.nth(1).selectOption('secondary');
+  await pg.locator('.tool').getByRole('button', { name: 'Save', exact: true }).click();
+  await dlg(pg).getByText('Your workspaces are already in the Defender portal').waitFor();
+  await clickDlg(pg, 'Focus on checking');
+  await pg.getByText(/steps? for connecting set aside/).waitFor();
+  await go(pg, '#/mission/transition/pre-change');
+  await pg.getByText('Nothing to do here: your answers set these checks aside.').waitFor();
+  await go(pg, '#/item/PREP-ACC-01');
+  await pg.getByText('already connected', { exact: false }).first().waitFor();
+  await c7.close();
 });
 
 await step('No network request was made during the whole run, and no console errors occurred', async () => {

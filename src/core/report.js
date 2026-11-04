@@ -125,7 +125,7 @@ export function buildReportModel(kind, kb, project, { appVersion }) {
   const evidenceIndex = [];
   for (const s of stages) for (const g of s.groups) for (const i of g.items) for (const e of i.evidence) evidenceIndex.push({ ...e, checkId: i.id });
 
-  const answers = kb.questions.map((q) => {
+  const answers = kb.questions.filter((q) => !q.derived || project.answers[q.id]).map((q) => {
     const a = project.answers[q.id];
     return { id: q.id, question: q.text, answer: a ? answerLabel(a.value) : 'Not answered', reason: a ? a.reason : '', by: a ? a.by : '', at: a ? a.at : '' };
   });

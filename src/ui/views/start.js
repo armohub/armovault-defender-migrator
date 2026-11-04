@@ -9,6 +9,7 @@ import { summariseStage } from '../../core/readiness.js';
 import { openProjectFileFlow, startDemo, confirmLeaveProject } from '../actions.js';
 import { btn, callout, daysUntil, infoTip } from '../components.js';
 import { readInventoryFiles, applyInventory } from '../inventory.js';
+import { suggestAnswers } from '../../core/inventory.js';
 import { downloadInventoryScript } from '../step-actions.js';
 import { formatDate, bytesLabel, nowIso } from '../../core/util.js';
 import { DISCLAIMER_SHORT } from '../../core/report.js';
@@ -124,25 +125,16 @@ const STEPS = [
   ['Timing', 'When you plan to switch, with the date Microsoft set in mind.'],
   ['Your workspaces', 'Import them from the read-only inventory script, or type them in.'],
   ['Where to keep your work', 'Choose how this assistant saves your project.'],
-  ['How to start', 'Tailor the plan to your environment, or see everything.'],
+  ['How to start', 'Choose how you want to work.'],
 ];
 const LAST = STEPS.length;
-const DISCOVER_CMD = '.\\Get-ArMoSentinelInventory.ps1 -Discover -OutFolder .\\inventory';
+const DISCOVER_CMD = '.\\Get-ArMoSentinelInventory.ps1 -OutFolder .\\inventory';
 
-// Suggested answers from every imported workspace that is in scope, merged per question (Yes only).
+// Suggested answers from the workspaces in scope (see suggestAnswers): Yes when any shows it, No only when every
+// one was read for it. What you untick stays unticked while you change the list.
 function mergeSuggestions() {
-  const kept = new Map(draft.suggest.map((x) => [x.questionId, x.on]));
-  const by = new Map();
-  for (const it of draft.imports.filter((x) => x.inScope)) {
-    for (const sg of it.res.suggestions) {
-      const cur = by.get(sg.questionId) || { questionId: sg.questionId, value: sg.value, reasons: [] };
-      cur.reasons.push(sg.reason);
-      by.set(sg.questionId, cur);
-    }
-  }
-  const inScope = draft.imports.filter((x) => x.inScope).length;
-  if (inScope > 1) by.set('multi_workspace', { questionId: 'multi_workspace', value: 'yes', reasons: [`${inScope} workspaces in scope`] });
-  draft.suggest = [...by.values()].map((x) => ({ ...x, on: kept.has(x.questionId) ? kept.get(x.questionId) : true }));
+  const kept = new Map(draft.suggest.map((x) => [`${x.questionId}:${x.value}`, x.on]));
+  draft.suggest = suggestAnswers(draft.imports.filter((x) => x.inScope)).map((x) => ({ ...x, on: kept.has(`${x.questionId}:${x.value}`) ? kept.get(`${x.questionId}:${x.value}`) : true }));
 }
 
 async function pickInventories() {
@@ -151,8 +143,10 @@ async function pickInventories() {
   const read = await withLoader('Reading your inventory files', () => readInventoryFiles(files));
   for (const r of read) {
     if (r.error) { draft.importErrors.push(`${r.file.name}: ${r.error}`); continue; }
-    const alias = r.inv.alias || r.file.name.replace(/^inventory-/, '').replace(/\.json$/i, '');
-    if (draft.imports.some((x) => x.alias === alias)) { draft.importErrors.push(`${r.file.name}: a workspace called ${alias} is already in the list.`); continue; }
+    // Files from older single-workspace runs carry no alias: ask for the name rather than use the file name.
+    const fromFile = r.file.name.replace(/^inventory-/, '').replace(/\.json$/i, '');
+    const alias = r.inv.alias || (/^armohub-inventory/i.test(fromFile) ? '' : fromFile);
+    if (alias && draft.imports.some((x) => x.alias === alias)) { draft.importErrors.push(`${r.file.name}: a workspace called ${alias} is already in the list.`); continue; }
     draft.imports.push({ ...r, alias, kind: /test|dev|lab/i.test(alias) ? 'test' : 'production', inScope: true });
   }
   mergeSuggestions();
@@ -189,8 +183,9 @@ function workspaceStep() {
   const found = draft.imports;
   const rows = found.map((it, i) => h('div', { class: ['import-ws', !it.inScope && 'off'] },
     h('label', { class: 'check-line import-scope' }, h('input', { type: 'checkbox', checked: it.inScope, 'data-focus-key': `imp-scope-${i}`, onchange: (e) => { it.inScope = e.target.checked; mergeSuggestions(); go('#/setup/3'); } }), h('span', null, 'In scope')),
-    field('Workspace', h('input', { type: 'text', value: it.alias, maxlength: '120', 'data-focus-key': `imp-alias-${i}`, oninput: (e) => { it.alias = e.target.value; } })),
-    field('Type', h('select', { onchange: (e) => { it.kind = e.target.value; } }, ['production', 'test', 'other'].map((k) => h('option', { value: k, selected: it.kind === k }, k)))),
+    field('Workspace', h('input', { type: 'text', value: it.alias, maxlength: '120', placeholder: 'Type the workspace name', 'aria-invalid': it.inScope && !it.alias.trim() ? 'true' : 'false', 'data-focus-key': `imp-alias-${i}`, oninput: (e) => { it.alias = e.target.value; } }),
+      it.inScope && !it.alias.trim() ? { hint: 'This file does not say which workspace it is. Type the workspace name.' } : {}),
+    field('Type', h('select', { onchange: (e) => { it.kind = e.target.value; mergeSuggestions(); go('#/setup/3'); } }, ['production', 'test', 'other'].map((k) => h('option', { value: k, selected: it.kind === k }, k)))),
     h('div', { class: 'small muted import-counts' }, [it.inv.region, `${it.res.counts.analyticsRules} analytics rules`, `${it.res.counts.automationRules} automation rules`, `${it.res.counts.dataConnectors} connectors`, `${it.res.counts.watchlists} watchlists`].filter(Boolean).join(' · '),
       it.res.errors.length ? h('div', { class: 'field-error' }, `${it.res.errors.length} request(s) failed while collecting. Some results may be missing.`) : null)));
   return h('div', { class: 'stack' }, modes,
@@ -210,10 +205,10 @@ function workspaceStep() {
       ...rows) : null,
     draft.suggest.length ? h('div', { class: 'stack' },
       h('h3', null, 'Answers the import fills in for you'),
-      h('p', { class: 'small muted' }, 'Based on what the script found in the workspaces in scope. Only Yes answers are suggested. Untick any that are wrong; you can change every answer later.'),
+      h('p', { class: 'small muted' }, `Based on what the script found in the workspaces in scope: ${draft.suggest.length} of ${kb.questions.filter((q) => !q.derived).length} questions. No is suggested only when the script could read that part in every workspace in scope. Untick any that are wrong; you can change every answer later.`),
       h('ul', { class: 'list' }, draft.suggest.map((sg) => h('li', { class: 'list-row' }, h('label', { class: 'check-line' },
         h('input', { type: 'checkbox', checked: sg.on, onchange: (e) => { sg.on = e.target.checked; } }),
-        h('span', null, qText(sg.questionId), h('strong', null, ' Yes'), h('span', { class: 'small muted' }, ` (${sg.reasons.slice(0, 2).join('; ')}${sg.reasons.length > 2 ? '; and more' : ''})`))))))) : null,
+        h('span', null, qText(sg.questionId), h('strong', null, sg.value === 'no' ? ' No' : ' Yes'), h('span', { class: 'small muted' }, ` (${sg.reasons.slice(0, 2).join('; ')}${sg.reasons.length > 2 ? '; and more' : ''})`))))))) : null,
     h('p', { class: 'small' }, 'Cannot run the script now? ', h('button', { type: 'button', class: 'linklike', onclick: () => { draft.wsMode = 'manual'; go('#/setup/3'); } }, 'Type the workspaces in instead'), '.'));
 }
 
@@ -254,6 +249,7 @@ route('setup', ({ params }) => {
     next = () => {
       if (!draft.wsMode) { toast('Choose how to add your workspaces.', 'bad'); return false; }
       if (draft.wsMode === 'import' && draft.imports.length && !draft.imports.some((x) => x.inScope)) { toast('Tick at least one workspace, or type them in instead.', 'bad'); return false; }
+      if (draft.wsMode === 'import' && draft.imports.some((x) => x.inScope && !x.alias.trim())) { toast('Type a name for each workspace in scope.', 'bad'); return false; }
       if (draft.wsMode === 'import' && !draft.imports.length) toast('No inventory imported yet. You can import it later from the analytics rules step.', 'info', 7000);
       return true;
     };
@@ -272,22 +268,21 @@ route('setup', ({ params }) => {
       h('p', { class: 'small muted' }, 'Your preferences (theme, saving choice, your name) are remembered in this browser\'s local storage. They contain no project data, and you can reset them in Settings.'));
     next = () => { if (!draft.storageMode) { toast('Choose how to save your work.', 'bad'); return false; } return true; };
   } else {
-    const qs = state.kb.questions;
+    const qs = state.kb.questions.filter((q) => !q.derived);
     const core = qs.filter((q) => q.core).length;
     const filled = draft.wsMode === 'import' ? draft.suggest.filter((x) => x.on).length : 0;
-    const guideChoice = (value, title, desc) => h('label', { class: ['choice', draft.guidance === value && 'selected'] },
-      h('input', { type: 'radio', name: 'guidance', value, checked: draft.guidance === value, onchange: () => { draft.guidance = value; go(`#/setup/${LAST}`); } }),
-      h('div', null, h('strong', null, title), h('p', { class: 'small' }, desc)));
-    const pathChoice = (value, title, desc) => h('label', { class: ['choice', draft.mode === value && 'selected'] },
-      h('input', { type: 'radio', name: 'mode', value, checked: draft.mode === value, onchange: () => { draft.mode = value; go(`#/setup/${LAST}`); } }),
-      h('div', null, h('strong', null, title), h('p', { class: 'small' }, desc)));
+    const guideChoice = (value, title, desc, extra) => h('label', { class: ['choice', draft.guidance === value && 'selected'] },
+      h('input', { type: 'radio', name: 'guidance', value, checked: draft.guidance === value, 'data-focus-key': `guidance-${value}`, onchange: () => { draft.guidance = value; if (value === 'simple') draft.mode = 'tailored'; go(`#/setup/${LAST}`); } }),
+      h('div', null, h('strong', null, title), h('p', { class: 'small' }, desc), extra || null));
+    // Under Detailed only: skip the questions and see every step, for consultants and audits.
+    const fullOption = draft.guidance === 'detailed' ? h('label', { class: 'check-line small' },
+      h('input', { type: 'checkbox', checked: draft.mode === 'full', 'data-focus-key': 'full-checklist', onchange: (e) => { draft.mode = e.target.checked ? 'full' : 'tailored'; go(`#/setup/${LAST}`); } }),
+      ` Skip the questions and show all ${state.kb.checks.length} steps (full checklist). You decide what applies as you go.`) : null;
     body = h('div', { class: 'stack' },
       h('fieldset', { class: 'choices' }, h('legend', { class: 'small muted' }, 'How do you want to work?'),
         guideChoice('simple', 'Simplified (recommended)', `Missions with short checklists. You answer ${core} questions now, and the others come up inside the missions they affect. Each check says what to do and what counts as proof.`),
-        guideChoice('detailed', 'Detailed', `Every step in full, with background and sources. You answer all ${qs.length} questions up front, grouped in ${state.kb.questionSections.length} short sections. For consultants and audit-heavy projects.`)),
-      h('fieldset', { class: 'choices' }, h('legend', { class: 'small muted' }, 'How to start'),
-        pathChoice('tailored', 'Tailor the plan to my environment (recommended)', `${draft.guidance === 'simple' ? `Answer ${core} short questions now, one per screen.` : `Answer up to ${qs.length} short questions, one per screen.`}${filled ? ` ${filled} answer${filled === 1 ? ' is' : 's are'} already filled in from your inventory.` : ''} Steps that do not apply are set aside with a reason, never deleted, and "I don't know yet" keeps them in your plan.`),
-        pathChoice('full', 'Show me the full checklist', `See all ${state.kb.checks.length} steps without tailoring. You decide what applies as you go.`)),
+        guideChoice('detailed', 'Detailed', `Every step in full, with background and sources. You answer all ${qs.length} questions up front, grouped in ${state.kb.questionSections.length} short sections. For consultants and audit-heavy projects.`, fullOption)),
+      h('p', { class: 'small muted' }, `${draft.mode === 'full' ? 'You will see every step, and decide what applies as you go.' : 'Your answers tailor the plan. Steps that do not apply are set aside with a reason, never deleted, and "I don\'t know yet" keeps them in your plan.'}${filled && draft.mode !== 'full' ? ` ${filled} answer${filled === 1 ? ' is' : 's are'} already filled in from your inventory.` : ''}`),
       h('div', { class: 'card card-muted' }, h('h2', { class: 'card-title' }, 'Before you start'), h('p', null, DISCLAIMER_SHORT),
         h('label', { class: 'check-line' }, h('input', { type: 'checkbox', checked: draft.disclaimer, onchange: (e) => { draft.disclaimer = e.target.checked; } }), ' I understand this assistant gives guidance only, and my organisation stays responsible for checking instructions, approvals and change decisions.')));
     next = () => { if (!draft.disclaimer) { toast('Please confirm the responsibility statement to continue.', 'bad'); return false; } return true; };
@@ -297,8 +292,10 @@ route('setup', ({ params }) => {
     if (!(await confirmLeaveProject())) return;
     const p = createProject({ mode: draft.mode, guidance: draft.guidance, appVersion: APP_VERSION, kbVersion: state.kb.meta.version });
     const imported = draft.wsMode === 'import' ? draft.imports.filter((x) => x.inScope && x.alias.trim()) : [];
+    const tenantRefs = [...new Set(imported.map((x) => x.inv.tenantRef).filter(Boolean))];
+    const tenantLabel = (x) => (tenantRefs.length > 1 && x.inv.tenantRef ? `Tenant ${tenantRefs.indexOf(x.inv.tenantRef) + 1}` : '');
     const envs = draft.wsMode === 'import'
-      ? imported.map((x) => ({ alias: x.alias.trim(), kind: x.kind, region: x.inv.region || '', notes: '' }))
+      ? imported.map((x) => ({ alias: x.alias.trim(), kind: x.kind, region: x.inv.region || '', tenant: tenantLabel(x), notes: '' }))
       : draft.environments.filter((e) => e.alias.trim()).map((e) => ({ alias: e.alias.trim(), kind: e.kind, notes: e.notes.trim() }));
     Object.assign(p.meta, {
       name: draft.name.trim(), organisation: draft.organisation.trim(), operatorName: draft.operatorName.trim(), operatorRole: draft.operatorRole.trim(),

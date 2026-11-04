@@ -32,6 +32,11 @@ function evalNode(rule, answers, questions, trace, neg = false, depth = 0) {
       trace.push({ q: rule.q, text: qText, value: null, label: 'Not asked (ruled out by an earlier answer)', result: neg ? T : F });
       return F;
     }
+    // A derived answer (set from your records, never asked on its own) counts as "No" until it is set.
+    if (q && q.derived && !(answers[rule.q] && answers[rule.q].value)) {
+      trace.push({ q: rule.q, text: qText, value: null, label: 'Not set yet', result: neg ? T : F });
+      return F;
+    }
     const a = answers[rule.q];
     const value = a && a.value;
     let r;
@@ -135,7 +140,7 @@ export function diffApplicability(before, after) {
 // Questions shown in this project: follow-ups appear only when their parent answer asks for them.
 export function visibleQuestions(kb, project) {
   const qIdx = questionIndex(kb);
-  return kb.questions.filter((q) => !q.showIf || evaluateApplicability({ id: '_', applicability: q.showIf }, { ...project, mode: 'tailored', checks: {} }, kb, qIdx).value !== 'not_applicable');
+  return kb.questions.filter((q) => !q.derived).filter((q) => !q.showIf || evaluateApplicability({ id: '_', applicability: q.showIf }, { ...project, mode: 'tailored', checks: {} }, kb, qIdx).value !== 'not_applicable');
 }
 
 // Simplified mode asks only the core questions up front; the others come up in the missions they affect.

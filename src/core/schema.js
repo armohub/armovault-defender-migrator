@@ -255,7 +255,6 @@ export const DEFAULT_SETTINGS = Object.freeze({
   operatorRole: '',
   welcomeSeen: false,
   introSeen: false, // the animated introduction plays once, then a short splash
-  autoAdvance: true, // the questionnaire moves on after an answer
   motion: 'system', // 'system' (follow the operating system) | 'reduced'
   disclaimerAcknowledgedAt: '',
   lastProjectId: '',
@@ -271,7 +270,6 @@ export function validateSettings(input) {
   s.operatorRole = str(input.operatorRole, 200);
   s.welcomeSeen = input.welcomeSeen === true;
   s.introSeen = input.introSeen === true;
-  s.autoAdvance = input.autoAdvance !== false;
   s.motion = oneOf(input.motion, ['system', 'reduced'], 'system');
   s.disclaimerAcknowledgedAt = iso(input.disclaimerAcknowledgedAt);
   s.lastProjectId = safeId(input.lastProjectId) ? input.lastProjectId : '';

@@ -57,11 +57,12 @@ test('guidance that sends people somewhere is clickable', () => {
 
 test('new settings have safe defaults and are validated', () => {
   assert.equal(DEFAULT_SETTINGS.theme, 'dark');
-  const s = validateSettings({ introSeen: 'yes', autoAdvance: false, motion: 'wild' });
+  const s = validateSettings({ introSeen: 'yes', autoAdvance: true, motion: 'wild' });
   assert.equal(s.introSeen, false, 'only a real boolean true marks the intro as seen');
-  assert.equal(s.autoAdvance, false);
   assert.equal(s.motion, 'system');
-  assert.equal(validateSettings({}).autoAdvance, true);
+  // The questionnaire never moves on by itself any more, so an old auto-advance preference is dropped.
+  assert.equal('autoAdvance' in s, false);
+  assert.equal('autoAdvance' in DEFAULT_SETTINGS, false);
 });
 
 test('brand and version for the 1.0 release', () => {

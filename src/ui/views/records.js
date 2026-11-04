@@ -11,7 +11,9 @@ import { revokeObjectUrls, trackUrl } from './work.js';
 import { importInventoryFlow } from '../inventory.js';
 import { personPicker } from '../tools.js';
 
-const regFilter = { type: 'all', status: 'open' };
+// 'unresolved' is everything not finished yet: open or in progress.
+const regFilter = { type: 'all', status: 'unresolved' };
+const statusLabel = (s) => s.charAt(0).toUpperCase() + s.slice(1).replace('_', ' ');
 
 // The words of the dialog when you add an item from a step: what the item is for, in plain labels.
 // Type, severity, status and the linked step are filled in and sit under "More options".
@@ -113,7 +115,7 @@ export async function editRegisterItem(existing, preset = {}) {
 
 route('register', () => {
   const p = state.project;
-  const items = p.register.filter((r) => (regFilter.type === 'all' || r.type === regFilter.type) && (regFilter.status === 'all' || (regFilter.status === 'open' ? !['done', 'closed', 'accepted'].includes(r.status) : r.status === regFilter.status)));
+  const items = p.register.filter((r) => (regFilter.type === 'all' || r.type === regFilter.type) && (regFilter.status === 'all' || (regFilter.status === 'unresolved' ? !['done', 'closed', 'accepted'].includes(r.status) : r.status === regFilter.status)));
   const rank = { critical: 0, high: 1, medium: 2, low: 3 };
   items.sort((a, b) => rank[a.severity] - rank[b.severity] || String(a.due || '9999').localeCompare(String(b.due || '9999')));
   const exportCsv = () => {
@@ -128,7 +130,7 @@ route('register', () => {
   return h('div', { class: 'page' },
     pageHead('Decisions and risks', 'One register for decisions, actions, issues, risks and accepted exceptions. An exception counts as accepted only with a named person and a reason.',
       btn('New decision', () => editRegisterItem(null, { type: 'decision' }), { kind: 'primary', iconName: 'plus', small: true }), btn('New action, risk or issue', () => editRegisterItem(null), { iconName: 'plus', small: true }), btn('Export CSV', exportCsv, { iconName: 'download', small: true })),
-    h('div', { class: 'toolbar' }, sel('type', [['all', 'All types'], ...REGISTER_TYPES.map((t) => [t.id, t.label])]), sel('status', [['open', 'Open'], ['all', 'All statuses'], ...REGISTER_STATUS_IDS.map((s) => [s, s.replace('_', ' ')])])),
+    h('div', { class: 'toolbar' }, sel('type', [['all', 'All types'], ...REGISTER_TYPES.map((t) => [t.id, t.label])]), sel('status', [['unresolved', 'Not finished (open or in progress)'], ['all', 'All statuses'], ...REGISTER_STATUS_IDS.map((s) => [s, statusLabel(s)])])),
     items.length ? h('div', { class: 'table-wrap' }, h('table', { class: 'table' },
       h('thead', null, h('tr', null, ...['Type', 'Severity', 'Title', 'Owner', 'Due', 'Status', 'Linked step'].map((t) => h('th', { scope: 'col' }, t)))),
       h('tbody', null, items.map((r) => h('tr', null,

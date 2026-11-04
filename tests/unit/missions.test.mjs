@@ -4,7 +4,7 @@ import assert from 'node:assert/strict';
 import { KB } from '../../content/kb.mjs';
 import { createProject, setAnswer, setCheckStatus, addEvidence, setTestAvailability } from '../../src/core/model.js';
 import { applicabilityMap, upfrontQuestions, visibleQuestions } from '../../src/core/applicability.js';
-import { missionOf, missionsForStage, nextMission, firstOpenRow } from '../../src/core/missions.js';
+import { missionOf, missionsForStage, nextMission, firstOpenRow, missionContext, journey } from '../../src/core/missions.js';
 
 const fresh = (opts = {}) => createProject({ meta: { operatorName: 'Sam' }, ...opts });
 
@@ -78,4 +78,31 @@ test('Simplified asks only the six core questions up front; Detailed asks them a
   assert.deepEqual(upfrontQuestions(KB, p).map((q) => q.id).sort(), ['data_residency', 'defender_xdr', 'multi_tenant', 'multi_workspace', 'sovereign_cloud', 'test_env']);
   p.guidance = 'detailed';
   assert.equal(upfrontQuestions(KB, p).length, visibleQuestions(KB, p).length);
+});
+
+test('a step opened from a mission knows its mission, its neighbours in it, and the mission after it', () => {
+  const p = fresh({ guidance: 'simple' });
+  const app = applicabilityMap(KB, p);
+  const m = missionOf(KB, p, 'prepare', 'scope', app);
+  const ids = [...m.needed, ...m.extras].map((r) => r.check.id);
+  const first = missionContext(KB, p, ids[0], app);
+  assert.equal(first.mission.key, 'prepare:scope');
+  assert.equal(first.prev, null);
+  assert.equal(first.next.id, ids[1]);
+  const last = missionContext(KB, p, ids[ids.length - 1], app);
+  assert.equal(last.next, null);
+  const order = journey(KB, p, app).stages.flatMap((x) => x.missions).map((x) => x.key);
+  assert.equal(last.after.key, order[order.indexOf('prepare:scope') + 1], 'the next mission in route order');
+  assert.equal(missionContext(KB, { ...p, guidance: 'detailed' }, ids[0], app), null, 'Detailed keeps the step page as it is');
+  setAnswer(p, 'all_connected', 'yes', 'test');
+  const app2 = applicabilityMap(KB, p);
+  assert.equal(missionContext(KB, p, 'PREP-SCOPE-03', app2), null, 'a set-aside step has no place in its mission');
+});
+
+test('the journey counts what is done in each mission and how many questions are still open', () => {
+  const p = fresh({ guidance: 'simple' });
+  const j = journey(KB, p, applicabilityMap(KB, p));
+  const all = j.stages.flatMap((x) => x.missions);
+  assert.ok(all.every((m) => Number.isInteger(m.done) && Number.isInteger(m.total) && Array.isArray(m.questions)));
+  assert.ok(all.some((m) => m.questions.length > 0), 'some missions still have questions to answer');
 });

@@ -1,5 +1,34 @@
 # Changelog
 
+## Unreleased: inventory and flow review (4 November 2026)
+
+### Version
+- Knowledge base version `2026.11.04` (it was `2026.11.03`): new questions logic, 18 new sources and a larger inventory script. The app version stays 1.0.0 until the release.
+
+### Inventory script
+- Run with no parameters, it finds every Sentinel workspace you can read (`-Discover` still works). Before, it asked for a subscription and a workspace and saw only that one.
+- The alias is the workspace name unless you give one, so an imported file never shows as `armohub-inventory`. Older files without a name ask you to type it.
+- It also collects, with GET requests only: customer-managed keys, UEBA and entity analytics, workspace manager, repositories, bookmarks and hunts, workbooks and playbooks installed from the content hub, Logic Apps that use the Microsoft Sentinel connector (and whether they use ServiceNow or Jira), role assignments as counts, the tenant as a short fingerprint, Lighthouse delegation, the Azure cloud, and data connectors from both API versions. Every part records whether it was collected, and a part that fails does not stop the others. Inventory files are schema version 2; version 1 files still import.
+- Tested against mocks: one workspace (every part, a refused part, the name), several workspaces, and discovery (tenant fingerprints, shared names, refused checks).
+
+### Answers from the import
+- The import can suggest answers to 28 of the 35 questions, up from 9. Yes when any workspace in scope shows it. No, for the 13 questions that allow it, only when every workspace in scope was read for that part and none has it. Setup shows each suggestion with Yes or No and why.
+- The workspace list answers several workspaces, several tenants, a test workspace and whether it is in a separate tenant. Workspaces from different tenants get tenant labels.
+
+### Setup and questions
+- How to start is one choice: Simplified or Detailed. Both tailor the plan. Under Detailed, "Skip the questions and show all 110 steps" keeps the full checklist.
+- Choosing an answer no longer moves on by itself. Next, or Enter, moves on. The "Move on after Yes or No" switch and setting are gone.
+
+### Connection check
+- A workspace marked connected, secondary, needs a primary in the same tenant; saving says so.
+- "Is any workspace already connected?" follows what you mark.
+- When every production workspace is connected, a dialog offers **Focus on checking**. It sets aside, with that reason, the steps for connecting: who connects and their roles, the transition window, and Transition before and during the change. The checks on what changed, the checks after the change and Validate stay. It comes back if a workspace is marked as not connected.
+- The tenant card no longer asks who connects a tenant whose workspaces are all connected.
+
+### Missions
+- In Simplified, Details opens the step inside its mission: the breadcrumb names the mission, the mission's progress and the overall progress stay on screen, and the buttons are Back to the mission and Next in this mission (then the next mission).
+- The journey rail shows done and total for every mission, and the questions still open in it.
+
 ## Unreleased: onboarding and guidance review (29 October 2026)
 
 ### Version

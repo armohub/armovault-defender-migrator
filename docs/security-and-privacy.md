@@ -38,7 +38,7 @@ There is no telemetry, analytics, automatic update, account or backend.
 |---|---|---|---|
 | Project in progress | Memory of the open tab | Always | No |
 | Autosaved project and attachments | IndexedDB of this browser profile on this computer | **Off** (opt-in) | No |
-| Preferences (theme, density, saving choice, your name and role, motion, questionnaire auto-advance, whether the introduction was seen) | localStorage of this browser profile | On | No |
+| Preferences (theme, density, saving choice, your name and role, motion, whether the introduction was seen) | localStorage of this browser profile | On | No |
 | Project package (.zip), JSON, CSV, PDF | Files you save | Only when you save | **No** |
 
 Important facts, measured on Edge and Chrome 155 (see the ADR):
@@ -54,7 +54,7 @@ Important facts, measured on Edge and Chrome 155 (see the ADR):
 - Crop or redact screenshots. A redaction confirmation is recorded for each screenshot.
 - Prefer short summaries over raw log exports.
 - Packages are not encrypted. Handle them under your data policy.
-- The inventory script writes names and flags only, never rule queries or incident data. Review its output before you import or share it.
+- The inventory script writes names, flags and counts only, never rule queries, Logic App definitions, incident data, or principal, tenant, subscription or resource group IDs. The tenant appears only as a short fingerprint, so tenants can be told apart. Review its output before you import or share it.
 
 ## Threat model and controls
 

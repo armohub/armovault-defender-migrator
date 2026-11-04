@@ -1,5 +1,5 @@
-// The tailoring questionnaire: one question per screen, with section progress, keyboard answers and an
-// optional auto-advance. "Your answers" shows every question on one page for review.
+// The tailoring questionnaire: one question per screen, with section progress and keyboard answers. Choosing an
+// answer only selects it; Next (or Enter) moves on. "Your answers" shows every question on one page for review.
 import { h, icon, modal, confirmDialog, toast, showSequence, savedPulse } from '../dom.js';
 import { state, mutate, updateSettings } from '../../app/store.js';
 import { go, route, render, freshRoute } from '../shell.js';
@@ -9,9 +9,10 @@ import { btn, linkBtn, callout } from '../components.js';
 import { formatDate } from '../../core/util.js';
 import { rich } from '../rich.js';
 import { questionStrip } from '../route.js';
+import { INVENTORY_QUESTIONS } from '../../core/inventory.js';
 
 // Questions the read-only inventory script can suggest answers for (see src/core/inventory.js).
-const INVENTORY_QS = new Set(['fusion', 'ms_incident_rules', 'alert_only_rules', 'mdc', 'standalone_connectors', 'automation_rules', 'playbooks', 'watchlists', 'ti']);
+const INVENTORY_QS = new Set(INVENTORY_QUESTIONS);
 
 // What the project already knows that hints at an answer.
 function knownHint(q, p) {
@@ -30,7 +31,6 @@ const ANSWER_TEXT = {
 
 
 let direction = 'forward';
-let advanceTimer = null;
 // Whether the question already had an answer when its screen opened (so we only show "Answered by" then,
 // and the screen does not change shape the moment you answer).
 let openedQ = '';
@@ -78,13 +78,11 @@ route('questionnaire', ({ params }) => {
   const goPrev = () => { direction = 'back'; if (prev) go(`#/questionnaire/q/${prev.id}`); };
 
   const pick = async (value) => {
-    clearTimeout(advanceTimer);
     const changed = await changeAnswer(q, value);
     if (changed === false) return;
     savedPulse('Answer recorded');
-    if (state.settings.autoAdvance && (value === 'yes' || value === 'no')) {
-      advanceTimer = setTimeout(() => { if (location.hash === `#/questionnaire/q/${q.id}`) goNext(); }, 650);
-    }
+    // Keep the keyboard on the chosen answer after the redraw, so Enter (or Tab to Next) moves on.
+    setTimeout(() => { const t = document.querySelector(`[data-focus-key="ans-${q.id}-${value}"]`); if (t) t.focus({ preventScroll: true }); }, 0);
   };
 
   const onTileKey = (e) => {
@@ -139,14 +137,13 @@ route('questionnaire', ({ params }) => {
       h('div', { class: 'q-aside' },
         knownHint(q, p) ? h('div', { class: 'q-note q-hint' }, icon('check', 'icon-sm'), h('div', null, h('b', null, 'From what you entered'), knownHint(q, p))) : null,
         a && /^From imported inventory/.test(a.reason || '') ? h('div', { class: 'q-note q-hint' }, icon('upload', 'icon-sm'), h('div', null, h('b', null, 'Filled in from your inventory'), `The script found: ${a.reason.replace(/^From imported inventory \(/, '').replace(/\); confirmed by.*$/, '')}. Change the answer if it is wrong.`)) : null,
-        INVENTORY_QS.has(q.id) && !p.meta.inventoryChoice ? h('div', { class: 'q-note q-hint' }, icon('upload', 'icon-sm'), h('div', null, h('b', null, 'The inventory script can answer this'), 'Run the read-only ', h('a', { href: '#/item/PREP-DET-01' }, 'inventory script'), ' and import its results: the assistant suggests answers for this and eight other questions, and you confirm them.')) : null,
+        INVENTORY_QS.has(q.id) && !p.meta.inventoryChoice ? h('div', { class: 'q-note q-hint' }, icon('upload', 'icon-sm'), h('div', null, h('b', null, 'The inventory script can answer this'), 'Run the read-only ', h('a', { href: '#/item/PREP-DET-01' }, 'inventory script'), ` and import its results: the assistant suggests answers for this and ${INVENTORY_QUESTIONS.length - 1} other questions, and you confirm them.`)) : null,
         q.why ? h('div', { class: 'q-note' }, icon('sparkle', 'icon-sm'), h('div', null, h('b', null, 'Why we ask'), rich(q.why, { kb }))) : null,
         q.help ? h('div', { class: 'q-note' }, icon('search', 'icon-sm'), h('div', null, h('b', null, 'Where to find the answer'), rich(q.help, { kb }))) : null)),
     h('div', { class: 'q-foot' },
       prev ? btn('Back', goPrev, { iconName: 'back' }) : linkBtn('Back to the overview', '#/overview', { iconName: 'back', kind: 'ghost' }),
       h('button', { type: 'button', class: ['btn', a ? 'btn-primary' : null], onclick: goNext, 'data-focus-key': 'q-next' }, a ? (next ? 'Next question' : 'Finish') : 'Skip for now', icon('arrow', 'icon-sm')),
       h('span', { class: 'spacer' }),
-      h('label', { class: 'toggle' }, h('input', { type: 'checkbox', checked: state.settings.autoAdvance, onchange: (e) => updateSettings({ autoAdvance: e.target.checked }, { silent: true }) }), 'Move on after Yes or No'),
       h('a', { href: '#/answers', class: 'small' }, 'See all answers')),
     h('p', { class: 'q-keys', style: { marginTop: '12px' } }, icon('keyboard', 'icon-sm'), 'Keys 1 to 4 answer, Enter goes to the next question.'));
 });
@@ -171,7 +168,7 @@ function introScreen(qs) {
       listed,
       filled ? callout('good', `${filled} answer${filled === 1 ? ' is' : 's are'} already filled in from your inventory.`, ' You will see them as you go, and you can change any of them.') : null,
       callout('info', 'Nothing is hidden for good.', ' Steps that do not apply are set aside with the reason, and you can change any answer later in "Your answers".'),
-      !p.meta.inventoryChoice ? h('p', { class: 'q-keys', style: { marginTop: '12px' } }, icon('upload', 'icon-sm'), 'Want fewer questions to answer by hand? Run the read-only ', h('a', { href: '#/item/PREP-DET-01' }, 'inventory script'), ' first: it suggests answers for nine questions.') : null,
+      !p.meta.inventoryChoice ? h('p', { class: 'q-keys', style: { marginTop: '12px' } }, icon('upload', 'icon-sm'), 'Want fewer questions to answer by hand? Run the read-only ', h('a', { href: '#/item/PREP-DET-01' }, 'inventory script'), ` first: it suggests answers for up to ${INVENTORY_QUESTIONS.length} questions.`) : null,
       h('div', { class: 'hero-actions' },
         h('button', { type: 'button', class: 'btn btn-primary btn-lg', 'data-focus-key': 'q-start', onclick: () => { direction = 'forward'; go(`#/questionnaire/q/${(qs.find((q) => !p.answers[q.id]) || qs[0]).id}`); } }, 'Start the questions', icon('arrow', 'icon-sm')),
         linkBtn('Skip, show the full plan', '#/overview', { kind: 'ghost' })),
@@ -227,14 +224,15 @@ function doneScreen(qs) {
 document.addEventListener('keydown', (e) => {
   if (!location.hash.startsWith('#/questionnaire/q/')) return;
   const screen = document.querySelector('.q-screen');
-  if (!screen || !screen.contains(document.activeElement)) return;
+  // Focus on the body (for example right after a redraw) counts as being on the question.
+  if (!screen || (document.activeElement !== document.body && !screen.contains(document.activeElement))) return;
   const t = e.target;
   if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
   if (e.ctrlKey || e.metaKey || e.altKey || document.querySelector('dialog[open]')) return;
   if (/^[1-4]$/.test(e.key)) {
     const tile = screen.querySelectorAll('.answer-tile')[Number(e.key) - 1];
     if (tile) { e.preventDefault(); tile.click(); }
-  } else if (e.key === 'Enter' && !(t && (t.tagName === 'BUTTON' || t.tagName === 'A'))) {
+  } else if (e.key === 'Enter' && (!(t && (t.tagName === 'BUTTON' || t.tagName === 'A')) || (t.classList.contains('answer-tile') && t.getAttribute('aria-checked') === 'true'))) {
     const nextBtn = screen.querySelector('[data-focus-key="q-next"]');
     if (nextBtn) { e.preventDefault(); nextBtn.click(); }
   }

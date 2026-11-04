@@ -6,7 +6,7 @@ Three kinds of data, kept strictly apart:
 
 | Data | Where it lives | Format | Versioning |
 |---|---|---|---|
-| **Knowledge base** (guidance) | Bundled into the assistant at build time; also published as `dist/kb.json` | `content/*.mjs` to JS objects | `KB_META.version` (currently `2026.11.03`); each item has `version` and `lastVerified` |
+| **Knowledge base** (guidance) | Bundled into the assistant at build time; also published as `dist/kb.json` | `content/*.mjs` to JS objects | `KB_META.version` (currently `2026.11.04`); each item has `version` and `lastVerified` |
 | **Project** (your records) | In memory; in IndexedDB only with browser autosave; in project packages you save | JSON (`armohub.dma.project`) | `schemaVersion` (currently 1) with a migration hook |
 | **Settings** (preferences) | `localStorage` key `armohub.dma.settings.v1`; optional export file | JSON (`armohub.dma.settings`) | `schemaVersion` 1 |
 
@@ -117,7 +117,6 @@ A "find out" action added from the questionnaire is an ordinary register item of
   density: 'comfortable' | 'compact',
   operatorName, operatorRole,
   welcomeSeen, introSeen,                   // introSeen becomes true once the introduction has been shown or skipped
-  autoAdvance: bool,                        // default true: move on after Yes or No
   motion: 'system' | 'reduced',             // default 'system': follow the operating system
   disclaimerAcknowledgedAt, lastProjectId,
 }
@@ -163,14 +162,19 @@ Import is defensive (`src/core/package.js`, `src/core/zip.js`):
 | `armo-dma-<project>-evidence-index.csv` | The evidence index |
 | `armo-dma-preferences.json` | Preferences (`armohub.dma.settings`), no project data |
 
-## Inventory file (`armohub.dma.inventory` v1)
+## Inventory file (`armohub.dma.inventory` v2; v1 still imports)
 
-Produced by `tools/Get-ArMoSentinelInventory.ps1`, which sends GET requests only. It contains names and flags only (no queries, incidents or credentials):
-- `analyticsRules[]`: name, kind, enabled, createIncident, groupingEnabled, reopenClosed, correlationTag, usesIdentityInfo, usesLegacyTI, productFilter, apiVersion
+Produced by `tools/Get-ArMoSentinelInventory.ps1`, which sends GET requests only. It contains names, kinds, flags and counts only (no queries, Logic App definitions, incidents, principal, tenant, subscription or resource group IDs, or credentials):
+- `workspace`: alias (the workspace name unless you gave one), region, tenantRef (a short fingerprint of the tenant, never its ID), delegated (Azure Lighthouse), cloud, customerManagedKey
+- `analyticsRules[]`: name, kind, enabled, createIncident, groupingEnabled, reopenClosed, correlationTag, usesIdentityInfo, usesLegacyTI, usesTI, productFilter, apiVersion
 - `automationRules[]`: name, enabled, triggersOn, triggersWhen, riskyConditions, playbookActions, taskActions
-- `dataConnectors[]`, `watchlists[]`, `errors[]`
+- `dataConnectors[]` (both API versions), `watchlists[]`
+- `settings` { ueba, entityAnalytics, anomalies }, `workspaceManager` { enabled, members }, `repositories` { count, huntingQueries }, `bookmarks`, `hunts`, `installedContent` { workbooks, playbooks }
+- `logicApps.sentinelPlaybooks[]`: name, ticketing
+- `access` { spWithSentinelRoles, spWithReadOnlyRoles, tableLevelRestrictions }: counts only
+- `collected` { part: true | false }: whether every request of a part succeeded; `errors[]`
 
-The assistant maps the file to imported evidence notes on specific steps, and to "Yes" answer suggestions. A finding that is absent in one workspace never becomes "No".
+The assistant maps the file to imported evidence notes on specific steps, and to answer suggestions for the workspaces in scope (`suggestAnswers` in `src/core/inventory.js`). Yes when any workspace shows it. No only for the 13 questions that allow it, and only when every workspace in scope was collected for that part and none has it. A finding that is absent in one workspace never becomes "No" on its own.
 
 ## Schema evolution
 

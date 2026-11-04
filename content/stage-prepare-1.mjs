@@ -1,5 +1,5 @@
 // Stage 1, Prepare (part 1 of 3): scope, workspaces, access, data governance.
-import { k, src, q, any, all, at, outcome } from './define.mjs';
+import { k, src, q, any, all, not, at, outcome } from './define.mjs';
 
 const DP = 'Defender portal';
 const AP = 'Azure portal';
@@ -98,7 +98,7 @@ export const PREPARE_1 = [
   }),
   k({
     tool: 'window',
-    id: 'PREP-SCOPE-03', stage: 'prepare', workstream: 'scope', order: 30, kind: 'decision', criticality: 'critical',
+    id: 'PREP-SCOPE-03', stage: 'prepare', workstream: 'scope', order: 30, kind: 'decision', criticality: 'critical', applicability: not(q('all_connected')),
     title: 'Set the transition window well before 31 March 2027',
     objective: 'Choose and approve a target date for connecting production workspaces. Leave time for testing, remediation and hypercare before Microsoft ends Azure portal support.',
     why: [
@@ -483,7 +483,7 @@ export const PREPARE_1 = [
 
   // ───────────────────────── Access and permissions ─────────────────────────
   k({
-    id: 'PREP-ACC-01', stage: 'prepare', workstream: 'access', order: 10, kind: 'check', criticality: 'critical',
+    id: 'PREP-ACC-01', stage: 'prepare', workstream: 'access', order: 10, kind: 'check', criticality: 'critical', applicability: not(q('all_connected')),
     title: 'Confirm the person who will connect the workspace has the required roles',
     objective: 'Check the onboarding operator\'s Entra and Azure roles before the change window.',
     why: [

@@ -5,7 +5,7 @@ The ArMo MS Defender Migration Assistant is released as one final version, **1.0
 ## Versioning
 
 - **App:** semantic versioning in `src/brand.js` (`APP_VERSION`) and `package.json` (`version`). The two must match. Each published version is final.
-- **Knowledge base:** a date-based version in `content/kb.mjs` (`KB_META.version`, currently `2026.11.03`), plus `lastReviewed`. Content-only updates bump the knowledge base version and the app patch version.
+- **Knowledge base:** a date-based version in `content/kb.mjs` (`KB_META.version`, currently `2026.11.04`), plus `lastReviewed`. Content-only updates bump the knowledge base version and the app patch version.
 - **Project schema:** an integer `schemaVersion`. Bump it only with a migration in `src/core/schema.js`.
 - **Internal identifiers** (`armohub.dma.project`, `armohub.dma.settings` and the related keys) stay as they are, for compatibility. Do not rename them as part of a release.
 

@@ -86,7 +86,8 @@ test('the workspace inventory keeps its fields and allows one primary only', () 
 
 test('saved projects keep the new fields through import, and import rules still hold', () => {
   const p = createProject({ meta: { operatorName: 'Sam' } });
-  setEnvironments(p, [{ alias: 'A', subscription: 'Sub-1', defender: 'secondary' }]);
+  // A secondary workspace needs a primary in its tenant.
+  setEnvironments(p, [{ alias: 'P', defender: 'primary' }, { alias: 'A', subscription: 'Sub-1', defender: 'secondary' }]);
   setWorkstreamOwners(p, { 'prepare:access': 'IAM team' });
   setApprovers(p, [{ role: 'SOC lead', name: 'Kim' }]);
   p.meta.plannedPrimary = 'A';
@@ -100,8 +101,8 @@ test('saved projects keep the new fields through import, and import rules still 
   const q = res.project;
   assert.deepEqual(q.meta.workstreamOwners, { 'prepare:access': 'IAM team' });
   assert.deepEqual(q.meta.approvers, [{ role: 'SOC lead', name: 'Kim' }]);
-  assert.equal(q.meta.environments[0].subscription, 'Sub-1');
-  assert.equal(q.meta.environments[0].defender, 'secondary');
+  assert.equal(q.meta.environments[1].subscription, 'Sub-1');
+  assert.equal(q.meta.environments[1].defender, 'secondary');
   assert.equal(q.meta.plannedPrimary, 'A');
   assert.equal(q.checks[P1.id].status, 'passed', 'a pass with a recorded reason survives import');
   assert.equal(q.checks[P1.id].evidenceWaiver.reason, 'Not needed');

@@ -564,7 +564,7 @@ export const SHORT = {
     info: {
       title: 'Several workspaces?',
       points: [
-        'Run the inventory script once with a list of workspaces (-WorkspacesFile). It writes one file per workspace, named after its alias.',
+        'Run the inventory script with no parameters: it finds every workspace you can read and writes one file per workspace, named after it. For a list you choose, use -WorkspacesFile.',
         'Pick all the files at once in Import inventory results. Each workspace gets its own dialog, so you confirm what applies to each one, or skip it.',
         'The list holds resource names only: no passwords, secrets or tokens. A workspace that fails does not stop the others.',
       ],

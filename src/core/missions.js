@@ -61,3 +61,30 @@ export function nextMission(kb, project, appMap) {
 export function firstOpenRow(mission) {
   return mission.needed.find((r) => !DONE_STATUSES.has(r.status)) || null;
 }
+
+// Every mission on the route, by stage, with what is done. Extras never count.
+export function journey(kb, project, appMap) {
+  const stages = kb.stages.filter((s) => s.id !== 'test' || testUsed(project)).map((s) => {
+    const missions = missionsForStage(kb, project, s.id, appMap);
+    return { stage: s, missions, complete: missions.every((m) => m.complete) };
+  });
+  const all = stages.flatMap((x) => x.missions);
+  const done = all.reduce((n, m) => n + m.done, 0);
+  const total = all.reduce((n, m) => n + m.total, 0);
+  return { stages, done, total, pct: total ? Math.round((done / total) * 100) : 100, missionsDone: all.filter((m) => m.complete).length, missions: all.length };
+}
+
+// In Simplified, a step opened from its mission stays inside it: the mission, the checks before and after it in the
+// mission, and the mission after this one in route order. Null in Detailed, or for a step that is set aside.
+export function missionContext(kb, project, checkId, appMap) {
+  if (project.guidance !== 'simple') return null;
+  const check = kb.checks.find((c) => c.id === checkId);
+  if (!check) return null;
+  const mission = missionOf(kb, project, check.stage, check.workstream, appMap);
+  const rows = mission ? [...mission.needed, ...mission.extras] : [];
+  const i = rows.findIndex((r) => r.check.id === checkId);
+  if (i < 0) return null;
+  const order = journey(kb, project, appMap).stages.flatMap((x) => x.missions);
+  const at = order.findIndex((m) => m.key === mission.key);
+  return { mission, prev: i > 0 ? rows[i - 1].check : null, next: rows[i + 1] ? rows[i + 1].check : null, after: at >= 0 ? order[at + 1] || null : null };
+}

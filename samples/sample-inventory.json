@@ -1,13 +1,18 @@
 {
   "schema": "armohub.dma.inventory",
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "tool": {
     "name": "Get-ArMoSentinelInventory.ps1",
-    "version": "0.9.0"
+    "version": "1.0.0"
   },
   "collectedAt": "2026-10-12T08:00:00Z",
   "workspace": {
-    "alias": "DEMO-WS (fictional)"
+    "alias": "DEMO-WS (fictional)",
+    "region": "westeurope",
+    "tenantRef": "t-0f1e2d3c",
+    "delegated": false,
+    "cloud": "AzureCloud",
+    "customerManagedKey": false
   },
   "analyticsRules": [
     {
@@ -21,7 +26,8 @@
       "usesIdentityInfo": false,
       "usesLegacyTI": false,
       "productFilter": "Azure Security Center",
-      "apiVersion": "2025-09-01"
+      "apiVersion": "2025-09-01",
+      "usesTI": false
     },
     {
       "name": "NRT identity rule",
@@ -34,7 +40,8 @@
       "usesIdentityInfo": true,
       "usesLegacyTI": true,
       "productFilter": "",
-      "apiVersion": "2025-07-01-preview"
+      "apiVersion": "2025-07-01-preview",
+      "usesTI": true
     },
     {
       "name": "Alert only rule",
@@ -47,7 +54,8 @@
       "usesIdentityInfo": false,
       "usesLegacyTI": false,
       "productFilter": "",
-      "apiVersion": "2025-09-01"
+      "apiVersion": "2025-09-01",
+      "usesTI": false
     },
     {
       "name": "Advanced Multistage Attack Detection",
@@ -60,7 +68,8 @@
       "usesIdentityInfo": false,
       "usesLegacyTI": false,
       "productFilter": "",
-      "apiVersion": "2025-09-01"
+      "apiVersion": "2025-09-01",
+      "usesTI": false
     }
   ],
   "automationRules": [
@@ -105,5 +114,56 @@
       "name": "VIP users"
     }
   ],
+  "settings": {
+    "ueba": true,
+    "entityAnalytics": true,
+    "anomalies": false
+  },
+  "workspaceManager": {
+    "enabled": false,
+    "members": 0
+  },
+  "repositories": {
+    "count": 0,
+    "huntingQueries": false
+  },
+  "bookmarks": 3,
+  "hunts": 0,
+  "installedContent": {
+    "workbooks": 4,
+    "playbooks": 1
+  },
+  "logicApps": {
+    "sentinelPlaybooks": [
+      {
+        "name": "Enrich incident (fictional)",
+        "ticketing": false
+      },
+      {
+        "name": "Open a ticket (fictional)",
+        "ticketing": true
+      }
+    ]
+  },
+  "access": {
+    "spWithSentinelRoles": 1,
+    "spWithReadOnlyRoles": 0,
+    "tableLevelRestrictions": 0
+  },
+  "collected": {
+    "analyticsRules": true,
+    "automationRules": true,
+    "dataConnectors": true,
+    "watchlists": true,
+    "onboarding": true,
+    "settings": true,
+    "workspaceManager": true,
+    "repositories": true,
+    "bookmarks": true,
+    "hunts": true,
+    "installedContent": true,
+    "logicApps": true,
+    "access": true
+  },
   "errors": []
 }

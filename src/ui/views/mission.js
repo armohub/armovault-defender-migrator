@@ -5,7 +5,7 @@ import { state, mutate } from '../../app/store.js';
 import { route, render, go } from '../shell.js';
 import { applicabilityMap } from '../../core/applicability.js';
 import { effectiveStatus } from '../../core/readiness.js';
-import { missionOf, missionsForStage, nextMission, firstOpenRow, DONE_STATUSES } from '../../core/missions.js';
+import { missionOf, nextMission, firstOpenRow, journey, DONE_STATUSES } from '../../core/missions.js';
 import { setWorkstreamOwners, setShowExtras, workstreamKey } from '../../core/model.js';
 import { btn, linkBtn, emptyState, infoTip } from '../components.js';
 import { actionsFor } from '../step-actions.js';
@@ -18,20 +18,6 @@ import { revokeObjectUrls } from './work.js';
 const openByMission = new Map(); // mission key -> open check id, remembered while you move around
 const seenComplete = new Map(); // mission key -> complete when last shown, so finishing one is celebrated once
 
-const testUsed = (p) => p.stages.test.availability === 'available';
-
-// Every mission on the route, by stage, with what is done. Extras never count.
-export function journey(kb, p, appMap) {
-  const stages = kb.stages.filter((s) => s.id !== 'test' || testUsed(p)).map((s) => {
-    const missions = missionsForStage(kb, p, s.id, appMap);
-    return { stage: s, missions, complete: missions.every((m) => m.complete) };
-  });
-  const all = stages.flatMap((x) => x.missions);
-  const done = all.reduce((n, m) => n + m.done, 0);
-  const total = all.reduce((n, m) => n + m.total, 0);
-  return { stages, done, total, pct: total ? Math.round((done / total) * 100) : 100, missionsDone: all.filter((m) => m.complete).length, missions: all.length };
-}
-
 function journeyRail(j, currentKey) {
   return h('aside', { class: 'journey-rail', 'aria-label': 'Your progress across all missions' },
     h('div', { class: 'rail-head' },
@@ -41,9 +27,10 @@ function journeyRail(j, currentKey) {
     h('ol', { class: 'rail-stages' }, j.stages.map((st) => h('li', { class: ['rail-stage', st.complete && 'done'] },
       h('div', { class: 'rail-milestone' }, h('span', { class: 'rail-flag', 'aria-hidden': 'true' }, icon(st.complete ? 'check' : 'flag', 'icon-xs')), h('strong', null, st.stage.short), h('span', { class: 'small muted tnum' }, `${st.missions.filter((m) => m.complete).length} of ${st.missions.length}`)),
       h('ol', { class: 'rail-missions' }, st.missions.map((m) => h('li', { class: ['rail-mission', m.complete && 'done', m.key === currentKey && 'current'] },
-        h('a', { href: `#/mission/${m.stage}/${m.workstream}`, 'aria-current': m.key === currentKey ? 'step' : null },
+        h('a', { href: `#/mission/${m.stage}/${m.workstream}`, 'aria-current': m.key === currentKey ? 'step' : null, 'aria-label': `${m.title}: ${m.total ? `${m.done} of ${m.total} done` : 'nothing to do'}${m.questions.length ? `, ${m.questions.length} question${m.questions.length === 1 ? '' : 's'} open` : ''}` },
           h('span', { class: 'rail-dot', 'aria-hidden': 'true' }, m.complete ? icon('check', 'icon-xs') : null),
-          h('span', { class: 'rail-label' }, m.title)))))))));
+          h('span', { class: 'rail-label', 'aria-hidden': 'true' }, m.title, m.questions.length ? h('small', { class: 'rail-q' }, `${m.questions.length} question${m.questions.length === 1 ? '' : 's'} open`) : null),
+          m.total ? h('span', { class: 'rail-count tnum', 'aria-hidden': 'true' }, `${m.done}/${m.total}`) : null))))))));
 }
 
 // One question that decides which checks apply here, with help to answer it.

@@ -2,7 +2,7 @@
 
 Generated from the knowledge base by `scripts/gen-research.mjs`. Do not edit by hand.
 
-Knowledge base **2026.11.03**, reviewed **2026-10-19**. 127 sources, all Microsoft Learn. "Page date" is the ms.date shown in the page metadata; "Updated" is the page's last-publish timestamp; "Verified" is when this project last fetched and read the page.
+Knowledge base **2026.11.04**, reviewed **2026-10-19**. 145 sources, all Microsoft Learn. "Page date" is the ms.date shown in the page metadata; "Updated" is the page's last-publish timestamp; "Verified" is when this project last fetched and read the page.
 
 Detailed research notes with verbatim quotes, confidence levels and gaps: [notes/](notes/).
 
@@ -84,6 +84,24 @@ Detailed research notes with verbatim quotes, confidence levels and gaps: [notes
 | `sisubscriptions` | [Subscriptions - List (REST API, Azure Resource Management)](https://learn.microsoft.com/en-us/rest/api/resources/subscriptions/list) | 2026-10-23 | 2026-07-23 | 2026-10-29 |  | PS_INVENTORY_SCRIPT |
 | `laworkspaces` | [Workspaces - List (REST API, Azure Log Analytics)](https://learn.microsoft.com/en-us/rest/api/loganalytics/workspaces/list) | 2026-10-23 | 2026-08-10 | 2026-10-29 |  | PS_INVENTORY_SCRIPT |
 | `sionboarding` | [Sentinel Onboarding States - List (REST API, Microsoft Sentinel)](https://learn.microsoft.com/en-us/rest/api/securityinsights/sentinel-onboarding-states/list) | 2026-10-23 | 2026-07-14 | 2026-10-29 |  | PS_INVENTORY_SCRIPT |
+| `sisettings` | [Product Settings - List (REST API, Microsoft Sentinel, preview)](https://learn.microsoft.com/en-us/rest/api/securityinsights/product-settings/list?view=rest-securityinsights-2025-07-01-preview) | 2026-10-23 | 2026-06-18 | 2026-11-04 |  | PS_INVENTORY_SCRIPT |
+| `siwsmanager` | [Workspace Manager Configurations - List (REST API, Microsoft Sentinel, preview)](https://learn.microsoft.com/en-us/rest/api/securityinsights/workspace-manager-configurations/list?view=rest-securityinsights-2025-07-01-preview) | 2026-10-23 | 2026-06-18 | 2026-11-04 |  | PS_INVENTORY_SCRIPT |
+| `siwsmembers` | [Workspace Manager Members - List (REST API, Microsoft Sentinel, preview)](https://learn.microsoft.com/en-us/rest/api/securityinsights/workspace-manager-members/list?view=rest-securityinsights-2025-07-01-preview) | 2026-10-23 | 2026-06-18 | 2026-11-04 |  | PS_INVENTORY_SCRIPT |
+| `sisourcecontrols` | [Source Controls - List (REST API, Microsoft Sentinel)](https://learn.microsoft.com/en-us/rest/api/securityinsights/source-controls/list?view=rest-securityinsights-2025-09-01) | 2026-10-23 | 2026-07-14 | 2026-11-04 |  | PS_INVENTORY_SCRIPT |
+| `sibookmarks` | [Bookmarks - List (REST API, Microsoft Sentinel)](https://learn.microsoft.com/en-us/rest/api/securityinsights/bookmarks/list?view=rest-securityinsights-2025-09-01) | 2026-10-23 | 2026-07-14 | 2026-11-04 |  | PS_INVENTORY_SCRIPT |
+| `sihunts` | [Hunts - List (REST API, Microsoft Sentinel, preview)](https://learn.microsoft.com/en-us/rest/api/securityinsights/hunts/list?view=rest-securityinsights-2025-07-01-preview) | 2026-10-23 | 2026-06-18 | 2026-11-04 |  | PS_INVENTORY_SCRIPT |
+| `simetadata` | [Metadata - List (REST API, Microsoft Sentinel)](https://learn.microsoft.com/en-us/rest/api/securityinsights/metadata/list?view=rest-securityinsights-2025-09-01) | 2026-10-23 | 2026-07-14 | 2026-11-04 |  | PS_INVENTORY_SCRIPT |
+| `siconnectorspreview` | [Data Connectors - List, preview version (REST API, Microsoft Sentinel)](https://learn.microsoft.com/en-us/rest/api/securityinsights/data-connectors/list?view=rest-securityinsights-2025-07-01-preview) | 2026-10-23 | 2026-06-18 | 2026-11-04 |  | PS_INVENTORY_SCRIPT |
+| `logicworkflows` | [Workflows - List By Subscription (REST API, Azure Logic Apps)](https://learn.microsoft.com/en-us/rest/api/logic/workflows/list-by-subscription) | 2026-10-23 | 2025-10-28 | 2026-11-04 |  | PS_INVENTORY_SCRIPT |
+| `roleassignments` | [Role Assignments - List For Scope (REST API, Azure Authorization)](https://learn.microsoft.com/en-us/rest/api/authorization/role-assignments/list-for-scope?view=rest-authorization-2022-04-01) | 2026-10-23 | 2026-07-30 | 2026-11-04 |  | PS_INVENTORY_SCRIPT |
+| `roledefinitions` | [Role Definitions - Get By Id (REST API, Azure Authorization)](https://learn.microsoft.com/en-us/rest/api/authorization/role-definitions/get-by-id?view=rest-authorization-2022-04-01) | 2026-10-23 | 2026-02-17 | 2026-11-04 |  | PS_INVENTORY_SCRIPT |
+| `subscriptionget` | [Subscriptions - Get (REST API, Azure Resource Management)](https://learn.microsoft.com/en-us/rest/api/resources/subscriptions/get?view=rest-resources-2022-12-01) | 2026-10-23 | 2026-07-23 | 2026-11-04 |  | PS_INVENTORY_SCRIPT |
+| `azcontext` | [Get-AzContext (Az.Accounts)](https://learn.microsoft.com/en-us/powershell/module/az.accounts/get-azcontext) | 2026-10-01 | 2026-11-03 | 2026-11-04 |  | PS_INVENTORY_SCRIPT |
+| `azenvironment` | [Get-AzEnvironment (Az.Accounts)](https://learn.microsoft.com/en-us/powershell/module/az.accounts/get-azenvironment) | 2026-10-01 | 2026-11-03 | 2026-11-04 |  | PS_INVENTORY_SCRIPT |
+| `rolessecurity` | [Azure built-in roles for Security (Microsoft Sentinel Reader)](https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/security) | 2026-07-01 | 2026-07-01 | 2026-11-04 |  | PS_INVENTORY_SCRIPT |
+| `connsentinel` | [Microsoft Sentinel connector reference (Logic Apps connectors)](https://learn.microsoft.com/en-us/connectors/azuresentinel/) | 2024-03-01 | 2026-06-23 | 2026-11-04 |  | PS_INVENTORY_SCRIPT |
+| `connservicenow` | [ServiceNow connector reference (Logic Apps connectors)](https://learn.microsoft.com/en-us/connectors/service-now/) | 2024-03-01 | 2026-08-11 | 2026-11-04 |  | PS_INVENTORY_SCRIPT |
+| `connjira` | [Jira connector reference (Logic Apps connectors)](https://learn.microsoft.com/en-us/connectors/jira/) | 2024-03-01 | 2026-10-02 | 2026-11-04 |  | PS_INVENTORY_SCRIPT |
 | `featureavail` | [Microsoft Sentinel feature support for Azure commercial/other clouds](https://learn.microsoft.com/en-us/azure/sentinel/feature-availability) | 2026-09-29 | 2026-09-29 | 2026-10-29 | PREP-SCOPE-05 |  |
 | `usgov` | [Microsoft Defender XDR for US Government customers](https://learn.microsoft.com/en-us/defender-xdr/usgov) | 2026-06-26 | 2026-06-26 | 2026-10-29 | PREP-SCOPE-04, PREP-SCOPE-05 |  |
 | `rbacconditions` | [Delegate Azure role assignment management to others with conditions](https://learn.microsoft.com/en-us/azure/role-based-access-control/delegate-role-assignments-portal) | 2026-03-30 | 2026-03-30 | 2026-10-29 | PREP-ACC-01 |  |

@@ -15,6 +15,7 @@ function global:Invoke-AzRestMethod {
   if ($Method -ne 'GET') { throw "Mock refuses non-GET method $Method" }
   $status = 200
   if ($Path -like '/subscriptions?api-version=*') { $content = $global:ArMoMockSubs }
+  elseif ($Path -match '^/subscriptions/([^/?]+)\?api-version=') { $content = '{"subscriptionId":"' + $Matches[1] + '","tenantId":"' + [string]$global:ArMoMockTenants[$Matches[1]] + '"}' }
   elseif ($Path -match '^/subscriptions/([^/]+)/providers/Microsoft\.OperationalInsights/workspaces\?') { $content = $global:ArMoMockWorkspaces[$Matches[1]] }
   elseif ($Path -match '/workspaces/([^/]+)/providers/Microsoft\.SecurityInsights/onboardingStates') {
     if ($global:ArMoMockStateStatus.ContainsKey($Matches[1])) { $status = $global:ArMoMockStateStatus[$Matches[1]] }
@@ -22,6 +23,7 @@ function global:Invoke-AzRestMethod {
   }
   elseif ($Path -like '*alertRules*') { $content = '{"value":[{"name":"r1","kind":"Scheduled","properties":{"displayName":"Rule A","enabled":true,"query":"SigninLogs","incidentConfiguration":{"createIncident":true}}}]}' }
   elseif ($Path -like '*automationRules*' -or $Path -like '*dataConnectors*' -or $Path -like '*watchlists*') { $content = '{"value":[]}' }
+  elseif ($Path -match '/(settings|workspaceManagerConfigurations|workspaceManagerMembers|sourcecontrols|bookmarks|hunts|metadata|roleAssignments)\?|Microsoft\.Logic/workflows\?') { $content = '{"value":[]}' }
   else { throw "Unexpected path $Path" }
   if (-not $content) { throw "Unexpected path $Path" }
   [pscustomobject]@{ StatusCode = $status; Content = $content }
@@ -29,15 +31,18 @@ function global:Invoke-AzRestMethod {
 function New-MockWorkspace([string] $Sub, [string] $Rg, [string] $Name) {
   "{`"name`":`"$Name`",`"location`":`"westeurope`",`"id`":`"/subscriptions/$Sub/resourceGroups/$Rg/providers/Microsoft.OperationalInsights/workspaces/$Name`"}"
 }
-function Invoke-Discover([string] $Folder) {
+function Invoke-Discover([string] $Folder, [switch] $Explicit) {
   $global:ArMoMockCalls = New-Object System.Collections.Generic.List[string]
   if (Test-Path $Folder) { Remove-Item -Recurse -Force $Folder }
   # Keep everything the script printed (output, warnings, host messages) for the checks, and show it indented.
-  $global:ArMoMockOut = & $script -Discover -OutFolder $Folder *>&1 | Out-String
+  # With no parameters other than the folder, the script finds every workspace; -Discover still works.
+  $global:ArMoMockOut = if ($Explicit) { & $script -Discover -OutFolder $Folder *>&1 | Out-String } else { & $script -OutFolder $Folder *>&1 | Out-String }
   $global:ArMoMockOut -split "`r?`n" | Where-Object { $_ } | ForEach-Object { "  $_" }
 }
 
-# Run 1: one Sentinel workspace, one plain Log Analytics workspace (404: not Sentinel), one disabled subscription.
+# Run 1, with no -Discover: one Sentinel workspace, one plain Log Analytics workspace (404: not Sentinel), one
+# disabled subscription.
+$global:ArMoMockTenants = @{ s1 = 'aaaaaaaa-0000-0000-0000-000000000001'; s3 = 'bbbbbbbb-0000-0000-0000-000000000002' }
 $global:ArMoMockSubs = '{"value":[{"subscriptionId":"s1","state":"Enabled"},{"subscriptionId":"s2","state":"Disabled"}]}'
 $global:ArMoMockWorkspaces = @{ s1 = '{"value":[' + (New-MockWorkspace s1 rg-soc law-soc) + ',' + (New-MockWorkspace s1 rg-apps law-apps) + ']}' }
 $global:ArMoMockStateStatus = @{ 'law-apps' = 404 }
@@ -62,7 +67,7 @@ $global:ArMoMockWorkspaces = @{
   s3 = '{"value":[' + (New-MockWorkspace s3 rg-b law-soc) + ',' + (New-MockWorkspace s3 rg-c LAW-SOC) + ']}'
 }
 $global:ArMoMockStateStatus = @{ 'law-blocked' = 403 }
-Invoke-Discover "$OutFolder\shared"
+Invoke-Discover "$OutFolder\shared" -Explicit
 $out = $global:ArMoMockOut
 $names = @(Get-ChildItem "$OutFolder\shared" -Filter 'inventory-*.json' | ForEach-Object { $_.Name })
 "FILES: $($names -join ', ')"
@@ -76,7 +81,11 @@ foreach ($f in (Get-ChildItem "$OutFolder\shared" -Filter 'inventory-*.json')) {
   $raw = Get-Content $f.FullName -Raw
   if ($raw -match 'subscriptions|resourceGroups|rg-a|rg-b|rg-c') { throw "$($f.Name) contains a resource path" }
   if ("inventory-$((ConvertFrom-Json $raw).workspace.alias).json" -ne $f.Name) { throw "$($f.Name) holds another alias" }
+  if ($raw -match 'aaaaaaaa|bbbbbbbb') { throw "$($f.Name) contains a tenant ID" }
 }
+$ref = @{}; foreach ($n in $names) { $ref[$n] = (Get-Content "$OutFolder\shared\$n" -Raw | ConvertFrom-Json).workspace.tenantRef }
+if (-not $ref['inventory-law-soc.json'] -or $ref['inventory-law-soc.json'] -eq $ref['inventory-law-soc-2.json'] -or $ref['inventory-law-soc-2.json'] -ne $ref['inventory-LAW-SOC-3.json']) { throw 'Tenant fingerprints do not tell the two tenants apart' }
+"TENANTS: $($ref['inventory-law-soc.json']) and $($ref['inventory-law-soc-2.json'])"
 if ($out -notmatch 'law-soc-2' -or $out -notmatch 'share a name') { throw 'The renamed workspaces were not explained' }
 if ($out -notmatch 'law-blocked' -or $out -notmatch 'HTTP 403') { throw 'The workspace whose check failed was skipped silently' }
 
@@ -85,7 +94,7 @@ $global:ArMoMockSubs = '{"value":[{"subscriptionId":"s1","state":"Enabled"}]}'
 $global:ArMoMockWorkspaces = @{ s1 = '{"value":[' + (New-MockWorkspace s1 rg-a law-blocked) + ']}' }
 $global:ArMoMockStateStatus = @{ 'law-blocked' = 403 }
 $message = ''
-try { Invoke-Discover "$OutFolder\refused" } catch { $message = $_.Exception.Message }
+try { Invoke-Discover "$OutFolder\refused" -Explicit } catch { $message = $_.Exception.Message }
 "MESSAGE: $message"
 if ($message -notmatch 'could not be checked') { throw 'A refused check was reported as "no Sentinel workspace"' }
 'ALL CHECKS PASSED'

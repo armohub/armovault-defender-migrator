@@ -2,11 +2,11 @@
 
 Generated from the knowledge base by `scripts/gen-research.mjs`. Do not edit by hand.
 
-Maps each knowledge object to its stage, workstream, applicability questions, provenance, validation status, sources and open gaps. Knowledge base **2026.11.03** (reviewed 2026-10-19).
+Maps each knowledge object to its stage, workstream, applicability questions, provenance, validation status, sources and open gaps. Knowledge base **2026.11.04** (reviewed 2026-10-19).
 
 Legend. Provenance: **official** = derived from current Microsoft Learn documentation; **practice** = practical guidance from the makers, not a Microsoft requirement. Validation: **docs-verified** = consistent with the cited current pages; **needs-review** = Microsoft sources conflict or are ambiguous (the gap is shown in the app).
 
-**Totals:** 110 items · 103 official · 7 practice · 13 needs-review · 33 snippets · 35 questions.
+**Totals:** 110 items · 103 official · 7 practice · 13 needs-review · 33 snippets · 36 questions.
 
 ## By workstream
 
@@ -44,7 +44,7 @@ Legend. Provenance: **official** = derived from current Microsoft Learn document
 |---|---|---|---|---|---|---|---|
 | **PREP-SCOPE-01** Agree what the transition changes, and what it does not | Prepare / Scope, governance and timeline | high | always | official | docs-verified | `defportal` `overview` `move` `isoc` |  |
 | **PREP-SCOPE-02** Name owners, approvers and the change process | Prepare / Scope, governance and timeline | high | always | practice | docs-verified | `move` `mssp` |  |
-| **PREP-SCOPE-03** Set the transition window well before 31 March 2027 | Prepare / Scope, governance and timeline | critical | always | official | docs-verified | `defportal` `overview` `whatsnew` `bestpractices` |  |
+| **PREP-SCOPE-03** Set the transition window well before 31 March 2027 | Prepare / Scope, governance and timeline | critical | all_connected | official | docs-verified | `defportal` `overview` `whatsnew` `bestpractices` |  |
 | **PREP-SCOPE-04** Check whether any workspace is already connected to the Defender portal | Prepare / Scope, governance and timeline | critical | always | official | docs-verified | `overview` `onboard` `quickstart` `usgov` |  |
 | **PREP-SCOPE-05** Confirm cloud-specific availability and limitations | Prepare / Scope, governance and timeline | high | sovereign_cloud | official | docs-verified | `ah` `featureavail` `whatsnew` `usgov` |  |
 | **PREP-TOP-01** Inventory all Sentinel-enabled workspaces | Prepare / Workspaces and tenants | critical | always | official | docs-verified | `multiws` `argtypes` `roles` `quickstart` |  |
@@ -53,7 +53,7 @@ Legend. Provenance: **official** = derived from current Microsoft Learn document
 | **PREP-TOP-04** Plan to move automation rules to the workspace that will receive Defender XDR incidents | Prepare / Workspaces and tenants | high | multi_workspace, automation_rules | official | docs-verified | `automation` `multiws` `exportauto` `autorules` |  |
 | **PREP-TOP-05** Define the multi-tenant access model | Prepare / Workspaces and tenants | high | multi_tenant | official | needs-review | `mto` `mtoreq` `govrel` `onboard` `move` `urbac` `urbacactivate` `overview` `mssp` | Microsoft pages conflict on GDAP (as of 2026-10-19). The onboarding page and the MTO requirements say "not supported". The transition guide says "in preview". Two unified RBAC pages say "supported in unified RBAC" and "not supported in unified RBAC". Treat GDAP support as unresolved. |
 | **PREP-TOP-06** Replace workspace manager | Prepare / Workspaces and tenants | high | workspace_manager | official | docs-verified | `move` `defportal` `wsmgr` `xdrwhatsnew` `cicd` |  |
-| **PREP-ACC-01** Confirm the person who will connect the workspace has the required roles | Prepare / Access and permissions | critical | always | official | docs-verified | `rbacconditions` `onboard` `multiws` `urbacmap` |  |
+| **PREP-ACC-01** Confirm the person who will connect the workspace has the required roles | Prepare / Access and permissions | critical | all_connected | official | docs-verified | `rbacconditions` `onboard` `multiws` `urbacmap` |  |
 | **PREP-ACC-02** Map analyst roles for working in the Defender portal | Prepare / Access and permissions | high | always | official | docs-verified | `xdrroles` `onboard` `ah` `runplaybooks` `roles` `multiws` |  |
 | **PREP-ACC-03** Decide whether and when to use Defender unified RBAC for Sentinel | Prepare / Access and permissions | high | always | official | needs-review | `urbac` `urbacmap` `urbacactivate` `scoping` `multiws` | No Microsoft page fetched on 2026-10-19 explicitly labels unified RBAC for Sentinel as generally available or preview. |
 | **PREP-ACC-04** Assess table-level and resource-context access restrictions | Prepare / Access and permissions | high | granular_rbac | official | needs-review | `move` `scoping` `resourcectx` | How table-level RBAC behaves for tables other than IdentityInfo, and how resource-context RBAC behaves in the Defender portal, is not documented. Validate it with a restricted test user. |
@@ -116,17 +116,17 @@ Legend. Provenance: **official** = derived from current Microsoft Learn document
 | **TEST-09** Validate workbooks, hunting and threat intelligence content | Test / Running the tests | medium | workbooks, hunting, identityinfo, ti, watchlists | official | docs-verified | `workbooks` `ah` `titransition` |  |
 | **TEST-10** Rehearse disconnection (optional) | Test / Running the tests | medium | always | official | docs-verified | `onboard` `offboard` |  |
 | **TEST-11** Record the test outcome and production recommendation | Test / Test outcome | critical | always | official | docs-verified | `migrategrouping` |  |
-| **TRN-01** Decide go or no-go: approvals, change record and participants | Transition / Checks before the change | critical | always | official | docs-verified | `move` |  |
-| **TRN-02** Confirm Stage 1 blockers are resolved or formally accepted | Transition / Checks before the change | critical | always | official | docs-verified | `move` |  |
-| **TRN-03** Refresh the configuration backup | Transition / Checks before the change | critical | always | official | docs-verified | `exportrules` `exportauto` `armexport` |  |
-| **TRN-04** Apply automation rule changes that are safe before connecting | Transition / Checks before the change | high | automation_rules | official | docs-verified | `automation` |  |
-| **TRN-05** Configure Defender for Cloud connectors as decided | Transition / Checks before the change | high | mdc | official | docs-verified | `onboard` `mdcxdr` `mdcalerts` `configconnector` `fusionconfig` |  |
-| **TRN-06** Place the Insider Risk Management connector on the primary only | Transition / Checks before the change | high | irm | official | docs-verified | `onboard` |  |
-| **TRN-07** Disconnect other standalone Microsoft alert connectors in secondary workspaces | Transition / Checks before the change | medium | multi_workspace, standalone_connectors | official | docs-verified | `multiws` |  |
-| **TRN-08** Verify the operator's roles on the day | Transition / Checks before the change | critical | always | official | docs-verified | `onboard` |  |
-| **TRN-09** Capture a pre-change snapshot | Transition / Checks before the change | high | always | official | docs-verified | `usage` `healthtables` `connectorhealth` `triageincidents` `rulehealth` `autohealth` `workbooks` `azworkbooks` |  |
-| **TRN-10** Connect the workspace(s) to the Defender portal | Transition / The change | critical | always | official | docs-verified | `onboard` `move` `migrategrouping` `automation` |  |
-| **TRN-11** Confirm the connection | Transition / The change | critical | always | official | docs-verified | `onboard` |  |
+| **TRN-01** Decide go or no-go: approvals, change record and participants | Transition / Checks before the change | critical | all_connected | official | docs-verified | `move` |  |
+| **TRN-02** Confirm Stage 1 blockers are resolved or formally accepted | Transition / Checks before the change | critical | all_connected | official | docs-verified | `move` |  |
+| **TRN-03** Refresh the configuration backup | Transition / Checks before the change | critical | all_connected | official | docs-verified | `exportrules` `exportauto` `armexport` |  |
+| **TRN-04** Apply automation rule changes that are safe before connecting | Transition / Checks before the change | high | all_connected, automation_rules | official | docs-verified | `automation` |  |
+| **TRN-05** Configure Defender for Cloud connectors as decided | Transition / Checks before the change | high | all_connected, mdc | official | docs-verified | `onboard` `mdcxdr` `mdcalerts` `configconnector` `fusionconfig` |  |
+| **TRN-06** Place the Insider Risk Management connector on the primary only | Transition / Checks before the change | high | all_connected, irm | official | docs-verified | `onboard` |  |
+| **TRN-07** Disconnect other standalone Microsoft alert connectors in secondary workspaces | Transition / Checks before the change | medium | all_connected, multi_workspace, standalone_connectors | official | docs-verified | `multiws` |  |
+| **TRN-08** Verify the operator's roles on the day | Transition / Checks before the change | critical | all_connected | official | docs-verified | `onboard` |  |
+| **TRN-09** Capture a pre-change snapshot | Transition / Checks before the change | high | all_connected | official | docs-verified | `usage` `healthtables` `connectorhealth` `triageincidents` `rulehealth` `autohealth` `workbooks` `azworkbooks` |  |
+| **TRN-10** Connect the workspace(s) to the Defender portal | Transition / The change | critical | all_connected | official | docs-verified | `onboard` `move` `migrategrouping` `automation` |  |
+| **TRN-11** Confirm the connection | Transition / The change | critical | all_connected | official | docs-verified | `onboard` |  |
 | **TRN-12** Verify the expected automatic changes | Transition / Checks after the change | high | always | official | docs-verified | `move` `xdrint` `multiws` `fusionconfig` `createincidents` `xdrconnector` |  |
 | **TRN-13** Verify incidents flow into the Defender portal | Transition / Checks after the change | critical | always | official | docs-verified | `correlation` `xdrconnector` `automation` `incidentqueue` |  |
 | **TRN-14** Apply post-connection configuration | Transition / Checks after the change | high | always | official | docs-verified | `corrsettings` `migrategrouping` `investigatealerts` |  |
@@ -158,6 +158,7 @@ Legend. Provenance: **official** = derived from current Microsoft Learn document
 | Question | Items whose applicability depends on it |
 |---|---|
 | `onboarded_any` Is any Sentinel workspace in this tenant already connected to the Defender portal? | none (context only) |
+| `all_connected` Are all your production workspaces already connected to the Defender portal? | PREP-SCOPE-03, PREP-ACC-01, TRN-01, TRN-02, TRN-03, TRN-04, TRN-05, TRN-06, TRN-07, TRN-08, TRN-09, TRN-10, TRN-11 |
 | `multi_workspace` Is more than one Sentinel-enabled workspace in scope in this tenant? | PREP-TOP-02, PREP-TOP-03, PREP-TOP-04, TRN-07, VAL-14 |
 | `multi_tenant` Do you run Sentinel across more than one tenant? | PREP-TOP-05 |
 | `sovereign_cloud` Is any in-scope tenant in a government or sovereign cloud? | PREP-SCOPE-05 |

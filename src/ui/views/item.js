@@ -5,6 +5,7 @@ import { state, mutate, getEvidenceBlob } from '../../app/store.js';
 import { route, go } from '../shell.js';
 import { applicabilityMap } from '../../core/applicability.js';
 import { effectiveStatus } from '../../core/readiness.js';
+import { missionContext, journey } from '../../core/missions.js';
 import { STATUSES, statusById, setCheckStatus, setCheckField, setApplicabilityOverride, recordGate, GATE_DECISIONS, setEvidenceWaiver, clearEvidenceWaiver, workstreamTeam } from '../../core/model.js';
 import { statusPill, critBadge, kindChip, applicabilityChip, provenanceChip, validationChip, callout, emptyState, sourceLine, btn, linkBtn, kv, stepExplainer } from '../components.js';
 import { attachFiles, addNoteEvidence, addLinkEvidence, removeEvidenceFlow } from '../actions.js';
@@ -32,6 +33,10 @@ route('item', ({ params }) => {
   const app = appMap.get(c.id);
   const ws = kb.workstreams.find((w) => w.stage === c.stage && w.id === c.workstream);
   const ctx = { kb, actions: actionsFor(c) };
+
+  // In Simplified, a step opened from its mission stays inside it: its progress, the way back, and the next check.
+  const mc = missionContext(kb, p, c.id, appMap);
+  if (mc) return missionStep(c, app, ctx, mc, appMap);
 
   // The way on: the next step of this stage that applies, then the next stage.
   const list = orderedStageItems(kb, c.stage);
@@ -66,6 +71,43 @@ route('item', ({ params }) => {
       prev ? h('a', { href: `#/item/${prev.id}`, class: 'nav-card' }, h('span', { class: 'dir' }, icon('back', 'icon-xs'), 'Previous step'), h('span', { class: 't' }, prev.title)) : h('a', { href: `#/stage/${stage.id}`, class: 'nav-card' }, h('span', { class: 'dir' }, icon('back', 'icon-xs'), 'Back to'), h('span', { class: 't' }, `All ${stage.short} steps`)),
       next ? h('a', { href: `#/item/${next.id}`, class: 'nav-card next', 'data-focus-key': 'next-step' }, h('span', { class: 'dir' }, nextLabel, icon('arrow', 'icon-xs')), h('span', { class: 't' }, next.title)) : h('a', { href: '#/overview', class: 'nav-card next' }, h('span', { class: 'dir' }, 'You reached the end', icon('arrow', 'icon-xs')), h('span', { class: 't' }, 'Back to the overview'))));
 });
+
+// The step page inside its mission (Simplified): the same guidance and record, with the mission's progress, the
+// overall progress, Back to the mission, and the next check in the mission (or the next mission at its end).
+function missionStep(c, app, ctx, mc, appMap) {
+  const kb = state.kb;
+  const p = state.project;
+  const stage = stageById(c.stage);
+  const m = mc.mission;
+  const j = journey(kb, p, appMap);
+  const missionHref = `#/mission/${m.stage}/${m.workstream}`;
+  const pct = m.total ? Math.round((m.done / m.total) * 100) : 100;
+  const nextHref = mc.next ? `#/item/${mc.next.id}` : mc.after ? `#/mission/${mc.after.stage}/${mc.after.workstream}` : missionHref;
+  const nextText = mc.next ? 'Next in this mission' : mc.after ? `Next mission: ${mc.after.title}` : 'Back to the mission';
+  return h('div', { class: 'page item-page' },
+    peopleList(),
+    h('div', { class: 'mission-strip' },
+      h('nav', { class: 'breadcrumb', 'aria-label': 'Where this step belongs' }, h('a', { href: '#/overview' }, 'Overview'), h('span', { 'aria-hidden': 'true' }, '›'), h('span', null, stage.short), h('span', { 'aria-hidden': 'true' }, '›'), h('a', { href: missionHref }, m.title)),
+      h('div', { class: 'mission-strip-progress', role: 'group', 'aria-label': 'Progress' },
+        h('span', { class: 'tnum' }, h('strong', null, String(m.done)), ` of ${m.total} done in this mission`),
+        h('div', { class: 'mission-bar', role: 'presentation' }, h('span', { style: { width: `${pct}%` } })),
+        h('span', { class: 'small muted tnum' }, `${j.pct}% of all checks, ${j.missionsDone} of ${j.missions} missions complete`)),
+      h('div', { class: 'row-actions' },
+        h('a', { href: missionHref, class: 'btn btn-sm', 'data-focus-key': 'back-to-mission' }, icon('back', 'icon-sm'), 'Back to the mission'),
+        h('a', { href: nextHref, class: 'btn btn-sm btn-primary', 'data-focus-key': 'next-in-mission' }, nextText, icon('arrow', 'icon-sm')))),
+    h('div', { class: 'item-head' },
+      h('h1', { id: 'page-title', tabindex: '-1' }, c.title),
+      h('div', { class: 'item-chips' }, statusPill(effectiveStatus(p, c.id)), critBadge(c.criticality), c.scope === 'extra' ? h('span', { class: 'chip chip-muted', title: 'Useful, but not needed for the move. It never affects readiness.' }, 'Good practice') : null, c.kind !== 'check' ? kindChip(c.kind) : null, provenanceChip(c), validationChip(c), applicabilityChip(app),
+        c.changesState ? h('span', { class: 'chip chip-warn' }, icon('edit', 'icon-xs'), 'Changes configuration: follow your change process') : null),
+      h('p', { class: 'item-lead' }, rich(c.objective, ctx)),
+      c.short ? stepExplainer(c.short.info, `step-${c.id}`) : null),
+    h('div', { class: 'item-layout' },
+      h('div', { class: 'item-guidance' }, guidance(c, app, ctx)),
+      h('aside', { class: 'item-record', 'aria-label': 'Your record for this step' }, recordPanel(c, app))),
+    h('nav', { class: 'item-nav', 'aria-label': 'Previous and next in this mission' },
+      mc.prev ? h('a', { href: `#/item/${mc.prev.id}`, class: 'nav-card' }, h('span', { class: 'dir' }, icon('back', 'icon-xs'), 'Previous in this mission'), h('span', { class: 't' }, mc.prev.title)) : h('a', { href: missionHref, class: 'nav-card' }, h('span', { class: 'dir' }, icon('back', 'icon-xs'), 'Back to'), h('span', { class: 't' }, m.title)),
+      h('a', { href: nextHref, class: 'nav-card next', 'data-focus-key': 'next-step' }, h('span', { class: 'dir' }, nextText, icon('arrow', 'icon-xs')), h('span', { class: 't' }, mc.next ? mc.next.title : mc.after ? mc.after.purpose : m.title))));
+}
 
 function section(title, iconName, ...content) {
   const body = content.flat().filter(Boolean);

@@ -894,6 +894,11 @@ body[data-motion="reduced"] .route-marker .pulse { animation: none !important; }
 .mission-count strong { font-size: 1.6rem; color: var(--text); }
 .mission-bar { width: 200px; height: 6px; border-radius: 3px; background: var(--surface-2); overflow: hidden; }
 .mission-bar > span { display: block; height: 100%; background: var(--accent); transition: width var(--t-state) var(--ease-out); }
+/* A step opened from its mission: where it belongs, the progress, and the way back and on. */
+.mission-strip { display: flex; align-items: center; justify-content: space-between; gap: 12px 20px; flex-wrap: wrap; padding: 12px 16px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-2); }
+.mission-strip-progress { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; color: var(--text-2); }
+.mission-strip-progress strong { color: var(--text); }
+.mission-strip .mission-bar { width: 140px; }
 .owner-chip-input { width: 200px; font-size: .86rem; padding: 4px 10px; border-radius: 999px; }
 .mission-questions { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
 .mq { border: 1px solid var(--accent); background: color-mix(in srgb, var(--accent-soft) 40%, var(--surface)); border-radius: var(--radius-md); padding: 12px 14px; }
@@ -1024,6 +1029,10 @@ select.owner-chip-input { width: 220px; }
 .rail-mission.done .rail-dot { border-color: var(--good); background: var(--good); color: var(--on-fill); }
 .rail-mission.done a { color: var(--muted); }
 .rail-mission.current a { background: var(--accent-soft); color: var(--text); font-weight: 620; }
+.rail-label { flex: 1; min-width: 0; }
+.rail-q { display: block; font-size: .76rem; color: var(--muted); font-weight: 400; }
+.rail-count { flex: none; font-size: .76rem; color: var(--muted); font-weight: 500; padding-top: 1px; }
+.rail-mission.current .rail-count { color: var(--text-2); }
 .rail-mission.current .rail-dot { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 25%, transparent); }
 @media (max-width: 1180px) {
   .mission-layout { grid-template-columns: 1fr; }

@@ -4,7 +4,7 @@ import { h, icon, toast, field, copyText, savedPulse, externalLink, modal } from
 import { state, mutate } from '../app/store.js';
 import { render } from './shell.js';
 import { readyText, emailActions } from './templates.js';
-import { setPlanProfile, setOwnersWanted, setEnvironments, setPlannedPrimary, plannedPrimaryOf, plannedRole, setWorkstreamOwners, setWorkstreamPeople, cleanWorkstreamPeople, setApprovers, setCheckField, DEFENDER_STATES, ENV_KINDS, workstreamKey, knownPeople, addAudit, setHelper, MAX_HELPER_SUBJECTS, addPerson, peopleWithRoles } from '../core/model.js';
+import { setPlanProfile, setOwnersWanted, setEnvironments, setPlannedPrimary, plannedPrimaryOf, plannedRole, setWorkstreamOwners, setWorkstreamPeople, cleanWorkstreamPeople, setApprovers, setCheckField, DEFENDER_STATES, ENV_KINDS, workstreamKey, knownPeople, addAudit, setHelper, MAX_HELPER_SUBJECTS, addPerson, peopleWithRoles, setAnswer, connectionState, syncConnectionAnswer, tenantConnected } from '../core/model.js';
 import { applicabilityMap } from '../core/applicability.js';
 import { evaluateHelper, decisionDraft } from '../core/decision-helper.js';
 import { formatDate } from '../core/util.js';
@@ -116,17 +116,47 @@ export function workspaceTool({ show = 'all' } = {}) {
   const barSlot = h('div');
   function refresh() { barSlot.replaceChildren(saveBar(JSON.stringify(rows) !== envDraft.base, save, discard, `${(state.project.meta.environments || []).length} workspace(s) saved.`)); }
   function save() {
-    const res = mutate((pr) => setEnvironments(pr, rows));
-    if (res && !res.ok) { toast(res.error, 'bad', 7000); return; }
+    const wasAll = connectionState(state.project).all;
+    const res = mutate((pr) => { const r = setEnvironments(pr, rows); if (r.ok) syncConnectionAnswer(pr); return r; });
+    if (res && !res.ok) { toast(res.error, 'bad', 9000); return; }
     envDraft.id = '';
     savedPulse('Workspaces saved');
     render();
+    const nowAll = connectionState(state.project).all;
+    const focus = state.project.answers.all_connected;
+    if (nowAll && !wasAll && !(focus && focus.value === 'yes')) offerCheckingFocus();
+    else if (!nowAll && focus && focus.value === 'yes') {
+      mutate((pr) => setAnswer(pr, 'all_connected', 'no', 'From the connection check: not every production workspace is connected'));
+      toast('Not every production workspace is connected now, so the steps for connecting are back in your plan.', 'info', 8000);
+    }
   }
   function discard() { envDraft.id = ''; render(); }
   refresh();
   wrap.appendChild(barSlot);
   if (dirty) refresh();
   return wrap;
+}
+
+// Every production workspace is connected: offer to focus the plan on checking. The steps for connecting are set
+// aside with that reason, never deleted, and come back when a workspace is marked as not connected.
+async function offerCheckingFocus() {
+  const before = applicabilityMap(state.kb, state.project);
+  const choice = await modal({
+    title: 'Your workspaces are already in the Defender portal',
+    body: h('div', { class: 'stack' },
+      h('p', null, 'Every production workspace is marked as connected, so the changes of the move already apply.'),
+      h('p', null, 'Your plan can skip the steps for connecting, such as the change window, the operator\'s roles and the change itself, and focus on checking that everything works. The checks on what changed stay, and so do the checks after the change and Stage 3 validation.'),
+      h('p', { class: 'small muted' }, 'Set-aside steps stay visible, with the reason. They come back if you mark a workspace as not connected.')),
+    actions: [{ label: 'Keep the full plan', value: 'keep' }, { label: 'Focus on checking', kind: 'primary', value: 'focus' }],
+  });
+  if (choice === 'focus') {
+    mutate((pr) => setAnswer(pr, 'all_connected', 'yes', 'From the connection check: every production workspace is connected'));
+    const after = applicabilityMap(state.kb, state.project);
+    const n = state.kb.checks.filter((c) => before.get(c.id).value !== 'not_applicable' && after.get(c.id).value === 'not_applicable').length;
+    toast(`${n} step${n === 1 ? '' : 's'} for connecting set aside. Next: check that everything works.`, 'good', 8000);
+  } else if (choice === 'keep') {
+    mutate((pr) => setAnswer(pr, 'all_connected', 'no', 'Every production workspace is connected, and the full plan was kept'));
+  }
 }
 
 // Planned primary workspace: one per tenant, a decision separate from what is connected today.
@@ -637,7 +667,7 @@ export function decisionHelperTool(key, c, ctx = { kb: state.kb }) {
     return h('div', { class: ['helper-subject', perTenant && 'ws-card'] },
       perTenant ? h('div', { class: 'ws-card-head' }, h('strong', null, s.label || `Tenant ${i + 1}`),
         d.subjects.length > 1 ? h('button', { type: 'button', class: 'btn-icon', 'aria-label': `Remove ${s.label || `tenant ${i + 1}`}`, onclick: () => { d.subjects.splice(i, 1); render(); } }, icon('trash', 'icon-sm')) : null) : null,
-      perTenant ? h('div', { class: 'tool-grid two' }, nameInput('label', 'Tenant (alias)', { maxlength: '120', placeholder: 'For example: Contoso EU' }), helper.person ? field(helper.person.label, personPicker({ value: s.person, label: helper.person.label, focusKey: `${fk}-person`, onChange: (v) => { s.person = v; refresh(); } }), helper.person.hint ? { hint: rich(helper.person.hint, ctx) } : {}) : null) : null,
+      perTenant ? h('div', { class: 'tool-grid two' }, nameInput('label', 'Tenant (alias)', { maxlength: '120', placeholder: 'For example: Contoso EU' }), helper.person && tenantConnected(p, s.label) ? h('p', { class: 'small muted' }, 'Its workspaces are already connected, so nobody needs to connect them.') : helper.person ? field(helper.person.label, personPicker({ value: s.person, label: helper.person.label, focusKey: `${fk}-person`, onChange: (v) => { s.person = v; refresh(); } }), helper.person.hint ? { hint: rich(helper.person.hint, ctx) } : {}) : null) : null,
       h('div', { class: 'helper-questions' }, helper.questions.map(question)),
       h('div', { class: 'helper-findings', 'aria-live': 'polite' }, findings, ev.notes.length ? h('div', null, h('h3', null, icon('info', 'icon-sm'), 'Good to know'), renderList(ev.notes, ctx)) : null),
       h('fieldset', { class: 'helper-choices' }, h('legend', null, helper.choiceText || 'Your choice'),

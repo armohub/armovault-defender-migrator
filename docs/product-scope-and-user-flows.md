@@ -15,7 +15,7 @@ Version 1.0.0 is the first public version, released as one final version (no rel
 
 **In scope**
 - A first-run introduction (about four seconds, skippable), a short splash on later starts, a welcome page and a four-step new-project wizard.
-- The choice between the tailored questionnaire (35 questions in six sections) and the full checklist.
+- The choice between Simplified and Detailed. Both tailor the plan with questions; Detailed can skip them and show the full checklist.
 - Four stages with 109 guided steps:
   - Prepare: 62
   - Test (optional): 11
@@ -83,7 +83,7 @@ Sidebar: Overview, the four stages, Decisions and risks, Evidence, Reports, Proj
 ### Flow details
 
 1. **First start.**
-   - The introduction plays once, for about four seconds. It shows six promises: no internet needed, processed on this device, your data stays with you, grounded in Microsoft Learn (127 pages), built by practitioners, and open for review. It ends with "Your data is yours." and the makers' quote, "Built to make your migration journey easy."
+   - The introduction plays once, for about four seconds. It shows six promises: no internet needed, processed on this device, your data stays with you, grounded in Microsoft Learn (145 pages), built by practitioners, and open for review. It ends with "Your data is yours." and the makers' quote, "Built to make your migration journey easy."
    - Focus starts on **Skip intro**. Escape also closes it. With reduced motion, everything is shown at once.
    - You can replay it from **About** or **Settings and data**. Later starts show a short splash instead.
 2. **Welcome and new project.**
@@ -141,7 +141,7 @@ Each criterion links to evidence in [test-results.md](test-results.md).
 | The introduction is short, skippable and respects reduced motion | ✔ Steps 1, 2, 27 and 30 |
 | Create a project and attribute it to a named operator | ✔ Step 6 |
 | Choose the tailored plan or the full checklist | ✔ Steps 6 and 28 |
-| One question per screen, keyboard answers, auto-advance only after Yes or No | ✔ Step 7 |
+| One question per screen, keyboard answers, and only Next or Enter moves on | ✔ Step 7 |
 | Tailoring is explainable and reversible; "I don't know yet" never creates false confidence | ✔ Steps 9 and 15; Unit (every step stays in scope when every answer is unknown) |
 | The overview says where to start | ✔ Step 8 |
 | Step pages: links to other steps, inline actions, item codes hidden from reading text | ✔ Steps 10 and 19 |

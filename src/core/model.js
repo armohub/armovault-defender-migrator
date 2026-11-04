@@ -462,9 +462,34 @@ export function setEnvironments(project, list) {
   const primaries = new Map();
   for (const e of next.filter((x) => x.defender === 'primary')) primaries.set(e.tenant, (primaries.get(e.tenant) || 0) + 1);
   if ([...primaries.values()].some((n) => n > 1)) return { ok: false, error: 'Only one workspace per tenant can be the primary workspace. Mark the others as secondary, or set the tenant of each workspace.' };
+  // A connected secondary always has a primary in its tenant: the first connected workspace becomes primary.
+  const lone = next.find((x) => x.defender === 'secondary' && !primaries.has(x.tenant));
+  if (lone) return { ok: false, error: `${lone.alias} is marked as connected, secondary, but no workspace${lone.tenant ? ` in ${lone.tenant}` : ''} is marked as primary. A secondary workspace needs a primary in the same tenant: mark which one is primary (add it to the list if it is not there), or change this one.` };
   project.meta.environments = next;
   addAudit(project, 'project.environments', `Workspace inventory updated (${next.length} workspace${next.length === 1 ? '' : 's'})`);
   return { ok: true };
+}
+
+// Where the workspaces stand, from the connection check. Test workspaces do not count for "all connected".
+export function connectionState(project) {
+  const envs = (project.meta.environments || []).filter((e) => e.alias);
+  const connected = (e) => e.defender === 'primary' || e.defender === 'secondary';
+  const prod = envs.filter((e) => e.kind !== 'test');
+  return { any: envs.some(connected), all: prod.length > 0 && prod.every(connected), checked: envs.length > 0 && envs.every((e) => e.defender !== 'unknown') };
+}
+
+// True when the tenant has workspaces and every one of them is connected.
+export function tenantConnected(project, tenant) {
+  const envs = (project.meta.environments || []).filter((e) => e.alias && (e.tenant || '') === (tenant || ''));
+  return envs.length > 0 && envs.every((e) => e.defender === 'primary' || e.defender === 'secondary');
+}
+
+// Keeps "Is any workspace already connected?" in line with the connection check. Nothing changes until it is checked.
+export function syncConnectionAnswer(project) {
+  const st = connectionState(project);
+  const value = st.any ? 'yes' : st.checked ? 'no' : null;
+  const cur = project.answers.onboarded_any;
+  if (value && (!cur || cur.value !== value)) setAnswer(project, 'onboarded_any', value, 'From the connection check');
 }
 
 export const workstreamKey = (stage, workstream) => `${stage}:${workstream}`;

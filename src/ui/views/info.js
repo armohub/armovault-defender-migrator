@@ -58,7 +58,7 @@ route('knowledge', ({ params }) => {
         h('table', { class: 'table' }, h('thead', null, h('tr', null, ...['Title', 'Page date', 'Updated', 'Verified'].map((t) => h('th', { scope: 'col' }, t)))), h('tbody', null, kb.sources.map((s) => h('tr', null, h('td', null, externalLink(s.url, s.title)), h('td', null, s.pageDate), h('td', null, s.updated || ''), h('td', null, s.verified))))));
       break;
     default:
-      body = h('div', { class: 'stack' }, kv([['Version', kb.meta.version], ['Last reviewed', kb.meta.lastReviewed], ['Steps', String(kb.checks.length)], ['Questions', String(kb.questions.length)], ['Sources', String(kb.sources.length)], ['Snippets', String(Object.keys(kb.snippets).length)]]),
+      body = h('div', { class: 'stack' }, kv([['Version', kb.meta.version], ['Last reviewed', kb.meta.lastReviewed], ['Steps', String(kb.checks.length)], ['Questions', String(kb.questions.filter((q) => !q.derived).length)], ['Sources', String(kb.sources.length)], ['Snippets', String(Object.keys(kb.snippets).length)]]),
         h('h2', null, 'Scope'), h('p', null, rich(kb.meta.scope, { kb })), h('h2', null, 'Method'), h('p', null, rich(kb.meta.method, { kb })), h('h2', null, 'Limitations'), h('ul', { class: 'bullets' }, kb.meta.limitations.map((l) => h('li', null, rich(l, { kb })))),
         h('h2', null, 'How to read the labels'), h('ul', { class: 'bullets' },
           h('li', null, provenanceChip({ provenance: 'official' }), ' based on current Microsoft Learn documentation. Each step lists its sources and what they support.'),
@@ -84,7 +84,6 @@ route('settings', () => {
   const prefs = h('section', { class: 'card' }, h('h2', { class: 'card-title' }, 'Preferences'),
     h('div', { class: 'grid-2' },
       field('Motion', h('select', { onchange: (e) => updateSettings({ motion: e.target.value }) }, [['system', 'Follow my system setting'], ['reduced', 'Reduce motion']].map(([v, l]) => h('option', { value: v, selected: s.motion === v }, l)))),
-      field('Questions', h('select', { onchange: (e) => updateSettings({ autoAdvance: e.target.value === 'on' }) }, [['on', 'Move on after Yes or No'], ['off', 'Stay until I press Next']].map(([v, l]) => h('option', { value: v, selected: (s.autoAdvance ? 'on' : 'off') === v }, l)))),
       field('Theme', h('select', { onchange: (e) => updateSettings({ theme: e.target.value }) }, [['dark', 'Dark'], ['light', 'Light'], ['system', 'Follow my system']].map(([v, l]) => h('option', { value: v, selected: s.theme === v }, l)))),
       field('Density', h('select', { onchange: (e) => updateSettings({ density: e.target.value }) }, [['comfortable', 'Comfortable'], ['compact', 'Compact']].map(([v, l]) => h('option', { value: v, selected: s.density === v }, l))))),
     h('p', { class: 'small muted' }, `Preferences are remembered in this browser's local storage${state.ui.localStorageOk ? '' : ', which is unavailable right now, so they last only for this session'}. They contain no project data.`),

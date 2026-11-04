@@ -1,6 +1,6 @@
 // Stage 2, production transition runbook. Sequenced: `phase` groups pre-change, change and post-change steps.
 // The assistant guides; it does not execute anything. Steps that change configuration are marked changesState.
-import { k, src, q, any, all, at, outcome } from './define.mjs';
+import { k, src, q, any, all, not, at, outcome } from './define.mjs';
 
 const DP = 'Defender portal';
 const AP = 'Azure portal';
@@ -12,7 +12,7 @@ export const TRANSITION = [
   // Pre-change
   k({
     tool: 'change',
-    id: 'TRN-01', stage: 'transition', workstream: 'pre-change', phase: 'pre', order: 10, kind: 'gate', criticality: 'critical', dependsOn: ['PREP-PLN-05', 'TEST-11'],
+    id: 'TRN-01', stage: 'transition', workstream: 'pre-change', phase: 'pre', order: 10, kind: 'gate', criticality: 'critical', applicability: not(q('all_connected')), dependsOn: ['PREP-PLN-05', 'TEST-11'],
     title: 'Decide go or no-go: approvals, change record and participants',
     objective: 'Confirm the change is approved, the window is open and the right people are present. Then record the go/no-go decision.',
     why: 'Connecting changes detections, automation and incident handling for the whole SOC. It needs explicit approval and an attended window.',
@@ -44,7 +44,7 @@ export const TRANSITION = [
     sources: [src('move', 'Finish all prerequisites before you onboard')],
   }),
   k({
-    id: 'TRN-02', stage: 'transition', workstream: 'pre-change', phase: 'pre', order: 20, kind: 'check', criticality: 'critical',
+    id: 'TRN-02', stage: 'transition', workstream: 'pre-change', phase: 'pre', order: 20, kind: 'check', criticality: 'critical', applicability: not(q('all_connected')),
     dependsOn: ['PREP-ACC-01', 'PREP-TOP-02', 'PREP-CON-01', 'PREP-DET-03', 'PREP-AUT-01', 'PREP-INT-01', 'PREP-GOV-02', 'PREP-GOV-03', 'PREP-PLN-01', 'PREP-PLN-03'],
     title: 'Confirm Stage 1 blockers are resolved or formally accepted',
     objective: 'Make sure no unresolved critical finding is carried into the change.',
@@ -61,7 +61,7 @@ export const TRANSITION = [
     sources: [src('move', 'Finish all prerequisites before onboarding')],
   }),
   k({
-    id: 'TRN-03', stage: 'transition', workstream: 'pre-change', phase: 'pre', order: 30, kind: 'task', criticality: 'critical', dependsOn: ['PREP-PLN-01'],
+    id: 'TRN-03', stage: 'transition', workstream: 'pre-change', phase: 'pre', order: 30, kind: 'task', criticality: 'critical', applicability: not(q('all_connected')), dependsOn: ['PREP-PLN-01'],
     title: 'Refresh the configuration backup',
     objective: 'Take a final backup immediately before the change.',
     why: 'Configuration may have changed since Stage 1. The backup is your restoration reference.',
@@ -81,7 +81,7 @@ export const TRANSITION = [
     sources: [src('exportrules', 'Analytics export; portal: export one page of rules at a time'), src('exportauto', 'Automation export; portal: export one page of rules at a time'), src('armexport', 'Export template from a resource or a resource group; export is not guaranteed to succeed; 200 resource limit')],
   }),
   k({
-    id: 'TRN-04', stage: 'transition', workstream: 'pre-change', phase: 'pre', order: 40, kind: 'task', criticality: 'high', applicability: q('automation_rules'), changesState: true, dependsOn: ['PREP-AUT-01'],
+    id: 'TRN-04', stage: 'transition', workstream: 'pre-change', phase: 'pre', order: 40, kind: 'task', criticality: 'high', applicability: all(not(q('all_connected')), q('automation_rules')), changesState: true, dependsOn: ['PREP-AUT-01'],
     title: 'Apply automation rule changes that are safe before connecting',
     objective: 'Make the planned automation rule changes that do not depend on the connection.',
     why: 'Adding analytic rule name or tag conditions before you connect stops rules running on the wrong incidents the moment the Incident provider condition is removed.',
@@ -99,7 +99,7 @@ export const TRANSITION = [
     sources: [src('automation', 'Provider condition removed; use Analytic rule name; avoid titles')],
   }),
   k({
-    id: 'TRN-05', stage: 'transition', workstream: 'pre-change', phase: 'pre', order: 50, kind: 'task', criticality: 'high', applicability: q('mdc'), changesState: true, dependsOn: ['PREP-CON-02'],
+    id: 'TRN-05', stage: 'transition', workstream: 'pre-change', phase: 'pre', order: 50, kind: 'task', criticality: 'high', applicability: all(not(q('all_connected')), q('mdc')), changesState: true, dependsOn: ['PREP-CON-02'],
     title: 'Configure Defender for Cloud connectors as decided',
     objective: 'Put the Defender for Cloud connector decision in place, to prevent duplicate or empty incidents.',
     why: 'Microsoft recommends the tenant-based connector on the primary workspace and disconnecting the legacy connector, with incident-creating rules for Defender for Cloud alerts turned off.',
@@ -128,7 +128,7 @@ export const TRANSITION = [
     sources: [src('onboard', 'Defender for Cloud prerequisite'), src('mdcxdr', 'Prevent duplicates'), src('mdcalerts', 'Connector hidden in the Defender portal; portal: the connector page lists subscriptions and their connection status'), src('configconnector', 'A connected connector page shows the Data received graph'), src('fusionconfig', 'The Active rules tab can be filtered by rule type and shows each rule status')],
   }),
   k({
-    id: 'TRN-06', stage: 'transition', workstream: 'pre-change', phase: 'pre', order: 60, kind: 'task', criticality: 'high', applicability: q('irm'), changesState: true, dependsOn: ['PREP-CON-03'],
+    id: 'TRN-06', stage: 'transition', workstream: 'pre-change', phase: 'pre', order: 60, kind: 'task', criticality: 'high', applicability: all(not(q('all_connected')), q('irm')), changesState: true, dependsOn: ['PREP-CON-03'],
     title: 'Place the Insider Risk Management connector on the primary only',
     objective: 'Enable the Microsoft 365 Insider Risk Management connector on the primary workspace and disable it on secondary workspaces.',
     why: 'Microsoft lists this as a prerequisite before onboarding.',
@@ -143,7 +143,7 @@ export const TRANSITION = [
     sources: [src('onboard', 'Insider Risk Management prerequisite')],
   }),
   k({
-    id: 'TRN-07', stage: 'transition', workstream: 'pre-change', phase: 'pre', order: 70, kind: 'task', criticality: 'medium', applicability: all(q('multi_workspace'), q('standalone_connectors')), changesState: true, dependsOn: ['PREP-TOP-03'],
+    id: 'TRN-07', stage: 'transition', workstream: 'pre-change', phase: 'pre', order: 70, kind: 'task', criticality: 'medium', applicability: all(not(q('all_connected')), q('multi_workspace'), q('standalone_connectors')), changesState: true, dependsOn: ['PREP-TOP-03'],
     title: 'Disconnect other standalone Microsoft alert connectors in secondary workspaces',
     objective: 'Handle the standalone Microsoft connectors with alerts that are not disconnected automatically.',
     why: 'Microsoft advises disconnecting other standalone Microsoft data connectors with alerts in your workspaces before onboarding.',
@@ -158,7 +158,7 @@ export const TRANSITION = [
     sources: [src('multiws', 'Disconnect other standalone Microsoft connectors with alerts before onboarding')],
   }),
   k({
-    id: 'TRN-08', stage: 'transition', workstream: 'pre-change', phase: 'pre', order: 80, kind: 'check', criticality: 'critical', dependsOn: ['PREP-ACC-01'],
+    id: 'TRN-08', stage: 'transition', workstream: 'pre-change', phase: 'pre', order: 80, kind: 'check', criticality: 'critical', applicability: not(q('all_connected')), dependsOn: ['PREP-ACC-01'],
     title: 'Verify the operator\'s roles on the day',
     objective: 'Confirm the operator has active role assignments right now.',
     why: [
@@ -176,7 +176,7 @@ export const TRANSITION = [
     sources: [src('onboard', 'Required roles')],
   }),
   k({
-    id: 'TRN-09', stage: 'transition', workstream: 'pre-change', phase: 'pre', order: 90, kind: 'task', criticality: 'high', dependsOn: ['PREP-CON-04', 'PREP-CON-05'],
+    id: 'TRN-09', stage: 'transition', workstream: 'pre-change', phase: 'pre', order: 90, kind: 'task', criticality: 'high', applicability: not(q('all_connected')), dependsOn: ['PREP-CON-04', 'PREP-CON-05'],
     title: 'Capture a pre-change snapshot',
     objective: 'Record the state immediately before you connect.',
     why: 'A snapshot from minutes before the change lets you separate transition effects from normal variation.',
@@ -202,7 +202,7 @@ export const TRANSITION = [
 
   // Change
   k({
-    id: 'TRN-10', stage: 'transition', workstream: 'change', phase: 'change', order: 100, kind: 'task', criticality: 'critical', changesState: true, dependsOn: ['TRN-01', 'TRN-08'],
+    id: 'TRN-10', stage: 'transition', workstream: 'change', phase: 'change', order: 100, kind: 'task', criticality: 'critical', applicability: not(q('all_connected')), changesState: true, dependsOn: ['TRN-01', 'TRN-08'],
     title: 'Connect the workspace(s) to the Defender portal',
     objective: 'Make the production connection exactly as planned, and record what was done.',
     why: [
@@ -238,7 +238,7 @@ export const TRANSITION = [
     sources: [src('onboard', 'Connection procedure'), src('move', 'Changes applied on onboarding'), src('migrategrouping', 'Retain option'), src('automation', 'Up to 5 minutes for Defender incidents')],
   }),
   k({
-    id: 'TRN-11', stage: 'transition', workstream: 'change', phase: 'change', order: 110, kind: 'check', criticality: 'critical', dependsOn: ['TRN-10'],
+    id: 'TRN-11', stage: 'transition', workstream: 'change', phase: 'change', order: 110, kind: 'check', criticality: 'critical', applicability: not(q('all_connected')), dependsOn: ['TRN-10'],
     title: 'Confirm the connection',
     objective: 'Confirm the Defender portal shows Sentinel and the intended workspace roles.',
     why: 'Microsoft documents that after connecting, Microsoft Sentinel appears in the left navigation and the Home page shows the environment is ready.',
