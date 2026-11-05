@@ -380,7 +380,7 @@ export const TRANSITION = [
     sources: [src('autohealth', 'Automation health; portal: Automation health workbook'), src('rulehealth', 'Analytics rule health; portal: Analytics Health & Audit workbook'), src('workbooks', 'Workbooks are under Threat management > Workbooks'), src('azworkbooks', 'Workbook permissions are based on the permissions you have for the resources the workbook uses'), src('connectorhealth', 'Data collection anomalies tab of the Data collection health monitoring workbook'), src('incidentqueue', 'Incident queue Service/detection sources filter')],
   }),
   k({
-    id: 'TRN-17', stage: 'transition', workstream: 'post-change', phase: 'post', order: 170, kind: 'gate', criticality: 'critical',
+    id: 'TRN-17', decisions: 'outcome', stage: 'transition', workstream: 'post-change', phase: 'post', order: 170, kind: 'gate', criticality: 'critical',
     title: 'Record the execution outcome',
     objective: 'Decide whether the change is complete, complete with exceptions, or rolled back, and record it.',
     why: 'An explicit outcome closes the change and hands over to validation.',

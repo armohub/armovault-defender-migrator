@@ -48,7 +48,41 @@ export const GATE_DECISIONS = [
   { id: 'no_go', label: 'No-go: do not proceed' },
   { id: 'deferred', label: 'Decision deferred' },
 ];
-export const GATE_DECISION_IDS = GATE_DECISIONS.map((g) => g.id);
+// The change outcome (TRN-17) is recorded with its own choices.
+export const OUTCOME_DECISIONS = [
+  { id: 'complete', label: 'Complete' },
+  { id: 'complete_with_exceptions', label: 'Complete with documented exceptions' },
+  { id: 'rolled_back', label: 'Rolled back' },
+];
+const ALL_DECISIONS = [...GATE_DECISIONS, ...OUTCOME_DECISIONS];
+export const GATE_DECISION_IDS = ALL_DECISIONS.map((g) => g.id);
+export const NEEDS_RATIONALE = new Set(['go_with_exceptions', 'no_go', 'complete_with_exceptions', 'rolled_back']);
+// Decisions that let the work go on: go, and a change that is complete.
+export const APPROVED_DECISIONS = new Set(['go', 'go_with_exceptions', 'complete', 'complete_with_exceptions']);
+export const decisionsFor = (check) => (check && check.decisions === 'outcome' ? OUTCOME_DECISIONS : GATE_DECISIONS);
+export const decisionLabel = (id) => (ALL_DECISIONS.find((d) => d.id === id) || { label: id || 'Not recorded' }).label;
+
+// Warnings on the stages after a gate that did not say go. They inform; nothing is blocked.
+export function gateWarnings(kb, project, { stage, workstream } = {}) {
+  const out = [];
+  const when = (g) => `Recorded by ${g.decidedBy} on ${String(g.at || '').slice(0, 10)}${g.rationale ? `: ${g.rationale}` : '.'}`;
+  if (stage === 'test' || stage === 'transition') {
+    const g = project.gates['PREP-PLN-05'];
+    if (!g) out.push({ level: 'info', gateId: 'PREP-PLN-05', title: 'Stage 1 has no gate decision yet.', text: 'Record it in the last step of Prepare before you make the change. You can look ahead in the meantime.' });
+    else if (g.decision === 'no_go') out.push({ level: 'bad', gateId: 'PREP-PLN-05', title: 'The Stage 1 gate decision is No-go: do not proceed.', text: `${when(g)} You can look ahead, but do not make the change until a new decision says Go.` });
+    else if (g.decision === 'deferred') out.push({ level: 'caution', gateId: 'PREP-PLN-05', title: 'The Stage 1 gate decision is deferred.', text: `${when(g)} Do not make the change until the gate says Go.` });
+  }
+  if (stage === 'transition' && ['change', 'post-change'].includes(workstream)) {
+    const g = project.gates['TRN-01'];
+    if (g && g.decision === 'no_go') out.push({ level: 'bad', gateId: 'TRN-01', title: 'The go or no-go decision for the change is No-go: do not proceed.', text: `${when(g)} Do not connect until a new decision says Go.` });
+    else if (g && g.decision === 'deferred') out.push({ level: 'caution', gateId: 'TRN-01', title: 'The go or no-go decision for the change is deferred.', text: when(g) });
+  }
+  if (stage === 'validate') {
+    const g = project.gates['TRN-17'];
+    if (g && g.decision === 'rolled_back') out.push({ level: 'caution', gateId: 'TRN-17', title: 'The change was recorded as rolled back.', text: `${when(g)} Validate what the rollback left in place, or plan the change again.` });
+  }
+  return out;
+}
 
 export const EVIDENCE_KINDS = ['image', 'note', 'link', 'file'];
 export const GUIDANCE = ['simple', 'detailed'];
@@ -232,7 +266,7 @@ export function setGuidance(project, guidance) {
 
 export function setShowExtras(project, show) {
   project.meta.showExtras = show === true;
-  addAudit(project, 'project.extras', project.meta.showExtras ? 'Recommended extras shown' : 'Recommended extras hidden');
+  addAudit(project, 'project.extras', project.meta.showExtras ? 'Good-practice extras shown' : 'Good-practice extras hidden');
   return { ok: true };
 }
 
@@ -379,10 +413,10 @@ export function removeRegisterItem(project, id) {
   addAudit(project, 'register.removed', `${entry.type}: ${entry.title}`, { ref: entry.checkId || entry.id });
 }
 
-export function recordGate(project, gateId, { decision, decidedBy, decidedRole, rationale }) {
-  if (!GATE_DECISION_IDS.includes(decision)) return { ok: false, error: 'Choose a decision.' };
+export function recordGate(project, gateId, { decision, decidedBy, decidedRole, rationale }, { allowed } = {}) {
+  if (!GATE_DECISION_IDS.includes(decision) || (allowed && !allowed.some((d) => d.id === decision))) return { ok: false, error: 'Choose a decision.' };
   if (!String(decidedBy || '').trim()) return { ok: false, error: 'Record who made the decision.' };
-  if ((decision === 'go_with_exceptions' || decision === 'no_go') && !String(rationale || '').trim()) {
+  if (NEEDS_RATIONALE.has(decision) && !String(rationale || '').trim()) {
     return { ok: false, error: 'Record the rationale for this decision.' };
   }
   const prev = project.gates[gateId];
@@ -486,6 +520,23 @@ export function setEnvironments(project, list) {
   project.meta.environments = next;
   addAudit(project, 'project.environments', `Workspace inventory updated (${next.length} workspace${next.length === 1 ? '' : 's'})`);
   return { ok: true };
+}
+
+// Fills in each workspace's subscription and resource group from a workspace list (workspaces.json), matched by
+// alias or workspace name. Values already entered are kept. Returns how many workspaces were filled in.
+export function applyWorkspaceList(project, list) {
+  const key = (x) => String(x || '').trim().toLowerCase();
+  const byName = new Map();
+  for (const w of list || []) { byName.set(key(w.alias), w); byName.set(key(w.workspaceName), w); }
+  let n = 0;
+  const next = (project.meta.environments || []).map((e) => {
+    const w = byName.get(key(e.alias));
+    if (!w || (e.subscription && e.resourceGroup)) return e;
+    n += 1;
+    return { ...e, subscription: e.subscription || w.subscription, resourceGroup: e.resourceGroup || w.resourceGroup, region: e.region || w.region || '' };
+  });
+  if (n) { project.meta.environments = next; addAudit(project, 'project.environments', `Subscription and resource group filled in from a workspace list for ${n} workspace${n === 1 ? '' : 's'}`); }
+  return n;
 }
 
 // Where the workspaces stand, from the connection check. Test workspaces do not count for "all connected".

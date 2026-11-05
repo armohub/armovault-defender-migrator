@@ -35,6 +35,21 @@ const STANDALONE_KINDS = {
   OfficeATP: 'Microsoft Defender for Office 365',
   AzureActiveDirectory: 'Microsoft Entra ID Protection (connector kind AzureActiveDirectory)',
 };
+// Names for connector kinds that carry no title, as the Data connectors page names them.
+const KIND_NAMES = {
+  MicrosoftThreatProtection: 'Microsoft Defender XDR', AzureSecurityCenter: 'Microsoft Defender for Cloud (subscription-based)', Office365: 'Microsoft 365 (formerly Office 365)',
+  OfficeIRM: 'Microsoft 365 Insider Risk Management', ThreatIntelligence: 'Threat intelligence platforms', ThreatIntelligenceTaxii: 'Threat intelligence (TAXII)',
+  MicrosoftThreatIntelligence: 'Microsoft Defender Threat Intelligence', PremiumMicrosoftDefenderForThreatIntelligence: 'Premium Microsoft Defender Threat Intelligence',
+  AmazonWebServicesCloudTrail: 'Amazon Web Services', AmazonWebServicesS3: 'Amazon Web Services S3', Dynamics365: 'Dynamics 365', OfficePowerBI: 'Microsoft Power BI',
+  MicrosoftPurviewInformationProtection: 'Microsoft Purview Information Protection', Office365Project: 'Microsoft Project',
+};
+const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+// A connector as people see it on the Data connectors page: its title, else a known product name, else its resource name.
+const connectorLabel = (x) => {
+  if (own(STANDALONE_KINDS, x.kind)) return `${STANDALONE_KINDS[x.kind]} (standalone; replaced by the Defender XDR connector)`;
+  const name = x.title || (own(KIND_NAMES, x.kind) ? KIND_NAMES[x.kind] : '') || x.name;
+  return name ? `${name} (${x.kind})` : x.kind;
+};
 const DEFENDER_KINDS = ['MicrosoftThreatProtection', 'MicrosoftDefenderAdvancedThreatProtection', 'AzureAdvancedThreatProtection', 'MicrosoftCloudAppSecurity', 'OfficeATP'];
 const TI_KINDS = ['ThreatIntelligence', 'ThreatIntelligenceTaxii', 'MicrosoftThreatIntelligence', 'PremiumMicrosoftDefenderForThreatIntelligence'];
 
@@ -78,7 +93,7 @@ export function parseInventory(text) {
       riskyConditions: arr(a.riskyConditions).map((x) => str(x, 60)).filter((x) => ['IncidentProviderName', 'IncidentTitle', 'IncidentDescription', 'IncidentUpdatedBySource'].includes(x)),
       playbookActions: Math.max(0, Math.min(1000, Number(a.playbookActions) || 0)), taskActions: Math.max(0, Math.min(1000, Number(a.taskActions) || 0)),
     })),
-    dataConnectors: limit(arr(obj.dataConnectors), 'data connector').map((x) => ({ kind: str(x.kind, 80), name: str(x.name, 200) })),
+    dataConnectors: limit(arr(obj.dataConnectors), 'data connector').map((x) => ({ kind: str(x.kind, 80), name: str(x.name, 200), title: str(x.title, 200) })),
     watchlists: limit(arr(obj.watchlists), 'watchlist').map((w) => ({ alias: str(w.alias, 120), name: str(w.name, 200) })),
     settings: { ueba: settings.ueba === true, entityAnalytics: settings.entityAnalytics === true, anomalies: settings.anomalies === true },
     workspaceManager: { enabled: manager.enabled === true, members: count(manager.members) },
@@ -171,7 +186,7 @@ export function analyseInventory(inv) {
   const has = (k) => conns.some((x) => x.kind === k);
   const standalone = conns.filter((x) => isStandalone(x.kind));
   if (conns.length || !failed('dataConnectors')) {
-    add('PREP-CON-01', `${conns.length} data connector(s) reported by the API`, `${list(conns, (x) => `${x.kind}${isStandalone(x.kind) ? `: ${STANDALONE_KINDS[x.kind]} (standalone; replaced by the Defender XDR connector)` : ''}`) || 'None reported.'}\n\nThe data connectors API does not list every connector type; use the ingestion baseline as ground truth.${failNote('dataConnectors')}`);
+    add('PREP-CON-01', `${conns.length} data connector(s) reported by the API`, `${list([...conns].sort((a, b) => connectorLabel(a).localeCompare(connectorLabel(b))), connectorLabel, 80) || 'None reported.'}\n\nThe data connectors API does not list every connector type; use the ingestion baseline as ground truth.${failNote('dataConnectors')}`);
   }
   if (standalone.length) add('PREP-TOP-03', `${standalone.length} standalone Microsoft connector(s)`, list(standalone, (x) => STANDALONE_KINDS[x.kind]));
   ev('standalone_connectors', standalone.length, `${standalone.length} standalone Microsoft connector(s)`, got.dataConnectors);
@@ -262,4 +277,16 @@ export function suggestAnswers(items) {
     }
   }
   return INVENTORY_QUESTIONS.filter((q) => out.has(q)).map((q) => out.get(q));
+}
+
+// workspaces.json, written by the script when it finds your workspaces (or your own list for -WorkspacesFile): the
+// subscription and resource group of each workspace, to fill in the workspace list. Null when it is not such a list.
+export function parseWorkspaceList(text) {
+  let obj;
+  try { obj = JSON.parse(String(text).replace(/^[^[{]+/, '')); } catch { return null; }
+  if (isPlainObject(obj) && obj.schema) return null;
+  const items = (Array.isArray(obj) ? obj : [obj]).filter(isPlainObject).slice(0, 500);
+  const out = items.map((w) => ({ alias: str(w.alias || w.workspaceName, 120), workspaceName: str(w.workspaceName, 120), subscription: str(w.subscriptionId, 200), resourceGroup: str(w.resourceGroupName, 200), region: str(w.region, 80) }))
+    .filter((w) => w.workspaceName && w.subscription && w.resourceGroup);
+  return out.length ? out : null;
 }

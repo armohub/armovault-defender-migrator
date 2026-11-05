@@ -6,11 +6,12 @@ import { route, render, go } from '../shell.js';
 import { applicabilityMap } from '../../core/applicability.js';
 import { effectiveStatus } from '../../core/readiness.js';
 import { missionOf, nextMission, firstOpenRow, journey, DONE_STATUSES } from '../../core/missions.js';
-import { setWorkstreamOwners, setShowExtras, workstreamKey } from '../../core/model.js';
-import { btn, linkBtn, emptyState, infoTip } from '../components.js';
+import { setWorkstreamOwners, setShowExtras, workstreamKey, gateWarnings } from '../../core/model.js';
+import { btn, linkBtn, emptyState, infoTip, gateWarningCallouts } from '../components.js';
 import { actionsFor } from '../step-actions.js';
 import { changeAnswer } from './questionnaire.js';
 import { checkRow } from '../checkrow.js';
+import { celebrateMigration, migrationComplete } from '../finale.js';
 import { questionImportance, IMPORTANCE } from '../../core/depth.js';
 import { peopleList, personPicker } from '../tools.js';
 import { rich } from '../rich.js';
@@ -50,6 +51,8 @@ function missionQuestion(q, kb) {
 }
 
 async function celebrateMission(kb, m, j, next) {
+  // Checking everything after the change, with the change complete: that is the move done.
+  if (m.key === 'transition:post-change' && migrationComplete(state.project)) { celebrateMigration(); return; }
   const stage = j.stages.find((x) => x.stage.id === m.stage);
   const stageDone = stage && stage.complete;
   const nextHref = next ? `#/mission/${next.stage}/${next.workstream}` : '#/report/final';
@@ -103,6 +106,7 @@ route('mission', ({ params }) => {
     h('div', { class: 'mission-layout' },
       h('div', { class: 'mission-main' },
         h('nav', { class: 'breadcrumb', 'aria-label': 'Where this mission belongs' }, h('a', { href: '#/overview' }, 'Overview'), h('span', { 'aria-hidden': 'true' }, '›'), h('span', null, stage.short)),
+        gateWarningCallouts(gateWarnings(kb, p, { stage: m.stage, workstream: m.workstream })),
         h('div', { class: 'mission-head' },
           h('div', null,
             h('h1', { id: 'page-title', tabindex: '-1' }, m.title),
@@ -118,7 +122,7 @@ route('mission', ({ params }) => {
         m.complete && m.total ? h('div', { class: 'mission-done', role: 'status' }, icon('check', 'icon-sm'), h('span', null, 'Mission done.'),
           next ? linkBtn(`Next: ${next.title}`, `#/mission/${next.stage}/${next.workstream}`, { kind: 'primary', iconName: 'arrow', small: true }) : linkBtn('Back to the overview', '#/overview', { small: true })) : null,
         m.extras.length ? h('section', { class: 'mission-extras' },
-          h('div', { class: 'row' }, h('h2', null, 'Recommended extras'), infoTip({ key: 'extras', title: 'Recommended extras' }, h('p', null, 'Good practice that Microsoft does not require for the move. They never count against your progress or readiness. Do them when they help you, or hide them with the switch.')), h('span', { class: 'small muted' }, 'Good practice, not needed for the move.'),
+          h('div', { class: 'row' }, h('h2', null, 'Good-practice extras'), infoTip({ key: 'extras', title: 'Good-practice extras' }, h('p', null, 'Good practice that Microsoft does not require for the move. They never count against your progress or readiness. Do them when they help you, or hide them with the switch.')), h('span', { class: 'small muted' }, 'Good practice, not needed for the move.'),
             h('label', { class: 'toggle small' }, h('input', { type: 'checkbox', checked: showExtras, 'data-focus-key': 'show-extras', onchange: (e) => mutate((pr) => setShowExtras(pr, e.target.checked)) }), 'Show')),
           showExtras ? h('ul', { class: 'crow-list' }, m.extras.map(rowFor)) : null) : null,
         m.setAside.length ? h('details', { class: 'disclose mission-aside' }, h('summary', null, icon('chevron', 'icon-sm'), `Set aside by your answers or your plan (${m.setAside.length})`),

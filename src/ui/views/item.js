@@ -6,9 +6,10 @@ import { route, go } from '../shell.js';
 import { applicabilityMap } from '../../core/applicability.js';
 import { effectiveStatus } from '../../core/readiness.js';
 import { missionContext, journey } from '../../core/missions.js';
-import { STATUSES, statusById, setCheckStatus, setCheckField, setApplicabilityOverride, recordGate, GATE_DECISIONS, setEvidenceWaiver, clearEvidenceWaiver, workstreamTeam } from '../../core/model.js';
-import { statusPill, tierBadge, kindChip, applicabilityChip, provenanceChip, validationChip, callout, emptyState, sourceLine, btn, linkBtn, kv, stepExplainer } from '../components.js';
+import { STATUSES, statusById, setCheckStatus, setCheckField, setApplicabilityOverride, recordGate, decisionsFor, decisionLabel, gateWarnings, setEvidenceWaiver, clearEvidenceWaiver, workstreamTeam } from '../../core/model.js';
+import { statusPill, tierBadge, gateWarningCallouts, kindChip, applicabilityChip, provenanceChip, validationChip, callout, emptyState, sourceLine, btn, linkBtn, kv, stepExplainer } from '../components.js';
 import { attachFiles, addNoteEvidence, addLinkEvidence, removeEvidenceFlow } from '../actions.js';
+import { celebrateMigration } from '../finale.js';
 import { formatDate, bytesLabel } from '../../core/util.js';
 import { extensionFor } from '../../core/files.js';
 import { editRegisterItem } from './records.js';
@@ -58,6 +59,7 @@ route('item', ({ params }) => {
       h('div', { class: 'row-actions' },
         effectiveStatus(p, c.id) === 'not_started' ? h('button', { type: 'button', class: 'btn btn-sm btn-quiet', title: 'Marks this step as in progress so you can come back to it, and takes you to the next step. Nothing is blocked.', onclick: () => { mutate((pr) => setCheckStatus(pr, c, 'in_progress', { kbVersion: kb.meta.version })); savedPulse('Left for later. It stays in progress.'); go(next ? `#/item/${next.id}` : '#/overview'); } }, icon('clock', 'icon-sm'), 'Leave for now') : null,
         next ? h('a', { href: `#/item/${next.id}`, class: 'btn btn-sm', 'data-focus-key': 'next-step-top' }, 'Next step', icon('arrow', 'icon-sm')) : h('a', { href: '#/overview', class: 'btn btn-sm' }, 'Back to the overview', icon('arrow', 'icon-sm')))),
+    gateWarningCallouts(gateWarnings(kb, p, { stage: c.stage, workstream: c.workstream })),
     h('div', { class: 'item-head' },
       h('h1', { id: 'page-title', tabindex: '-1' }, c.title),
       h('div', { class: 'item-chips' }, statusPill(effectiveStatus(p, c.id)), tierBadge(c), c.kind !== 'check' ? kindChip(c.kind) : null, provenanceChip(c), validationChip(c), applicabilityChip(app),
@@ -95,6 +97,7 @@ function missionStep(c, app, ctx, mc, appMap) {
       h('div', { class: 'row-actions' },
         h('a', { href: missionHref, class: 'btn btn-sm', 'data-focus-key': 'back-to-mission' }, icon('back', 'icon-sm'), 'Back to the mission'),
         h('a', { href: nextHref, class: 'btn btn-sm btn-primary', 'data-focus-key': 'next-in-mission' }, nextText, icon('arrow', 'icon-sm')))),
+    gateWarningCallouts(gateWarnings(kb, p, { stage: c.stage, workstream: c.workstream })),
     h('div', { class: 'item-head' },
       h('h1', { id: 'page-title', tabindex: '-1' }, c.title),
       h('div', { class: 'item-chips' }, statusPill(effectiveStatus(p, c.id)), tierBadge(c), c.kind !== 'check' ? kindChip(c.kind) : null, provenanceChip(c), validationChip(c), applicabilityChip(app),
@@ -131,7 +134,7 @@ function guidance(c, app, ctx) {
   const needs = [...c.roles, ...c.prerequisites];
   return h('div', null,
     c.tool && TOOLS[c.tool] ? h('section', { class: 'g-section' }, h('h2', null, icon('edit', 'icon-sm'), `Do it here: ${TOOL_TITLES[c.tool]}`), h('div', { class: 'g-panel do-here', id: c.kind === 'gate' ? 'do-it-here-tool' : 'do-it-here' }, TOOLS[c.tool](c, ctx))) : null,
-    c.kind === 'gate' ? h('section', { class: 'g-section' }, h('h2', null, icon('gate', 'icon-sm'), 'Do it here: record the decision'), h('div', { class: 'g-panel do-here', id: 'do-it-here' }, gateForm(c))) : null,
+    c.kind === 'gate' ? h('section', { class: 'g-section' }, h('h2', null, icon('gate', 'icon-sm'), c.decisions === 'outcome' ? 'Do it here: record the outcome' : 'Do it here: record the decision'), h('div', { class: 'g-panel do-here', id: 'do-it-here' }, gateForm(c))) : null,
     applicabilitySection(c, app),
     section('Where', 'route',
       h('ul', { class: 'where' }, c.where.map((w) => h('li', null, h('span', { class: 'portal' }, w.portal), renderPath(w.path)))),
@@ -329,21 +332,26 @@ export function gateForm(c) {
   const g = state.project.gates[c.id];
   if (!gateDrafts.has(c.id)) gateDrafts.set(c.id, { decision: g ? g.decision : '', decidedBy: '', decidedRole: '', rationale: '' });
   const draft = gateDrafts.get(c.id);
-  const sel = h('select', { 'data-focus-key': `gate-dec-${c.id}`, onchange: (e) => { draft.decision = e.target.value; } }, h('option', { value: '' }, 'Choose a decision'), GATE_DECISIONS.map((d) => h('option', { value: d.id, selected: draft.decision === d.id }, d.label)));
+  const choices = decisionsFor(c);
+  const outcome = c.decisions === 'outcome';
+  const sel = h('select', { 'data-focus-key': `gate-dec-${c.id}`, onchange: (e) => { draft.decision = e.target.value; } }, h('option', { value: '' }, outcome ? 'Choose the outcome' : 'Choose a decision'), choices.map((d) => h('option', { value: d.id, selected: draft.decision === d.id }, d.label)));
   const by = h('input', { type: 'text', maxlength: '200', list: 'people-list', value: draft.decidedBy, placeholder: 'Name of the person who decided', 'data-focus-key': `gate-by-${c.id}`, oninput: (e) => { draft.decidedBy = e.target.value; } });
   const role = h('input', { type: 'text', maxlength: '200', value: draft.decidedRole, placeholder: 'Their role', 'data-focus-key': `gate-role-${c.id}`, oninput: (e) => { draft.decidedRole = e.target.value; } });
   const rat = h('textarea', { rows: '3', maxlength: '20000', placeholder: 'Why, under which conditions, and which exceptions apply', 'data-focus-key': `gate-rat-${c.id}`, oninput: (e) => { draft.rationale = e.target.value; } });
   rat.value = draft.rationale;
   return h('div', { class: 'gate-form', id: `gate-${c.id}` },
-    g ? callout('info', `Recorded: ${(GATE_DECISIONS.find((d) => d.id === g.decision) || {}).label}`, h('div', { class: 'small' }, `by ${g.decidedBy}${g.decidedRole ? ` (${g.decidedRole})` : ''} on ${formatDate(g.at, true)}`), g.rationale ? h('p', { class: 'small' }, g.rationale) : null) : h('p', { class: 'small muted' }, 'No decision recorded yet. You type the decision maker\'s name: the assistant never fills it in.'),
-    field('Decision', sel), field('Decided by', by, { required: true }), field('Role', role), field('Why', rat),
-    btn(g ? 'Record a new decision' : 'Record the decision', () => {
+    g ? callout('info', `Recorded: ${decisionLabel(g.decision)}`, h('div', { class: 'small' }, `by ${g.decidedBy}${g.decidedRole ? ` (${g.decidedRole})` : ''} on ${formatDate(g.at, true)}`), g.rationale ? h('p', { class: 'small' }, g.rationale) : null) : h('p', { class: 'small muted' }, 'No decision recorded yet. You type the decision maker\'s name: the assistant never fills it in.'),
+    field(outcome ? 'Outcome' : 'Decision', sel), field(outcome ? 'Recorded by' : 'Decided by', by, { required: true }), field('Role', role), field('Why', rat),
+    btn(outcome ? (g ? 'Record a new outcome' : 'Record the outcome') : (g ? 'Record a new decision' : 'Record the decision'), () => {
       // Validate on a scratch copy first so a rejected attempt does not mark the project as changed.
-      const probe = recordGate({ gates: {}, audit: [], meta: {} }, c.id, draft);
+      const probe = recordGate({ gates: {}, audit: [], meta: {} }, c.id, draft, { allowed: choices });
       if (!probe.ok) { toast(probe.error, 'bad'); return; }
-      mutate((pr) => recordGate(pr, c.id, draft));
+      const decided = draft.decision;
+      mutate((pr) => recordGate(pr, c.id, draft, { allowed: choices }));
       gateDrafts.delete(c.id);
-      toast('Decision recorded.', 'good');
+      toast(outcome ? 'Outcome recorded.' : 'Decision recorded.', 'good');
+      // The change is complete: the moment the move is done deserves a celebration.
+      if (outcome && (decided === 'complete' || decided === 'complete_with_exceptions')) celebrateMigration();
     }, { kind: 'primary', small: true }));
 }
 

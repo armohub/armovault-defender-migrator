@@ -10,7 +10,7 @@ import { SHORT, EXTRAS } from './short-forms.mjs';
 
 export const KB_META = {
   id: 'armohub.dma.kb',
-  version: '2026.11.04',
+  version: '2026.11.05',
   lastReviewed: '2026-10-19',
   language: 'en',
   scope: 'Moving Microsoft Sentinel from the Azure portal to the Microsoft Defender portal. That means connecting your Sentinel workspaces to the Defender portal, and adapting access, data governance, connectors, detections, automation, integrations, content and SOC operations. Out of scope: migrating to Sentinel from another SIEM, deploying Sentinel from scratch, and detection engineering beyond what the transition requires.',

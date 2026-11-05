@@ -6,7 +6,7 @@ Three kinds of data, kept strictly apart:
 
 | Data | Where it lives | Format | Versioning |
 |---|---|---|---|
-| **Knowledge base** (guidance) | Bundled into the assistant at build time; also published as `dist/kb.json` | `content/*.mjs` to JS objects | `KB_META.version` (currently `2026.11.04`); each item has `version` and `lastVerified` |
+| **Knowledge base** (guidance) | Bundled into the assistant at build time; also published as `dist/kb.json` | `content/*.mjs` to JS objects | `KB_META.version` (currently `2026.11.05`); each item has `version` and `lastVerified` |
 | **Project** (your records) | In memory; in IndexedDB only with browser autosave; in project packages you save | JSON (`armohub.dma.project`) | `schemaVersion` (currently 1) with a migration hook |
 | **Settings** (preferences) | `localStorage` key `armohub.dma.settings.v1`; optional export file | JSON (`armohub.dma.settings`) | `schemaVersion` 1 |
 
@@ -184,6 +184,15 @@ The assistant maps the file to imported evidence notes on specific steps, and to
 - `leftOutByPlan(check, project)` applies after the answers: a step the answers keep is set aside (`source: 'plan'`) when the plan leaves it out. Reviewer decisions win; the full checklist ignores the plan. Must-do steps are only ever left out with the test rehearsal switched off, which skips the whole Test stage.
 - Topics: backups are the steps with `topics: ['backups']` in the knowledge base; the test rehearsal is the Test stage; extra verification is Validate and the Transition checks after the change.
 - A question's importance is the best tag among the steps it decides (applicability) or informs (`informs` in the knowledge base), among those the plan keeps. A question whose steps are all left out is not asked.
+
+## Gate decisions
+
+- Gates use go, go_with_exceptions, no_go or deferred. A gate marked `decisions: 'outcome'` in the knowledge base (the change outcome, TRN-17) uses complete, complete_with_exceptions or rolled_back instead. go_with_exceptions, no_go, complete_with_exceptions and rolled_back need a rationale.
+- `gateWarnings()` in `src/core/model.js` turns a gate that did not say go into warnings on the stages after it.
+
+## Workspace list (`workspaces.json`)
+
+Written by the inventory script when it finds your workspaces, or your own list for `-WorkspacesFile`: an array of { subscriptionId, resourceGroupName, workspaceName, alias, region }. The assistant reads it only to fill in each workspace's subscription and resource group (`parseWorkspaceList`, `applyWorkspaceList`); it is never kept as evidence.
 
 ## Schema evolution
 

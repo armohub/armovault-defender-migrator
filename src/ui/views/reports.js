@@ -5,7 +5,7 @@ import { route, render, go, savePackageFlow } from '../shell.js';
 import { buildReportModel, createSnapshot, verifySnapshot, REPORT_KINDS, itemsCsvRows, DISCLAIMER_SHORT } from '../../core/report.js';
 import { assessStage, overallAssessment } from '../../core/readiness.js';
 import { applicabilityMap } from '../../core/applicability.js';
-import { GATE_DECISIONS, addAudit, statusById, MAX_SNAPSHOTS, DEFENDER_STATES } from '../../core/model.js';
+import { decisionLabel, addAudit, statusById, MAX_SNAPSHOTS, DEFENDER_STATES } from '../../core/model.js';
 import { pageHead, btn, linkBtn, conclusionBadge, emptyState, callout } from '../components.js';
 import { toCsv } from '../../core/files.js';
 import { formatDate, slugify } from '../../core/util.js';
@@ -98,7 +98,7 @@ function reportPage(model, { live, kind, snapshot, integrity }) {
   return h('div', { class: 'report-page' }, toolbar, done ? h('div', { class: 'report-toolbar no-print' }, callout('good', 'You made it to the end of the route.', thanksLine(' Well done. If the assistant helped, consider thanking'))) : null, renderReport(model, { live, snapshot, includeImages: live && reportOpts.includeImages }));
 }
 
-const decisionLabel = (id) => (GATE_DECISIONS.find((d) => d.id === id) || { label: id || 'Not recorded' }).label;
+
 
 export function renderReport(m, { live, snapshot, includeImages }) {
   const kb = state.kb;
@@ -136,7 +136,9 @@ export function renderReport(m, { live, snapshot, includeImages }) {
     m.project.owners && m.project.owners.length ? h('div', null, h('h3', null, 'Owners and approvers'), table(['Area', 'Lead or approver', 'Also involved'], m.project.owners.map((o) => h('tr', null, h('td', null, o.area), h('td', null, o.name || 'Not named'), h('td', null, o.others || ''))), 'r-compact')) : null,
     h('p', null, `Checklist mode: ${m.project.mode === 'full' ? 'full checklist (no tailoring)' : 'tailored to the answers below'}. Planned window: ${m.project.windowStart || 'not set'}${m.project.windowEnd ? ` to ${m.project.windowEnd}` : ''}.`),
     h('p', null, `Test stage: ${m.testStage.availability === 'unavailable' ? `not available: ${m.testStage.reason} (recorded by ${m.testStage.decidedBy})` : m.testStage.availability === 'available' ? 'available' : 'not decided'}.`),
-    m.answers.length ? h('div', null, h('h3', null, 'Environment answers (assumptions)'), table(['Question', 'Answer', 'Note', 'Answered by'], m.answers.map((a) => h('tr', null, h('td', null, a.question), h('td', null, a.answer), h('td', null, a.reason || ''), h('td', { class: 'small' }, a.by ? `${a.by}, ${formatDate(a.at)}` : ''))), 'r-compact')) : null);
+    m.answers.length ? h('div', null, h('h3', null, 'Environment answers (assumptions)'), table(['Question', 'Answer', 'Note', 'Answered by'], m.answers.map((a) => h('tr', null, h('td', null, a.question), h('td', null, a.answer), h('td', null, a.reason || ''), h('td', { class: 'small' }, a.by ? `${a.by}, ${formatDate(a.at)}` : ''))), 'r-compact')) : null,
+    m.openQuestions && m.openQuestions.length ? h('div', null, h('h3', null, 'Questions not answered yet'), h('p', { class: 'small' }, 'Their steps stay in the plan, marked as not sure yet, until they are answered.'), h('ul', { class: 'r-list' }, m.openQuestions.map((q) => h('li', null, q.question)))) : null,
+    m.notAsked && m.notAsked.length ? h('div', null, h('h3', null, 'Questions not asked because of your plan'), h('p', { class: 'small' }, m.notAskedReason), h('ul', { class: 'r-list' }, m.notAsked.map((q) => h('li', null, q.question)))) : null);
 
   let n = 2;
   const findings = m.stages.map((s) => {

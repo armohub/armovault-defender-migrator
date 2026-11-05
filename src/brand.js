@@ -8,6 +8,8 @@ export const BRAND = Object.freeze({
   quote: 'Built to make your migration journey easy.',
   website: 'https://armohub.ch',
   repositoryUrl: null, // set when the repository is public
+  // The makers' community, supplied by them.
+  community: { name: 'ArMoHub', url: 'https://www.linkedin.com/company/armohub' },
   makers: [
     { name: 'Arno', initials: 'A', profileUrl: 'https://www.linkedin.com/in/arnoyan', photoDataUrl: null },
     { name: 'Moise', initials: 'M', profileUrl: 'https://www.linkedin.com/in/m-aub/', photoDataUrl: null },

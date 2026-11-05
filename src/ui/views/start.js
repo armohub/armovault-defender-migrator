@@ -104,7 +104,7 @@ function resetDraft() {
   Object.assign(draft, {
     guidance: 'simple', name: '', organisation: '', operatorName: state.settings.operatorName || '', operatorRole: state.settings.operatorRole || '',
     startDate: new Date().toISOString().slice(0, 10), windowStart: '', windowEnd: '', environments: [blankRow()],
-    wsMode: '', imports: [], importErrors: [], suggest: [], storageMode: state.settings.storageMode, mode: 'tailored', disclaimer: false,
+    wsMode: '', imports: [], importErrors: [], suggest: [], wsList: [], storageMode: state.settings.storageMode, mode: 'tailored', disclaimer: false,
     planDepth: 'recommended', planTopics: topicPreset('recommended'),
   });
 }
@@ -146,15 +146,19 @@ async function pickInventories() {
   const read = await withLoader('Reading your inventory files', () => readInventoryFiles(files));
   for (const r of read) {
     if (r.error) { draft.importErrors.push(`${r.file.name}: ${r.error}`); continue; }
+    if (r.list) { draft.wsList.push(...r.list); continue; }
     // Files from older single-workspace runs carry no alias: ask for the name rather than use the file name.
     const fromFile = r.file.name.replace(/^inventory-/, '').replace(/\.json$/i, '');
     const alias = r.inv.alias || (/^armohub-inventory/i.test(fromFile) ? '' : fromFile);
     if (alias && draft.imports.some((x) => x.alias === alias)) { draft.importErrors.push(`${r.file.name}: a workspace called ${alias} is already in the list.`); continue; }
-    draft.imports.push({ ...r, alias, kind: /test|dev|lab/i.test(alias) ? 'test' : 'production', inScope: true });
+    draft.imports.push({ ...r, alias, fileAlias: r.inv.alias || fromFile, kind: /test|dev|lab/i.test(alias) ? 'test' : 'production', inScope: true });
   }
   mergeSuggestions();
   go('#/setup/3');
 }
+
+// The workspace list entry for an imported file, matched by the alias in the file.
+const listedFor = (it) => draft.wsList.find((w) => [w.alias, w.workspaceName].some((x) => x && x.toLowerCase() === String(it.fileAlias || '').toLowerCase())) || null;
 
 function workspaceStep() {
   const kb = state.kb;
@@ -189,7 +193,7 @@ function workspaceStep() {
     field('Workspace', h('input', { type: 'text', value: it.alias, maxlength: '120', placeholder: 'Type the workspace name', 'aria-invalid': it.inScope && !it.alias.trim() ? 'true' : 'false', 'data-focus-key': `imp-alias-${i}`, oninput: (e) => { it.alias = e.target.value; } }),
       it.inScope && !it.alias.trim() ? { hint: 'This file does not say which workspace it is. Type the workspace name.' } : {}),
     field('Type', h('select', { onchange: (e) => { it.kind = e.target.value; mergeSuggestions(); go('#/setup/3'); } }, ['production', 'test', 'other'].map((k) => h('option', { value: k, selected: it.kind === k }, k)))),
-    h('div', { class: 'small muted import-counts' }, [it.inv.region, `${it.res.counts.analyticsRules} analytics rules`, `${it.res.counts.automationRules} automation rules`, `${it.res.counts.dataConnectors} connectors`, `${it.res.counts.watchlists} watchlists`].filter(Boolean).join(' · '),
+    h('div', { class: 'small muted import-counts' }, [it.inv.region, listedFor(it) ? `${listedFor(it).resourceGroup} in ${listedFor(it).subscription}` : '', `${it.res.counts.analyticsRules} analytics rules`, `${it.res.counts.automationRules} automation rules`, `${it.res.counts.dataConnectors} connectors`, `${it.res.counts.watchlists} watchlists`].filter(Boolean).join(' · '),
       it.res.errors.length ? h('div', { class: 'field-error' }, `${it.res.errors.length} request(s) failed while collecting. Some results may be missing.`) : null)));
   return h('div', { class: 'stack' }, modes,
     h('ol', { class: 'steps' },
@@ -198,14 +202,15 @@ function workspaceStep() {
       h('li', null, h('div', { class: 'step-text' }, h('strong', null, 'Run it in PowerShell. '), 'Sign in with ', h('code', null, 'Connect-AzAccount'), ' first. Your account needs Microsoft Sentinel Reader on the workspaces\' resource groups.'),
         h('pre', { class: 'code' }, DISCOVER_CMD),
         h('div', { class: 'row-actions' }, btn('Copy the command', async () => { await copyText(DISCOVER_CMD); toast('Command copied.', 'good'); }, { small: true, iconName: 'copy' })),
-        h('p', { class: 'small muted' }, 'It finds every Sentinel workspace you can read and writes one inventory file per workspace into the inventory folder. Look the files over before you import them: rule and watchlist names can be sensitive.')),
-      h('li', null, h('div', { class: 'step-text' }, h('strong', null, 'Import the files here. '), 'Select all the inventory-*.json files at once.'),
+        h('p', { class: 'small muted' }, 'It finds every Sentinel workspace you can read, and writes one inventory file per workspace and a list of the workspaces (workspaces.json) into the inventory folder. Look the files over before you import them: rule and watchlist names can be sensitive.')),
+      h('li', null, h('div', { class: 'step-text' }, h('strong', null, 'Import the files here. '), 'Select all the files in the inventory folder at once. Include workspaces.json: it fills in the subscription and resource group of each workspace.'),
         h('div', { class: 'row-actions' }, btn(found.length ? 'Add more files' : 'Choose the inventory files', pickInventories, { small: true, iconName: 'upload', kind: found.length ? null : 'primary' })))),
     draft.importErrors.length ? callout('caution', 'Some files were not imported.', h('ul', null, draft.importErrors.map((e) => h('li', null, e)))) : null,
     found.length ? h('div', { class: 'stack' },
       h('h3', null, `Found ${found.length} workspace${found.length === 1 ? '' : 's'}. Which are in scope?`),
       h('p', { class: 'small muted' }, 'Untick the ones you are not moving. You can rename them to the aliases your team uses.'),
       ...rows) : null,
+    found.length && !draft.wsList.length ? h('p', { class: 'small muted' }, 'Add workspaces.json from the same folder to fill in each workspace\'s subscription and resource group. You can also type them later.') : null,
     draft.suggest.length ? h('div', { class: 'stack' },
       h('h3', null, 'Answers the import fills in for you'),
       h('p', { class: 'small muted' }, `Based on what the script found in the workspaces in scope: ${draft.suggest.length} of ${kb.questions.filter((q) => !q.derived).length} questions. No is suggested only when the script could read that part in every workspace in scope. Untick any that are wrong; you can change every answer later.`),
@@ -283,10 +288,10 @@ route('setup', ({ params }) => {
       h('input', { type: 'checkbox', checked: draft.mode === 'full', 'data-focus-key': 'full-checklist', onchange: (e) => { draft.mode = e.target.checked ? 'full' : 'tailored'; go(`#/setup/${LAST}`); } }),
       ` Skip the questions and show all ${state.kb.checks.length} steps (full checklist). You decide what applies as you go.`) : null;
     body = h('div', { class: 'stack' },
-      h('fieldset', { class: 'choices' }, h('legend', { class: 'small muted' }, 'How do you want to work?'),
-        guideChoice('simple', 'Simplified (recommended)', `Missions with short checklists. You answer ${core} questions now, and the others come up inside the missions they affect. Each check says what to do and what counts as proof.`),
+      h('fieldset', { class: 'choices' }, h('legend', { class: 'small muted' }, '1. How should the plan look?'),
+        guideChoice('simple', 'Simplified (suggested)', `Missions with short checklists. You answer ${core} questions now, and the others come up inside the missions they affect. Each check says what to do and what counts as proof.`),
         guideChoice('detailed', 'Detailed', `Every step in full, with background and sources. You answer the questions up front, most important first. For consultants and audit-heavy projects.`, fullOption)),
-      draft.mode === 'full' ? null : planChoices({ depth: draft.planDepth, topics: draft.planTopics, name: 'wiz-depth',
+      draft.mode === 'full' ? null : planChoices({ depth: draft.planDepth, topics: draft.planTopics, name: 'wiz-depth', legend: '2. How much should the plan cover?',
         onDepth: (d) => { draft.planDepth = d; draft.planTopics = topicPreset(d); go(`#/setup/${LAST}`); },
         onTopic: (id, on) => { draft.planTopics = { ...draft.planTopics, [id]: on }; go(`#/setup/${LAST}`); } }),
       draft.mode === 'full' ? h('p', { class: 'small muted' }, 'You will see every step, and decide what applies as you go.') : filled ? h('p', { class: 'small muted' }, `${filled} answer${filled === 1 ? ' is' : 's are'} already filled in from your inventory.`) : null,
@@ -302,7 +307,7 @@ route('setup', ({ params }) => {
     const tenantRefs = [...new Set(imported.map((x) => x.inv.tenantRef).filter(Boolean))];
     const tenantLabel = (x) => (tenantRefs.length > 1 && x.inv.tenantRef ? `Tenant ${tenantRefs.indexOf(x.inv.tenantRef) + 1}` : '');
     const envs = draft.wsMode === 'import'
-      ? imported.map((x) => ({ alias: x.alias.trim(), kind: x.kind, region: x.inv.region || '', tenant: tenantLabel(x), notes: '' }))
+      ? imported.map((x) => ({ alias: x.alias.trim(), kind: x.kind, region: x.inv.region || (listedFor(x) || {}).region || '', tenant: tenantLabel(x), subscription: (listedFor(x) || {}).subscription || '', resourceGroup: (listedFor(x) || {}).resourceGroup || '', notes: '' }))
       : draft.environments.filter((e) => e.alias.trim()).map((e) => ({ alias: e.alias.trim(), kind: e.kind, notes: e.notes.trim() }));
     Object.assign(p.meta, {
       name: draft.name.trim(), organisation: draft.organisation.trim(), operatorName: draft.operatorName.trim(), operatorRole: draft.operatorRole.trim(),

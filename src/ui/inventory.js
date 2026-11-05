@@ -1,8 +1,8 @@
 // UI flow for importing a read-only inventory file and turning it into evidence and suggestions.
 import { h, pickFile, modal, toast, readBlobBytes } from './dom.js';
 import { state, mutate, putEvidenceBlob } from '../app/store.js';
-import { parseInventory, analyseInventory, MAX_INVENTORY_BYTES } from '../core/inventory.js';
-import { addEvidence, setAnswer, answerLabel, addAudit, setEnvironments } from '../core/model.js';
+import { parseInventory, analyseInventory, MAX_INVENTORY_BYTES, parseWorkspaceList } from '../core/inventory.js';
+import { addEvidence, setAnswer, answerLabel, addAudit, setEnvironments, applyWorkspaceList } from '../core/model.js';
 import { sha256Hex } from '../core/files.js';
 import { callout } from './components.js';
 
@@ -13,7 +13,11 @@ export async function readInventoryFiles(files) {
     if (file.size > MAX_INVENTORY_BYTES) { out.push({ file, error: 'The file is larger than 5 MB.' }); continue; }
     try {
       const bytes = await readBlobBytes(file);
-      const inv = parseInventory(new TextDecoder('utf-8').decode(bytes));
+      const text = new TextDecoder('utf-8').decode(bytes);
+      // workspaces.json is not an inventory: it carries the subscription and resource group of each workspace.
+      const list = parseWorkspaceList(text);
+      if (list) { out.push({ file, list }); continue; }
+      const inv = parseInventory(text);
       out.push({ file, bytes, sha: await sha256Hex(bytes), inv, res: analyseInventory(inv) });
     } catch (e) { out.push({ file, error: e.message }); }
   }
@@ -53,12 +57,14 @@ export async function importInventoryFlow() {
   const files = await pickFile({ accept: '.json,application/json', multiple: true });
   if (!files.length) return;
   let imported = 0;
+  let lists = 0;
   for (const [i, file] of files.entries()) {
     const r = await importOneInventory(file, { n: i + 1, total: files.length });
     if (r === 'stop') break;
     if (r === 'imported') imported += 1;
+    if (r === 'list') lists += 1;
   }
-  if (files.length > 1) toast(`${imported} of ${files.length} inventory files imported.`, imported ? 'good' : 'info', 7000);
+  if (files.length - lists > 1) toast(`${imported} of ${files.length - lists} inventory files imported.`, imported ? 'good' : 'info', 7000);
 }
 
 // Returns 'imported', 'skipped' or 'stop' (Cancel or close stops the remaining files too).
@@ -70,7 +76,14 @@ async function importOneInventory(file, { n, total }) {
   let bytes;
   try {
     bytes = await readBlobBytes(file);
-    inv = parseInventory(new TextDecoder('utf-8').decode(bytes));
+    const text = new TextDecoder('utf-8').decode(bytes);
+    const list = parseWorkspaceList(text);
+    if (list) {
+      const filled = mutate((pr) => applyWorkspaceList(pr, list));
+      toast(filled ? `${file.name}: subscription and resource group filled in for ${filled} workspace${filled === 1 ? '' : 's'}.` : `${file.name}: no workspace in your list was missing a subscription or resource group.`, filled ? 'good' : 'info', 7000);
+      return 'list';
+    }
+    inv = parseInventory(text);
   } catch (e) {
     await modal({ title: `Inventory not imported${of}`, body: h('p', null, many ? `${file.name}: ${e.message}` : e.message), actions: [{ label: n < total ? 'Next file' : 'OK', kind: 'primary', value: true }] });
     return 'skipped';

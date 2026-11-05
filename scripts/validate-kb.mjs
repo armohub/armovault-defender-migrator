@@ -10,7 +10,7 @@ const CRIT = ['critical', 'high', 'medium', 'low'];
 const KINDS = ['check', 'task', 'decision', 'gate'];
 const DASHES = /[\u2013\u2014]/;
 // Keys whose values are identifiers or code, not reading text.
-const NOT_TEXT = new Set(['topics', 'informs', 'tool', 'id', 'dependsOn', 'snippets', 'code', 'url', 'stage', 'workstream', 'kind', 'criticality', 'provenance', 'confidence', 'validation', 'lastVerified', 'version', 'applicability', 'showIf', 'section', 'sources', 'language', 'status', 'readOnly', 'reportKind', 'number', 'pageDate', 'verified', 'publisher', 'date']);
+const NOT_TEXT = new Set(['decisions', 'topics', 'informs', 'tool', 'id', 'dependsOn', 'snippets', 'code', 'url', 'stage', 'workstream', 'kind', 'criticality', 'provenance', 'confidence', 'validation', 'lastVerified', 'version', 'applicability', 'showIf', 'section', 'sources', 'language', 'status', 'readOnly', 'reportKind', 'number', 'pageDate', 'verified', 'publisher', 'date']);
 // Words that make guidance sound machine-written. Plain alternatives are in the style guide.
 const BANNED_WORDS = /\b(seamless(?:ly)?|leverag(?:e|es|ed|ing)|utili[sz](?:e|es|ed|ing|ation)|delve|robust|streamlin(?:e|ed|es|ing)|cutting-edge|game-?changer|empower(?:s|ed|ing)?|holistic|synerg(?:y|ies)|paradigm|in order to)\b/i;
 const STEP_KEYS = new Set(['text', 'bullets', 'tip']);
@@ -204,6 +204,7 @@ export function validateKb(kb) {
     for (const d of c.dependsOn || []) if (!checkIds.has(d)) errors.push(`${label}: dependsOn unknown ${d}.`);
     for (const qid of questionsUsed(c.applicability)) if (!questionIds.has(qid)) errors.push(`${label}: applicability uses unknown question ${qid}.`);
     for (const t of c.topics || []) if (t !== 'backups') errors.push(`${label}: unknown topic ${t}.`);
+    if (c.decisions && (c.decisions !== 'outcome' || c.kind !== 'gate')) errors.push(`${label}: decisions 'outcome' is for gates only.`);
     if (!['official', 'practice'].includes(c.provenance)) errors.push(`${label}: provenance.`);
     if (!['docs-verified', 'needs-review'].includes(c.validation)) errors.push(`${label}: validation.`);
     if (c.validation === 'needs-review' && (!c.caveats || !c.caveats.length)) errors.push(`${label}: needs-review items must explain the uncertainty in caveats.`);

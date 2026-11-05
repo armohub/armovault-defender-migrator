@@ -2,7 +2,7 @@
 
 Generated from the knowledge base by `scripts/gen-research.mjs`. Do not edit by hand.
 
-Knowledge base **2026.11.04**, reviewed **2026-10-19**. 145 sources, all Microsoft Learn. "Page date" is the ms.date shown in the page metadata; "Updated" is the page's last-publish timestamp; "Verified" is when this project last fetched and read the page.
+Knowledge base **2026.11.05**, reviewed **2026-10-19**. 145 sources, all Microsoft Learn. "Page date" is the ms.date shown in the page metadata; "Updated" is the page's last-publish timestamp; "Verified" is when this project last fetched and read the page.
 
 Detailed research notes with verbatim quotes, confidence levels and gaps: [notes/](notes/).
 

@@ -345,16 +345,18 @@ export function savedPulse(text = 'Saved') {
 
 // A short celebration when a mission or a whole stage is finished: a check that pops, a burst of confetti and
 // the way on. With reduced motion only the card appears. Resolves with the chosen action's value.
-export function celebrate({ title, text, milestone = false, actions = [] }) {
+export function celebrate({ title, text, milestone = false, actions = [], grand = false, extra = null }) {
   return new Promise((resolve) => {
     const calm = reducedMotion();
     const titleId = `cel-${Math.random().toString(36).slice(2, 9)}`;
-    const dlg = h('dialog', { class: ['celebrate', milestone && 'milestone', calm && 'calm'], 'aria-labelledby': titleId });
+    const dlg = h('dialog', { class: ['celebrate', milestone && 'milestone', grand && 'grand', calm && 'calm'], 'aria-labelledby': titleId });
     const close = (v) => { if (dlg.open) dlg.close(); dlg.remove(); resolve(v); };
-    const burst = calm ? null : h('div', { class: 'confetti', 'aria-hidden': 'true' }, Array.from({ length: milestone ? 36 : 22 }, (_, i) => {
-      const angle = (i / (milestone ? 36 : 22)) * Math.PI * 2 + Math.random() * 0.4;
-      const dist = 90 + Math.random() * (milestone ? 150 : 100);
-      return h('span', { class: `bit b${i % 4}`, style: { '--x': `${Math.round(Math.cos(angle) * dist)}px`, '--y': `${Math.round(Math.sin(angle) * dist - 30)}px`, '--r': `${Math.round(Math.random() * 540 - 270)}deg`, '--d': `${Math.round(Math.random() * 120)}ms` } });
+    // A grand celebration bursts in three waves, wider.
+    const bits = grand ? 72 : milestone ? 36 : 22;
+    const burst = calm ? null : h('div', { class: 'confetti', 'aria-hidden': 'true' }, Array.from({ length: bits }, (_, i) => {
+      const angle = (i / bits) * Math.PI * 2 + Math.random() * 0.4;
+      const dist = 90 + Math.random() * (grand ? 230 : milestone ? 150 : 100);
+      return h('span', { class: `bit b${i % 4}`, style: { '--x': `${Math.round(Math.cos(angle) * dist)}px`, '--y': `${Math.round(Math.sin(angle) * dist - 30)}px`, '--r': `${Math.round(Math.random() * 540 - 270)}deg`, '--d': `${Math.round(Math.random() * 120) + (grand ? (i % 3) * 420 : 0)}ms` } });
     }));
     dlg.append(
       h('div', { class: 'celebrate-card' },
@@ -362,6 +364,7 @@ export function celebrate({ title, text, milestone = false, actions = [] }) {
         h('div', { class: 'celebrate-mark', 'aria-hidden': 'true' }, icon(milestone ? 'flag' : 'check')),
         h('h2', { id: titleId }, title),
         text ? h('p', null, text) : null,
+        extra,
         h('div', { class: 'celebrate-actions' }, actions.map((a) => h('button', { type: 'button', class: ['btn', a.kind && `btn-${a.kind}`], onclick: () => close(a.value) }, a.label)))));
     dlg.addEventListener('cancel', (e) => { e.preventDefault(); close(undefined); });
     dlg.addEventListener('click', (e) => { if (e.target === dlg) close(undefined); });

@@ -1,8 +1,8 @@
 // Report model builder (pure data). The same model drives the printable report, snapshots and CSV exports.
 // It only reflects what is recorded in the project. It never invents evidence, dates, approvals or sign-offs.
 
-import { applicabilityMap } from './applicability.js';
-import { planSummary } from './depth.js';
+import { applicabilityMap, visibleQuestions } from './applicability.js';
+import { planSummary, questionImportance, planOf, DEPTHS } from './depth.js';
 import { assessStage, summariseStage, CONCLUSION_CRITERIA, exceptionsByCheck, overallAssessment } from './readiness.js';
 import { statusById, answerLabel, actor, effectiveOwner, plannedRole } from './model.js';
 import { sha256Hex } from './files.js';
@@ -126,10 +126,16 @@ export function buildReportModel(kind, kb, project, { appVersion }) {
   const evidenceIndex = [];
   for (const s of stages) for (const g of s.groups) for (const i of g.items) for (const e of i.evidence) evidenceIndex.push({ ...e, checkId: i.id });
 
-  const answers = kb.questions.filter((q) => !q.derived || project.answers[q.id]).map((q) => {
+  // Answers, apart from questions still open and those the plan never asked (every step they decide is left out).
+  const row = (q) => {
     const a = project.answers[q.id];
     return { id: q.id, question: q.text, answer: a ? answerLabel(a.value) : 'Not answered', reason: a ? a.reason : '', by: a ? a.by : '', at: a ? a.at : '' };
-  });
+  };
+  const visible = new Set(visibleQuestions(kb, project).map((q) => q.id));
+  const answers = kb.questions.filter((q) => project.answers[q.id]).map(row);
+  const openQuestions = kb.questions.filter((q) => !project.answers[q.id] && visible.has(q.id)).map(row);
+  const notAsked = kb.questions.filter((q) => !q.derived && !project.answers[q.id] && !visible.has(q.id) && questionImportance(kb, project, q) === 'hidden').map(row);
+  const depthLabel = (DEPTHS.find((d) => d.id === planOf(project).depth) || {}).label;
 
   const overallFinal = kind === 'final' ? overallAssessment(kb, project, def.stages, appMap) : null;
   const overall = kind === 'final' ? { label: overallFinal.label, level: overallFinal.level, title: 'All stages' } : stages[0];
@@ -165,6 +171,9 @@ export function buildReportModel(kind, kb, project, { appVersion }) {
     testStage: { availability: project.stages.test.availability, reason: project.stages.test.reason, decidedBy: project.stages.test.decidedBy, decidedAt: project.stages.test.decidedAt },
     stages,
     answers: project.mode === 'tailored' ? answers : [],
+    openQuestions: project.mode === 'tailored' ? openQuestions : [],
+    notAsked: project.mode === 'tailored' ? notAsked : [],
+    notAskedReason: `Your plan (${depthLabel}) leaves out every step these questions decide, so they were not asked. Their steps are set aside with that reason.`,
     register,
     gates,
     evidenceIndex,

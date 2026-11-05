@@ -96,7 +96,7 @@ Details: [docs/security-and-privacy.md](docs/security-and-privacy.md).
 ## Knowledge base and provenance
 
 - The content lives in [`content/`](content/), separate from the UI. It is checked at build time and published as `dist/kb.json`.
-- Knowledge base version **2026.11.04**: 145 Microsoft Learn sources (114 verified on 2026-10-19, 3 on 2026-10-20, 2 on 2026-10-26, 8 on 2026-10-29, 18 on 2026-11-04), 33 read-only snippets, and 13 steps marked "Sources differ" where Microsoft sources conflict or are unclear.
+- Knowledge base version **2026.11.05**: 145 Microsoft Learn sources (114 verified on 2026-10-19, 3 on 2026-10-20, 2 on 2026-10-26, 8 on 2026-10-29, 18 on 2026-11-04), 33 read-only snippets, and 13 steps marked "Sources differ" where Microsoft sources conflict or are unclear.
 - Every step states its provenance:
   - **Microsoft documentation:** derived from current pages.
   - **Practical guidance:** the makers' good practice, *not* a Microsoft requirement.

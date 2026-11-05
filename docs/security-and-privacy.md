@@ -50,7 +50,7 @@ Important facts, measured on Edge and Chrome 155 (see the ADR):
 ## Sensitive data guidance (shown in the assistant)
 
 - Never enter credentials, client secrets, tokens, connection strings or keys. The assistant never asks for them.
-- Use aliases for workspaces and environments. Tenant or subscription IDs are not needed.
+- Use aliases for workspaces and environments. Tenant or subscription IDs are not needed. If you import workspaces.json with the inventory files, the assistant fills in each workspace's subscription ID and resource group name in your project. They are not secrets, but they identify your environment, so keep the project and its reports under your data policy. The inventory files themselves never contain them.
 - Crop or redact screenshots. A redaction confirmation is recorded for each screenshot.
 - Prefer short summaries over raw log exports.
 - Packages are not encrypted. Handle them under your data policy.

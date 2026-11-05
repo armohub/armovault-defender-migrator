@@ -6,12 +6,14 @@ param([string] $OutFile = '.\.tmp\mock-inventory.json', [string] $Fail = '')
 $ErrorActionPreference = 'Stop'
 $script = "$PSScriptRoot\..\..\tools\Get-ArMoSentinelInventory.ps1"
 $global:ArMoMockFail = $Fail
+$global:ArMoMockNotFound = ''
 function global:Get-AzContext { [pscustomobject]@{ Environment = [pscustomobject]@{ Name = 'AzureUSGovernment' } } }
 function global:Invoke-AzRestMethod {
   param([string] $Path, [string] $Method)
   $global:ArMoMockCalls.Add("$Method $Path")
   if ($Method -ne 'GET') { throw "Mock refuses non-GET method $Method" }
   if ($global:ArMoMockFail -and $Path -like "*$($global:ArMoMockFail)*") { return [pscustomobject]@{ StatusCode = 403; Content = '{"error":{"code":"AuthorizationFailed"}}' } }
+  if ($global:ArMoMockNotFound -and $Path -like "*$($global:ArMoMockNotFound)*") { return [pscustomobject]@{ StatusCode = 404; Content = '{"error":{"code":"NotFound"}}' } }
   $content = switch -Wildcard ($Path) {
     '/subscriptions/s?api-version=*' { '{"subscriptionId":"s","tenantId":"11111111-2222-3333-4444-555555555555","managedByTenants":[{"tenantId":"99999999-8888-7777-6666-555555555555"}],"state":"Enabled"}' }
     '*alertRules?api-version=2025-09-01&skipToken=2' { '{"value":[{"name":"r3","kind":"Scheduled","properties":{"displayName":"Alert only rule","enabled":true,"query":"SigninLogs","description":"#DONT_CORR# keep separate","incidentConfiguration":{"createIncident":false,"groupingConfiguration":{"enabled":false,"reopenClosedIncident":false}}}}]}' }
@@ -19,7 +21,7 @@ function global:Invoke-AzRestMethod {
     '*alertRules?api-version=2025-07-01-preview' { '{"value":[{"name":"r1","kind":"Fusion","properties":{"displayName":"Advanced Multistage Attack Detection","enabled":true}},{"name":"r4","kind":"NRT","properties":{"displayName":"NRT identity rule","enabled":true,"query":"IdentityInfo | join ThreatIntelligenceIndicator","incidentConfiguration":{"createIncident":true,"groupingConfiguration":{"enabled":true,"reopenClosedIncident":true}}}},{"name":"r5","kind":"Scheduled","properties":{"displayName":"TI map","enabled":true,"query":"ThreatIntelIndicators | take 1","incidentConfiguration":{"createIncident":true}}}]}' }
     '*automationRules*' { '{"value":[{"name":"a1","properties":{"displayName":"Assign Defender incidents","triggeringLogic":{"isEnabled":true,"triggersOn":"Incidents","triggersWhen":"Created","conditions":[{"conditionType":"Property","conditionProperties":{"propertyName":"IncidentProviderName","operator":"Equals","propertyValues":["Microsoft 365 Defender"]}}]},"actions":[{"order":1,"actionType":"RunPlaybook","actionConfiguration":{"logicAppResourceId":"/x"}},{"order":2,"actionType":"AddIncidentTask","actionConfiguration":{"title":"Check"}}]}},{"name":"a2","properties":{"displayName":"Alert enrichment","triggeringLogic":{"isEnabled":true,"triggersOn":"Alerts","triggersWhen":"Created"},"actions":[]}}]}' }
     '*dataConnectors?api-version=2025-09-01' { '{"value":[{"name":"c1","kind":"MicrosoftDefenderAdvancedThreatProtection"},{"name":"c2","kind":"AzureSecurityCenter"},{"name":"c3","kind":"Office365"}]}' }
-    '*dataConnectors?api-version=2025-07-01-preview' { '{"value":[{"name":"c1","kind":"MicrosoftDefenderAdvancedThreatProtection"},{"name":"c4","kind":"OfficeIRM"},{"name":"c5","kind":"MicrosoftThreatProtection"}]}' }
+    '*dataConnectors?api-version=2025-07-01-preview' { '{"value":[{"name":"c1","kind":"MicrosoftDefenderAdvancedThreatProtection"},{"name":"c4","kind":"OfficeIRM"},{"name":"c5","kind":"MicrosoftThreatProtection"},{"name":"316ec55e","kind":"GenericUI","properties":{"connectorUiConfig":{"title":"Microsoft Entra ID Protection"}}}]}' }
     '*watchlists*' { '{"value":[{"name":"w1","properties":{"watchlistAlias":"vip-users","displayName":"VIP users"}}]}' }
     '*onboardingStates*' { '{"value":[{"name":"default","properties":{"customerManagedKey":true}}]}' }
     '*/settings?api-version=2025-07-01-preview' { '{"value":[{"name":"Ueba","kind":"Ueba","properties":{"dataSources":["SigninLogs","AuditLogs"]}},{"name":"EntityAnalytics","kind":"EntityAnalytics","properties":{"entityProviders":["AzureActiveDirectory"]}},{"name":"Anomalies","kind":"Anomalies","properties":{"isEnabled":true}}]}' }
@@ -69,7 +71,8 @@ Expect ($j.bookmarks -eq 1 -and $j.hunts -eq 1) 'bookmarks and hunts'
 Expect ($j.installedContent.workbooks -eq 1 -and $j.installedContent.playbooks -eq 1) 'installed workbooks and playbooks'
 Expect (@($j.logicApps.sentinelPlaybooks).Count -eq 2 -and @($j.logicApps.sentinelPlaybooks | Where-Object { $_.ticketing }).Count -eq 1) 'Sentinel playbooks, one with a ticketing connector'
 Expect ($j.access.spWithSentinelRoles -eq 4 -and $j.access.spWithReadOnlyRoles -eq 2 -and $j.access.tableLevelRestrictions -eq 1) 'role assignment counts: Sentinel roles, Owner and Reader count by what they allow; users do not count'
-Expect (@($j.dataConnectors).Count -eq 5 -and (@($j.dataConnectors.kind) -contains 'OfficeIRM') -and (@($j.dataConnectors.kind) -contains 'MicrosoftThreatProtection')) 'connectors from both API versions'
+Expect (@($j.dataConnectors | Where-Object { $_.title -eq 'Microsoft Entra ID Protection' }).Count -eq 1) 'a connector keeps the title the portal shows'
+Expect (@($j.dataConnectors).Count -eq 6 -and (@($j.dataConnectors.kind) -contains 'OfficeIRM') -and (@($j.dataConnectors.kind) -contains 'MicrosoftThreatProtection')) 'connectors from both API versions'
 Expect (@($j.analyticsRules | Where-Object { $_.usesTI }).Count -eq 2) 'rules that query threat intelligence tables'
 $parts = @('analyticsRules', 'automationRules', 'dataConnectors', 'watchlists', 'onboarding', 'settings', 'workspaceManager', 'repositories', 'bookmarks', 'hunts', 'installedContent', 'logicApps', 'access')
 Expect (@($parts | Where-Object { $j.collected.$_ -ne $true }).Count -eq 0) 'every part marked as collected'
@@ -87,11 +90,19 @@ Expect ($j.collected.logicApps -eq $false -and $j.collected.analyticsRules -eq $
 Expect (@($j.errors | Where-Object { $_ -match 'workflows returned HTTP 403' }).Count -eq 1) 'the refused request is named'
 
 # Run 4: the subscription lookup refused. The tenant is then unknown, and the failure is named.
-$global:ArMoMockFail = '/subscriptions/s?'
+$global:ArMoMockFail = '/subscriptions/s?api-version'
 $j = ConvertFrom-Json (Invoke-Run $OutFile 'MOCK-WS')
 Expect ($j.workspace.tenantRef -eq '' -and @($j.errors | Where-Object { $_ -match 'subscription returned HTTP 403' }).Count -eq 1) 'a refused subscription lookup leaves the tenant unknown and is named'
 
-# Run 5: automation rules refused.
+# Run 5: no workspace manager configured (404). That is "not used", not a failure, and members are not asked for.
+$global:ArMoMockFail = ''
+$global:ArMoMockNotFound = 'workspaceManagerConfigurations'
+$j = ConvertFrom-Json (Invoke-Run $OutFile 'MOCK-WS')
+Expect ($j.collected.workspaceManager -eq $true -and $j.workspaceManager.enabled -eq $false -and @($j.errors).Count -eq 0) 'a workspace manager that is not set up is not a failure'
+Expect (@($global:ArMoMockCalls | Where-Object { $_ -match 'workspaceManagerMembers' }).Count -eq 0) 'members are only read when workspace manager is on'
+$global:ArMoMockNotFound = ''
+
+# Run 6: automation rules refused.
 $global:ArMoMockFail = 'automationRules'
 $j = ConvertFrom-Json (Invoke-Run $OutFile 'MOCK-WS')
 Expect ($j.collected.automationRules -eq $false -and $j.collected.watchlists -eq $true) 'automation rules marked as not collected'

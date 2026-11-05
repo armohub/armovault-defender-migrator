@@ -1,6 +1,6 @@
 // Short forms of every check for Simplified mode: an action title, one to three "do this" points and one
 // line of proof. Each restates the check's own content: same facts, same sources, no new claims.
-// EXTRAS: checks that are good practice, not needed for the move (shown as recommended extras).
+// EXTRAS: checks that are good practice, not needed for the move (shown as good-practice extras).
 // Health monitoring (PREP-CON-06) and the rule health baseline (PREP-DET-07) are needed, not extras:
 // Validate checks query SentinelHealth, which exists only once monitoring is on.
 export const EXTRAS = ['PREP-CON-08', 'PREP-AUT-06', 'PREP-DET-08', 'PREP-GOV-04', 'PREP-GOV-05', 'PREP-CNT-04', 'PREP-CNT-06', 'TEST-10', 'VAL-19'];

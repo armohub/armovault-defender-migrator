@@ -16,6 +16,12 @@ export function critBadge(c) {
   return h('span', { class: ['badge', `badge-${c}`], title: `Criticality: ${c}` }, c);
 }
 
+// Warnings from a gate that did not say go, for the stages after it. They inform; nothing is blocked.
+export function gateWarningCallouts(warnings) {
+  if (!warnings || !warnings.length) return null;
+  return h('div', { class: 'stack gate-warnings' }, warnings.map((w) => callout(w.level === 'bad' ? 'bad' : w.level === 'caution' ? 'caution' : 'info', w.title, ' ', w.text, ' ', h('a', { href: `#/item/${w.gateId}` }, 'Open the decision'))));
+}
+
 // A step's tag: Must do, Recommended, Useful or Good practice.
 const TIER_BADGE = { must: 'critical', recommended: 'high', useful: 'medium', extra: 'low' };
 export function tierBadge(check) {

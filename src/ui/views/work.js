@@ -4,9 +4,9 @@ import { state, mutate } from '../../app/store.js';
 import { route, render, freshRoute, savePackageFlow } from '../shell.js';
 import { applicabilityMap, evaluateApplicability, questionIndex, upfrontQuestions } from '../../core/applicability.js';
 import { assessStage, summariseStage, dependencyStatus, CONCLUSION_CRITERIA, effectiveStatus } from '../../core/readiness.js';
-import { setTestAvailability, effectiveOwner, setGuidance } from '../../core/model.js';
+import { setTestAvailability, effectiveOwner, setGuidance, gateWarnings, APPROVED_DECISIONS } from '../../core/model.js';
 import { missionsForStage, nextMission } from '../../core/missions.js';
-import { statusPill, tierBadge, kindChip, applicabilityChip, progressBar, conclusionBadge, callout, emptyState, btn, linkBtn, daysUntil, infoTip } from '../components.js';
+import { statusPill, tierBadge, gateWarningCallouts, kindChip, applicabilityChip, progressBar, conclusionBadge, callout, emptyState, btn, linkBtn, daysUntil, infoTip } from '../components.js';
 import { formatDate } from '../../core/util.js';
 import { importInventoryFlow } from '../inventory.js';
 import { routeView, routeModel } from '../route.js';
@@ -78,7 +78,7 @@ function stageFacts(kb, p, appMap) {
   return kb.stages.map((s) => {
     const sum = summariseStage(kb, p, s.id, appMap);
     const gates = kb.checks.filter((c) => c.stage === s.id && c.kind === 'gate' && appMap.get(c.id).value !== 'not_applicable');
-    const gateDone = gates.every((g) => p.gates[g.id] && ['go', 'go_with_exceptions'].includes(p.gates[g.id].decision));
+    const gateDone = gates.every((g) => p.gates[g.id] && APPROVED_DECISIONS.has(p.gates[g.id].decision));
     const skipped = s.id === 'test' && p.stages.test.availability === 'unavailable';
     return { id: s.id, name: s.short, assessed: sum.counts.assessed, inScope: sum.counts.inScope, skipped, gateDone, href: `#/stage/${s.id}`, sum };
   });
@@ -138,7 +138,6 @@ route('overview', () => {
     const justPlannedSimple = state.ui.justPlanned;
     state.ui.justPlanned = false;
     return h('div', { class: 'page' },
-      h('div', { class: 'view-switch-row' }, guidanceSwitch()),
       justPlannedSimple ? callout('good', 'Your plan is ready.', ' Start with the mission below. More questions come up in the missions they affect.') : openQuestionsCallout(kb, p),
       h('section', { class: 'next-panel', 'aria-label': 'Your next mission' },
         h('div', { class: 'next-head' },
@@ -196,7 +195,6 @@ route('overview', () => {
   }
 
   return h('div', { class: 'page' },
-    h('div', { class: 'view-switch-row' }, guidanceSwitch()),
     justPlanned ? callout('good', 'Your plan is ready.', ' Start with the step below. The "Start here" list shows what comes after it, and the route shows where you are.') : openQuestionsCallout(kb, p),
     h('section', { class: 'next-panel', 'aria-label': 'Your next step' }, hero,
       h('div', { class: 'next-route' }, routeView({ ...model, animate: freshRoute, key: 'overview', label: 'Your route from the Azure portal to the Defender portal' }))),
@@ -218,7 +216,7 @@ function guideList(kb, p, appMap, facts, next) {
   const gateOf = (stageId) => kb.checks.find((c) => c.stage === stageId && c.kind === 'gate' && appMap.get(c.id).value !== 'not_applicable');
   const prepGate = gateOf('prepare');
   const finalGate = gateOf('validate');
-  const gateRecorded = (g) => g && p.gates[g.id] && ['go', 'go_with_exceptions'].includes(p.gates[g.id].decision);
+  const gateRecorded = (g) => g && p.gates[g.id] && APPROVED_DECISIONS.has(p.gates[g.id].decision);
   const firstOpenIn = (stageId) => { const list = orderedStageItems(kb, stageId).filter((x) => appMap.get(x.id).value !== 'not_applicable'); const c = list.find((x) => effectiveStatus(p, x.id) === 'not_started') || list.find((x) => OPEN_STATUSES.has(effectiveStatus(p, x.id))); return c ? `#/item/${c.id}` : `#/stage/${stageId}`; };
   const rows = [
     { t: 'Set up your project', d: p.meta.windowStart ? `Planned window ${p.meta.windowStart}${p.meta.windowEnd ? ` to ${p.meta.windowEnd}` : ''}` : 'Add your planned transition window', done: !!(p.meta.name && p.meta.operatorName && p.meta.windowStart), href: p.meta.windowStart ? '#/project' : '#/project/window', go: p.meta.windowStart ? 'Edit' : 'Add it' },
@@ -323,7 +321,7 @@ route('stage', ({ params }) => {
     const nm = nextMission(kb, p, appMap);
     const ms = missionsForStage(kb, p, stage.id, appMap);
     return h('div', { class: 'page' },
-      h('div', { class: 'view-switch-row' }, guidanceSwitch()),
+      gateWarningCallouts(gateWarnings(kb, p, { stage: stage.id })),
       h('div', { class: 'stage-head' },
         h('div', null,
           h('h1', { id: 'page-title', tabindex: '-1' }, stage.title),
@@ -336,7 +334,7 @@ route('stage', ({ params }) => {
       h('section', { class: 'card stage-missions' }, h('ul', { class: 'mission-list' }, ms.map((m) => missionRowView(m, nm)))));
   }
   return h('div', { class: 'page' },
-    h('div', { class: 'view-switch-row' }, guidanceSwitch()),
+    gateWarningCallouts(gateWarnings(kb, p, { stage: stage.id })),
     h('div', { class: 'stage-head' },
       h('div', null,
         h('h1', { id: 'page-title', tabindex: '-1' }, stage.title),

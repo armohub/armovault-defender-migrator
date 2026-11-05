@@ -4,7 +4,7 @@ import { h, icon, toast, field, copyText, savedPulse, externalLink, modal } from
 import { state, mutate } from '../app/store.js';
 import { render } from './shell.js';
 import { readyText, emailActions } from './templates.js';
-import { setPlanProfile, setOwnersWanted, setEnvironments, setPlannedPrimary, plannedPrimaryOf, plannedRole, setWorkstreamOwners, setWorkstreamPeople, cleanWorkstreamPeople, setApprovers, setCheckField, DEFENDER_STATES, ENV_KINDS, workstreamKey, knownPeople, addAudit, setHelper, MAX_HELPER_SUBJECTS, addPerson, peopleWithRoles, setAnswer, setPlanDepth, connectionState, syncConnectionAnswer, tenantConnected } from '../core/model.js';
+import { setPlanProfile, setOwnersWanted, setEnvironments, setPlannedPrimary, plannedPrimaryOf, plannedRole, setWorkstreamOwners, setWorkstreamPeople, cleanWorkstreamPeople, setApprovers, setCheckField, DEFENDER_STATES, ENV_KINDS, workstreamKey, knownPeople, addAudit, setHelper, MAX_HELPER_SUBJECTS, addPerson, peopleWithRoles, setAnswer, setPlanDepth, setShowExtras, connectionState, syncConnectionAnswer, tenantConnected } from '../core/model.js';
 import { applicabilityMap } from '../core/applicability.js';
 import { DEPTHS, TOPICS, tierOf, topicPreset, planOf, planSummary } from '../core/depth.js';
 import { evaluateHelper, decisionDraft } from '../core/decision-helper.js';
@@ -78,16 +78,16 @@ const TOPIC_HINT = {
   verification: 'the checks after the change and in Validate, beyond the must-do ones',
 };
 // The choices, used in setup (a draft) and in Project setup (the project). onDepth(id), onTopic(id, on).
-export function planChoices({ depth, topics, onDepth, onTopic, name = 'plan-depth' }) {
+export function planChoices({ depth, topics, onDepth, onTopic, name = 'plan-depth', legend = 'How much should the plan cover?' }) {
   const kb = state.kb;
   const upTo = (keeps) => kb.checks.filter((c) => keeps.includes(tierOf(c))).length;
   const desc = {
-    essentials: `Only the must-do steps: up to ${upTo(['must'])}. For a simple environment or a tight timeline.`,
-    recommended: `Must-do and recommended steps: up to ${upTo(['must', 'recommended'])}, plus the good-practice extras, which you can hide.`,
-    thorough: `Every step: up to ${kb.checks.length}, the useful ones included.`,
+    essentials: `Only the must-do steps: up to ${upTo(['must'])} of the ${kb.checks.length} steps. For a simple environment or a tight timeline.`,
+    recommended: `Must-do and recommended steps: up to ${upTo(['must', 'recommended'])} of the ${kb.checks.length} steps, plus the good-practice extras, which you can hide.`,
+    thorough: `Every step: up to all ${kb.checks.length}, the useful ones included.`,
   };
   return h('div', { class: 'stack plan-choices' },
-    h('fieldset', { class: 'choices' }, h('legend', { class: 'small muted' }, 'How thorough should your plan be?'),
+    h('fieldset', { class: 'choices' }, h('legend', { class: 'small muted' }, legend),
       DEPTHS.map((d) => h('label', { class: ['choice', depth === d.id && 'selected'] },
         h('input', { type: 'radio', name, value: d.id, checked: depth === d.id, 'data-focus-key': `${name}-${d.id}`, onchange: () => onDepth(d.id) }),
         h('div', null, h('strong', null, d.id === 'recommended' ? 'Recommended (default)' : d.label), h('p', { class: 'small' }, desc[d.id]))))),
@@ -112,7 +112,9 @@ export function planTool() {
   };
   return h('div', { class: 'tool' },
     h('p', { class: 'small' }, planSummary(p, count().out)),
-    planChoices({ depth, topics, name: 'proj-depth', onDepth: (d) => apply(d, topicPreset(d)), onTopic: (id, on) => apply(depth, { ...topics, [id]: on }) }));
+    planChoices({ depth, topics, name: 'proj-depth', onDepth: (d) => apply(d, topicPreset(d)), onTopic: (id, on) => apply(depth, { ...topics, [id]: on }) }),
+    h('label', { class: 'check-line' }, h('input', { type: 'checkbox', checked: p.meta.showExtras !== false, 'data-focus-key': 'proj-show-extras', onchange: (e) => mutate((pr) => setShowExtras(pr, e.target.checked)) }), ' Show the good-practice extras in missions (not needed for the move, never counted)'),
+    h('p', { class: 'small muted' }, 'This only shows or hides the extras. To leave out the Recommended steps, choose Essentials above.'));
 }
 
 // ───────── Workspace inventory ─────────

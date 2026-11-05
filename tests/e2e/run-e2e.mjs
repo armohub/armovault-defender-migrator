@@ -757,7 +757,7 @@ await step('Simplified: six questions, missions with progress, a mission questio
   await pg.getByText('Type them in myself', { exact: true }).click();
   await btn(pg, 'Continue').click();
   await btn(pg, 'Continue').click();
-  await pg.locator('label.choice.selected', { hasText: 'Simplified (recommended)' }).waitFor();
+  await pg.locator('label.choice.selected', { hasText: 'Simplified (suggested)' }).waitFor();
   // This step covers missions in full, so it keeps every step.
   await pg.locator('[data-focus-key="wiz-depth-thorough"]').check();
   await pg.getByLabel(/I understand this assistant gives guidance only/).check();
@@ -833,10 +833,13 @@ await step('Simplified: six questions, missions with progress, a mission questio
   // Simplified stage pages list missions; Detailed shows the steps with a bar per workstream.
   await go(pg, '#/stage/prepare');
   assert.ok((await pg.locator('.mission-row').count()) >= 11, 'the stage page lists its missions');
-  await pg.locator('[data-focus-key="guidance-detailed"]').click();
-  await pg.waitForTimeout(200);
+  assert.equal(await pg.locator('.guidance-switch').count(), 0, 'the view switch is in Project setup only');
+  await go(pg, '#/project');
+  await pg.locator('#sec-plan [data-focus-key="guidance-detailed"]').click();
+  await go(pg, '#/stage/prepare');
   assert.ok((await pg.locator('.ws-bar').count()) >= 11, 'a progress bar per workstream');
-  await pg.locator('[data-focus-key="guidance-simple"]').click();
+  await go(pg, '#/project');
+  await pg.locator('#sec-plan [data-focus-key="guidance-simple"]').click();
   // Any answer can be reopened from "Your answers", including questions asked in missions.
   await go(pg, '#/answers');
   await pg.locator('li, tr, .answer-row', { hasText: 'Do you use playbooks?' }).getByRole('link', { name: 'Open' }).first().click();
@@ -885,6 +888,9 @@ await step('Setup: import the inventory, choose the workspaces in scope, and the
     fs.writeFileSync(f, JSON.stringify({ ...sample, workspace: { ...sample.workspace, alias, region } }));
     return f;
   });
+  const list = path.join(work, 'workspaces.json');
+  fs.writeFileSync(list, JSON.stringify([{ subscriptionId: 'sub-e2e-1', resourceGroupName: 'rg-soc-weu', workspaceName: 'law-soc-weu', alias: 'law-soc-weu', region: 'westeurope' }]));
+  files.push(list);
   const c6 = await chromium.launch({ channel, headless });
   const ctx6 = await c6.newContext({ viewport: { width: 1440, height: 1000 } });
   ctx6.on('request', (r) => { const u = r.url(); if (/^(https?|wss?):/i.test(u)) network.push(u); });
@@ -902,6 +908,8 @@ await step('Setup: import the inventory, choose the workspaces in scope, and the
   assert.equal(await pg.locator('pre.code', { hasText: '-Discover' }).count(), 0, 'no parameter needed to find every workspace');
   await chooseFile(pg, () => btn(pg, 'Choose the inventory files').click(), files);
   await pg.getByRole('heading', { name: 'Found 3 workspaces. Which are in scope?' }).waitFor();
+  await pg.locator('.import-ws', { hasText: 'rg-soc-weu in sub-e2e-1' }).waitFor();
+  assert.equal(await pg.locator('.callout', { hasText: 'Some files were not imported' }).count(), 0, 'workspaces.json is read as a list, not refused');
   assert.equal(await pg.locator('.import-ws').nth(2).locator('select').inputValue(), 'test', 'a lab workspace is proposed as test');
   await pg.locator('[data-focus-key="imp-scope-2"]').uncheck();
   await pg.getByRole('heading', { name: 'Answers the import fills in for you' }).waitFor();
@@ -933,6 +941,15 @@ await step('Setup: import the inventory, choose the workspaces in scope, and the
   assert.equal(await pg.locator('#sec-environments').getByText('law-lab').count(), 0, 'the unticked workspace is left out');
   await go(pg, '#/item/PREP-DET-01');
   assert.ok(await pg.getByText(/Inventory file law-soc-weu/).count() > 0, 'each imported file is kept as evidence');
+  await go(pg, '#/project/environments');
+  assert.ok(await pg.locator('#sec-environments input').evaluateAll((els) => els.some((e) => e.value === 'rg-soc-weu')), 'the resource group came from workspaces.json');
+  assert.ok(await pg.locator('#sec-environments input').evaluateAll((els) => els.some((e) => e.value === 'sub-e2e-1')), 'and the subscription');
+  // In a mission row, what the script found unfolds under its proof.
+  await go(pg, '#/mission/prepare/detections');
+  const head = pg.locator('[data-focus-key="crow-PREP-DET-01"]');
+  if ((await head.getAttribute('aria-expanded')) !== 'true') await head.click();
+  await pg.locator('#crow-PREP-DET-01 .crow-found summary', { hasText: 'Show what the script found' }).first().click();
+  await pg.locator('#crow-PREP-DET-01 .crow-found-text').first().waitFor();
   await c6.close();
 });
 
@@ -1015,6 +1032,18 @@ await step('Connection check: a secondary needs a primary, all connected offers 
   await pg.getByText('Nothing to do here: your answers set these checks aside.').waitFor();
   await go(pg, '#/item/PREP-ACC-01');
   await pg.getByText('already connected', { exact: false }).first().waitFor();
+  // The demo's Stage 1 gate is deferred: Transition says so, and still lets you look ahead.
+  await go(pg, '#/mission/transition/post-change');
+  await pg.locator('.gate-warnings').getByText('The Stage 1 gate decision is deferred.').waitFor();
+  // Recording the change as complete celebrates the move, with the makers and the community.
+  await go(pg, '#/item/TRN-17');
+  assert.deepEqual(await pg.locator('select[data-focus-key="gate-dec-TRN-17"] option').allTextContents(), ['Choose the outcome', 'Complete', 'Complete with documented exceptions', 'Rolled back']);
+  await pg.locator('select[data-focus-key="gate-dec-TRN-17"]').selectOption('complete');
+  await pg.locator('[data-focus-key="gate-by-TRN-17"]').fill('Jordan Example');
+  await pg.locator('#do-it-here').getByRole('button', { name: 'Record the outcome' }).click();
+  await pg.locator('dialog.celebrate.grand').getByText('You are in the Defender portal!').waitFor();
+  assert.equal(await pg.locator('dialog.celebrate.grand a[href="https://www.linkedin.com/company/armohub"]').count(), 1, 'the community is linked');
+  await pg.locator('dialog.celebrate.grand').getByRole('button', { name: 'Stay here' }).click();
   await c7.close();
 });
 
@@ -1057,6 +1086,9 @@ await step('Plan depth: how thorough, with topics; questions most important firs
   await pg.getByText(/Your plan now has \d+ steps? \(\d+ fewer\)/).waitFor();
   await go(pg, '#/item/PREP-CON-05');
   await pg.locator('.item-chips').getByText('Left out by your plan').waitFor();
+  await go(pg, '#/report/prepare');
+  await pg.getByRole('heading', { name: 'Questions not asked because of your plan' }).waitFor();
+  await pg.getByText(/Your plan \(Essentials\) leaves out every step these questions decide/).waitFor();
   await go(pg, '#/project');
   await pg.locator('[data-focus-key="proj-depth-topic-backups"]').check();
   await go(pg, '#/item/PREP-CON-05');

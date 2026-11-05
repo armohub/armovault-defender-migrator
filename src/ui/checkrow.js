@@ -30,9 +30,12 @@ function proofList(c, evidence) {
         getEvidenceBlob(e.id).then((b) => { if (b && img.isConnected) img.src = trackUrl(b); });
         thumb = img;
       }
-      return h('li', null, thumb,
+      // A finding from the inventory script: the list itself, folded under its title.
+      const found = e.origin === 'import' && e.kind === 'note' && e.text ? h('details', { class: 'disclose crow-found' }, h('summary', null, icon('chevron', 'icon-xs'), 'Show what the script found'), h('pre', { class: 'crow-found-text' }, e.text.split('\n\n').slice(1).join('\n\n') || e.text)) : null;
+      return h('li', { class: found ? 'with-found' : null }, thumb,
         h('span', { class: 'crow-proof-text' }, h('span', null, e.title || e.fileName || 'Proof'), h('span', { class: 'small muted' }, `${e.origin === 'import' ? 'Imported' : 'Added'} ${formatDate(e.createdAt, true)}${e.createdBy ? `, ${e.createdBy}` : ''}`)),
-        h('button', { type: 'button', class: 'btn-icon', 'aria-label': `Remove ${e.title || e.fileName || 'this proof'}`, onclick: () => removeEvidenceFlow(e) }, icon('trash', 'icon-sm')));
+        h('button', { type: 'button', class: 'btn-icon', 'aria-label': `Remove ${e.title || e.fileName || 'this proof'}`, onclick: () => removeEvidenceFlow(e) }, icon('trash', 'icon-sm')),
+        found);
     })));
 }
 
@@ -47,6 +50,14 @@ function howTo(c, ctx) {
       where.length ? h('div', null, h('h5', null, 'Where'), h('ul', { class: 'where' }, where.map((w) => h('li', null, h('span', { class: 'portal' }, w.portal), renderPath(w.path))))) : null,
       steps.length ? h('div', null, h('h5', null, 'Steps'), renderSteps(steps, ctx)) : null,
       c.expected ? h('div', null, h('h5', null, 'What you should see'), h('p', null, rich(c.expected, ctx))) : null));
+}
+
+// A check with ready-to-run queries says so, and where they are: the full step (Details) shows them with their
+// purpose, cost and caveats.
+function queriesHint(c) {
+  const names = (c.snippets || []).map((id) => state.kb.snippets[id]).filter(Boolean).map((sn) => sn.title);
+  if (!names.length) return null;
+  return h('p', { class: 'small crow-queries' }, icon('search', 'icon-xs'), ` ${names.length === 1 ? 'A ready query is' : `${names.length} ready queries are`} in the full step: ${names.join('; ')}. `, h('a', { href: `#/item/${c.id}` }, 'Open them in Details'), '.');
 }
 
 const ICON = { not_started: 'circle', in_progress: 'half', passed: 'check', not_verified: 'question', failed: 'x', blocked: 'block', needs_review: 'alert', not_applicable: 'minus' };
@@ -78,6 +89,7 @@ export function checkRow(row, { open, onToggle, onDone, ctx }) {
     h('h4', null, 'Do this'),
     h('ul', { class: 'bullets' }, c.short.do.map((d) => h('li', null, rich(d, ctx)))),
     howTo(c, ctx),
+    queriesHint(c),
     c.tool && TOOLS[c.tool] ? h('div', { class: 'crow-tool' }, TOOLS[c.tool](c, ctx)) : null,
     c.kind === 'gate' ? h('div', { class: 'crow-tool' }, gateForm(c)) : null,
     h('p', { class: 'crow-proofline' }, h('strong', null, 'Proof: '), c.short.proof, h('span', { class: 'muted' }, ' Paste a screenshot here with Ctrl+V, or drop a file.'),

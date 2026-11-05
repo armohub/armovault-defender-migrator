@@ -99,11 +99,13 @@ $script:errors = New-Object System.Collections.Generic.List[string]
 # Managed API names of ticketing connectors, as in their Logic Apps connector reference pages.
 $script:ticketingApis = @('service-now', 'jira')
 
-function Get-AllPages([string] $Path) {
+# -NotFoundIsEmpty: for features that may not be set up (workspace manager, hunts), HTTP 404 means "none", not a failure.
+function Get-AllPages([string] $Path, [switch] $NotFoundIsEmpty) {
   $items = @()
   $next = $Path
   while ($next) {
     $resp = Invoke-AzRestMethod -Path $next -Method GET
+    if ($NotFoundIsEmpty -and $resp.StatusCode -eq 404) { break }
     if ($resp.StatusCode -ne 200) {
       # Record only the resource type and status code - never the subscription, resource group or workspace path.
       $resourceType = ($Path.Split('?')[0]).Split('/')[-1]
@@ -242,7 +244,8 @@ function Invoke-WorkspaceInventory([string] $SubscriptionId, [string] $ResourceG
     foreach ($c in (Get-AllPages "$base/dataConnectors?api-version=$api")) {
       $cn = [string](Get-Prop $c @('name'))
       if (-not $cn -or $byName.Contains($cn)) { continue }
-      $byName[$cn] = [ordered]@{ kind = [string](Get-Prop $c @('kind')); name = $cn }
+      # The title is the name the portal shows on the Data connectors page, when the connector has one.
+      $byName[$cn] = [ordered]@{ kind = [string](Get-Prop $c @('kind')); name = $cn; title = [string](Get-Prop $c @('properties', 'connectorUiConfig', 'title')) }
     }
   }
   $connectors = @($byName.Values)
@@ -269,12 +272,14 @@ function Invoke-WorkspaceInventory([string] $SubscriptionId, [string] $ResourceG
   }
   $collected.settings = ($script:errors.Count -eq $n)
 
-  # Workspace manager (preview API).
+  # Workspace manager (preview API). Not set up (HTTP 404) means not used; members are read only when it is on.
   $n = $script:errors.Count
   $manager = [ordered]@{ enabled = $false; members = 0 }
-  foreach ($cfg in (Get-AllPages "$base/workspaceManagerConfigurations?api-version=2025-07-01-preview")) { if ([string](Get-Prop $cfg @('properties', 'mode')) -eq 'Enabled') { $manager.enabled = $true } }
-  $members = Get-AllPages "$base/workspaceManagerMembers?api-version=2025-07-01-preview"
-  $manager.members = @($members).Count
+  foreach ($cfg in (Get-AllPages "$base/workspaceManagerConfigurations?api-version=2025-07-01-preview" -NotFoundIsEmpty)) { if ([string](Get-Prop $cfg @('properties', 'mode')) -eq 'Enabled') { $manager.enabled = $true } }
+  if ($manager.enabled) {
+    $members = Get-AllPages "$base/workspaceManagerMembers?api-version=2025-07-01-preview" -NotFoundIsEmpty
+    $manager.members = @($members).Count
+  }
   $collected.workspaceManager = ($script:errors.Count -eq $n)
 
   # Repositories (content as code).
@@ -287,7 +292,7 @@ function Invoke-WorkspaceInventory([string] $SubscriptionId, [string] $ResourceG
   $bookmarks = Get-AllPages "$base/bookmarks?api-version=2025-09-01"
   $collected.bookmarks = ($script:errors.Count -eq $n)
   $n = $script:errors.Count
-  $hunts = Get-AllPages "$base/hunts?api-version=2025-07-01-preview"
+  $hunts = Get-AllPages "$base/hunts?api-version=2025-07-01-preview" -NotFoundIsEmpty
   $collected.hunts = ($script:errors.Count -eq $n)
 
   # Content installed from the content hub or a repository, from the Sentinel metadata.
@@ -363,7 +368,7 @@ function Invoke-WorkspaceInventory([string] $SubscriptionId, [string] $ResourceG
   $result | ConvertTo-Json -Depth 8 | Out-File -FilePath $OutFile -Encoding utf8
   Write-Host "Inventory written to $OutFile - $($rules.Count) analytics rules, $(@($automation).Count) automation rules, $(@($connectors).Count) connectors, $(@($watchlists).Count) watchlists, $($playbooks.Count) Sentinel playbooks."
   $missing = @($collected.Keys | Where-Object { -not $collected[$_] })
-  if ($script:errors.Count) { Write-Warning ("Some requests failed: " + ($script:errors -join '; ') + '. Not collected: ' + ($missing -join ', ') + '.') }
+  if ($script:errors.Count) { Write-Warning ("Some requests failed: " + ($script:errors -join '; ') + '.' + $(if ($missing.Count) { ' Not collected: ' + ($missing -join ', ') + '.' } else { '' })) }
   return $script:errors.Count
 }
 

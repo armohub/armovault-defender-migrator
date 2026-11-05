@@ -86,11 +86,11 @@ Usage
     title: 'Exact last record per table (expensive, so use a short window)', language: 'kql', status: 'composed', runIn: `${LA_ONLY} only. In advanced hunting, * also pulls in Defender tables.`, permissions: READER, readOnly: true,
     cost: 'High, because it scans every table. Microsoft advises avoiding wildcards when the table list is known. Keep the window to 1 to 7 days, or replace * with an explicit table list.',
     purpose: 'Confirms exactly when each table last received a record.', notDo: 'Does not cover functions. Its behaviour on the Basic, Auxiliary and lake tiers is not documented here.',
-    code: `union withsource = TableName *
+    code: `union withsource = SourceTable_ *
 | where TimeGenerated > ago(7d)
-| summarize LastRecord = max(TimeGenerated), Rows = count() by TableName
+| summarize LastRecord = max(TimeGenerated), Rows = count() by SourceTable_
 | order by LastRecord desc`,
-    expected: 'Columns TableName, LastRecord and Rows.', caveats: ['For large workspaces, prefer an explicit table list from the Usage query.'], sources: ['union', 'usage'],
+    expected: 'Columns SourceTable_, LastRecord and Rows.', caveats: ['For large workspaces, prefer an explicit table list from the Usage query.', 'The source column is called SourceTable_ because some tables already have a TableName column, which makes union fail with "column names TableName already exists". If a table has SourceTable_ too, rename it in both lines.'], sources: ['union', 'usage'],
   },
   K_ALERTS_BY_PRODUCT: {
     title: 'SecurityAlert volume by product and provider (last 90 days)', language: 'kql', status: 'composed', runIn: LA, permissions: READER, readOnly: true,

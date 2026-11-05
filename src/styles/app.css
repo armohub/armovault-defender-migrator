@@ -216,6 +216,11 @@ strong { font-weight: 640; }
 .q-imp.imp-optional { background: var(--neutral-soft); color: var(--neutral); }
 .mq-head .q-imp { flex: none; align-self: flex-start; }
 .plan-topics { border: 0; padding: 0; margin: 0; }
+/* Mission rows: the script's findings, folded, and the hint to the ready queries. */
+.crow-proofs li.with-found { flex-wrap: wrap; }
+.crow-found { flex-basis: 100%; margin: 4px 0 0 34px; }
+.crow-found-text { white-space: pre-wrap; font: inherit; font-size: .82rem; color: var(--text-2); max-height: 260px; overflow: auto; margin: 6px 0 0; padding: 8px 10px; background: var(--surface-2); border-radius: var(--radius-sm); }
+.crow-queries { color: var(--text-2); margin: 6px 0; }
 .item-chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .state-pill { font-size: .78rem; font-weight: 640; border: 1px solid currentColor; border-radius: 999px; padding: 1px 10px; white-space: nowrap; }
 .tone-bad { color: var(--bad); } .tone-caution { color: var(--caution); } .tone-accent { color: var(--accent-strong); } .tone-good { color: var(--good); } .tone-muted { color: var(--muted); }
@@ -1067,6 +1072,26 @@ select.owner-chip-input { width: 220px; }
 .celebrate.calm .celebrate-card, .celebrate.calm .celebrate-mark { animation: none; }
 @media (prefers-reduced-motion: reduce) { .celebrate-card, .celebrate-mark, .confetti { animation: none !important; } .confetti { display: none; } .rail-bar > span { transition: none; } }
 body[data-motion="reduced"] .confetti { display: none; }
+/* The finale: the move is done. */
+.celebrate.grand .celebrate-card { width: min(560px, 94vw); padding: 36px 32px 28px; }
+.celebrate.grand .celebrate-card h2 { font-size: 1.7rem; letter-spacing: -0.01em; }
+.celebrate.grand .celebrate-card > p { max-width: 46ch; }
+.celebrate.grand .celebrate-mark { width: 84px; height: 84px; box-shadow: 0 0 0 0 color-mix(in srgb, var(--good) 45%, transparent); animation: cel-mark 560ms 80ms var(--ease-out) both, finale-glow 2400ms 700ms ease-out 2; }
+.finale-extra { margin-top: 20px; }
+.finale-route { display: flex; align-items: center; gap: 10px; font-size: .78rem; font-weight: 600; color: var(--text-2); margin: 0 auto 18px; max-width: 420px; }
+.finale-stop { flex: none; padding: 4px 10px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); }
+.finale-stop.to { background: color-mix(in srgb, var(--good) 18%, var(--surface)); border-color: color-mix(in srgb, var(--good) 50%, var(--border)); color: var(--text); animation: finale-arrive 500ms 1500ms var(--ease-out) both; }
+.finale-line { position: relative; flex: 1; height: 4px; border-radius: 2px; background: var(--surface-3); overflow: visible; }
+.finale-fill { position: absolute; inset: 0; border-radius: 2px; background: linear-gradient(90deg, var(--accent), var(--good)); transform-origin: left; animation: grow 1300ms 300ms var(--ease-out) both; }
+.finale-dot { position: absolute; top: 50%; left: 0; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: var(--good); box-shadow: 0 0 0 4px color-mix(in srgb, var(--good) 25%, transparent); animation: finale-travel 1300ms 300ms var(--ease-out) both; }
+.finale-credits p { margin: 6px auto 0; font-size: .9rem; color: var(--text-2); }
+.finale-credits a { font-weight: 600; }
+@keyframes finale-travel { from { left: 0; } to { left: 100%; } }
+@keyframes finale-arrive { 0% { transform: scale(.9); } 60% { transform: scale(1.08); } 100% { transform: none; } }
+@keyframes finale-glow { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--good) 45%, transparent); } 100% { box-shadow: 0 0 0 26px transparent; } }
+.celebrate.calm .finale-fill, .celebrate.calm .finale-dot, .celebrate.calm .finale-stop.to, .celebrate.calm.grand .celebrate-mark { animation: none; }
+.celebrate.calm .finale-dot { left: 100%; }
+@media (prefers-reduced-motion: reduce) { .finale-fill, .finale-dot, .finale-stop.to, .celebrate.grand .celebrate-mark { animation: none !important; } .finale-dot { left: 100%; } }
 
 /* ───── Folded email templates and example estimates ───── */
 .email-fold > summary { cursor: pointer; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface-2); }

@@ -1,5 +1,30 @@
 # Changelog
 
+## Unreleased: field feedback (5 November 2026)
+
+### Version
+- Knowledge base version `2026.11.05` (it was `2026.11.04`): the exact last-record query and the change outcome choices changed.
+
+### Inventory script and import
+- A workspace manager that is not set up (HTTP 404) counts as not used, not as a failed request; members are read only when it is on. The same goes for hunts. So the import can now answer the workspace manager question.
+- Data connectors carry the title the portal shows (`connectorUiConfig.title`), and the evidence lists them by that title, a product name for known kinds, or the resource name, with the kind in brackets. Before, it showed only kinds such as GenericUI and StaticUI.
+- workspaces.json, which the script writes next to the inventory files, fills in each workspace's subscription and resource group when you import it with them, in setup or later. Values you typed are kept.
+- A warning no longer ends with "Not collected: ." when only the subscription lookup failed.
+
+### Steps and missions
+- In a mission row, a finding from the script unfolds under its proof: **Show what the script found** lists, for example, the connectors.
+- A check with ready-to-run queries says so in its mission row, with their names and a link to Details.
+- The exact last record per table query uses `withsource = SourceTable_`: some tables already have a TableName column, which made union fail with "column names TableName already exists".
+- The change outcome (Record the execution outcome) offers Complete, Complete with documented exceptions, or Rolled back, instead of the go or no-go choices. Exceptions and rollbacks need a reason.
+- A Stage 1 gate that says No-go, or is deferred, shows a warning on the Test and Transition pages, missions and steps; a No-go on the day of the change warns the change and after it; a rolled-back change warns Validate. Nothing is blocked.
+- When the change is recorded as complete, a celebration marks the move: the route from the Azure portal to the Defender portal, congratulations, and links to the makers and the ArMoHub community on LinkedIn. Reduced motion shows it still.
+
+### Setup, Project setup and reports
+- Setup asks two numbered questions: how the plan should look (Simplified, suggested, or Detailed) and how much it should cover (Essentials, Recommended or Thorough, counted in steps out of 110).
+- Project setup has one **Your plan** section: how the plan looks, how much it covers, the topics, and the switch for the good-practice extras, which says it only shows or hides the extras. The view switch is gone from the overview and stage pages.
+- "Recommended extras" are called good-practice extras everywhere, so they are not mistaken for the Recommended steps.
+- Reports list answered questions apart from questions not answered yet, and from questions the plan never asked, with the reason.
+
 ## Unreleased: inventory and flow review (4 November 2026)
 
 ### Version
