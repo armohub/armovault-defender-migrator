@@ -332,6 +332,7 @@ export const PREPARE_2 = [
   // ───────────────────────── Analytics rules, correlation and incidents ─────────────────────────
   k({
     id: 'PREP-DET-01', stage: 'prepare', workstream: 'detections', order: 10, kind: 'task', criticality: 'critical',
+    tool: 'inventory',
     title: 'Inventory and export analytics rules',
     objective: 'Capture a complete, dated inventory and export of all analytics rules in each workspace.',
     why: [
@@ -363,8 +364,8 @@ export const PREPARE_2 = [
         text: 'Produce a summary of the transition-relevant settings, in one of two ways:',
         bullets: [
           'Run the analytics rule scan.',
-          'Or [[do:download-inventory-script|download the read-only inventory script]], run it, and [[do:import-inventory|import the inventory results]]. The import turns its output into evidence for this step and related steps.',
-          'For several workspaces, run the script once with a list of workspaces. It writes one file per workspace, and you can import all the files together.',
+          'Or run the read-only inventory script and import its results in [[do:open-tool|Do it here]] at the top of this page. The import turns its output into evidence for this step and related steps, and suggests answers you confirm.',
+          'With no parameters, the script finds every workspace you can read. It writes one file per workspace and workspaces.json: drop them all at once, in any order, and review them on one screen before anything changes.',
         ],
         tip: 'The **Import inventory results** button is also on the [[go:stage:prepare|Stage 1 page]].',
       },

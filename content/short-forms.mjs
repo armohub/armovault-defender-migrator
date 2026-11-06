@@ -557,7 +557,7 @@ export const SHORT = {
   'PREP-DET-01': {
     title: 'Export your analytics rules',
     do: [
-      'Export the rules from Microsoft Sentinel > Configuration > Analytics, one page at a time, or run the read-only inventory script and import its results.',
+      'Export the rules from Microsoft Sentinel > Configuration > Analytics, one page at a time, or run the read-only inventory script and import its results below.',
       'Store the exports in secure, versioned storage, and note where they are and the rule counts per kind.',
     ],
     proof: 'The scan CSV, or a note with the export location.',
@@ -565,7 +565,7 @@ export const SHORT = {
       title: 'Several workspaces?',
       points: [
         'Run the inventory script with no parameters: it finds every workspace you can read and writes one file per workspace, named after it. For a list you choose, use -WorkspacesFile.',
-        'Pick all the files at once in Import inventory results. Each workspace gets its own dialog, so you confirm what applies to each one, or skip it.',
+        'Drop all the files at once, workspaces.json included, in any order. You see every workspace and the answers it fills in on one screen, and untick what does not apply, before anything changes.',
         'The list holds resource names only: no passwords, secrets or tokens. A workspace that fails does not stop the others.',
       ],
     },

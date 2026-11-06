@@ -343,7 +343,7 @@ route('stage', ({ params }) => {
         h('p', { class: 'lede' }, stage.purpose),
         h('p', { class: 'small muted tnum', style: { marginTop: '8px' } }, `Stage ${stage.number}${stage.optional ? ', optional' : ''}. ${c.assessed} of ${c.inScope} steps checked.`)),
       h('div', { class: 'page-actions' },
-        stage.id === 'prepare' ? btn('Import inventory results', importInventoryFlow, { iconName: 'upload', small: true, title: 'Import the JSON files produced by the read-only inventory script, one per workspace' }) : null,
+        stage.id === 'prepare' ? btn('Import inventory results', importInventoryFlow, { iconName: 'upload', small: true, title: 'Choose every file the read-only inventory script wrote, workspaces.json included, and review them on one screen' }) : null,
         linkBtn(`Open the ${stage.deliverable.toLowerCase()}`, `#/report/${stage.reportKind}`, { iconName: 'reports', small: true }))),
     stage.id === 'test' ? testAvailabilityPanel(appMap) : null,
     conclusionPanel(a),

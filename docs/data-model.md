@@ -192,7 +192,7 @@ The assistant maps the file to imported evidence notes on specific steps, and to
 
 ## Workspace list (`workspaces.json`)
 
-Written by the inventory script when it finds your workspaces, or your own list for `-WorkspacesFile`: an array of { subscriptionId, resourceGroupName, workspaceName, alias, region }. The assistant reads it only to fill in each workspace's subscription and resource group (`parseWorkspaceList`, `applyWorkspaceList`); it is never kept as evidence.
+Written by the inventory script when it finds your workspaces, or your own list for `-WorkspacesFile`: an array of { subscriptionId, resourceGroupName, workspaceName, alias, region }. The assistant reads it only to fill in each workspace's subscription and resource group (`parseWorkspaceList`; `applyImport` in `src/core/inventory-import.js` and `applyWorkspaceList`); it is never kept as evidence. It can be chosen before, after or without the inventory files.
 
 ## Schema evolution
 

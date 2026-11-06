@@ -540,12 +540,16 @@ await step('Optional test stage can be skipped with a reason; the route shows it
   await page.locator('.route-stop.skipped').waitFor();
 });
 
-await step('Import read-only inventory results as labelled evidence and confirmed suggestions', async () => {
+await step('Import inventory results: the Stage 1 button opens the review on the step with the script, and nothing changes before Import', async () => {
   await go(page, '#/stage/prepare');
   await chooseFile(page, () => btn(page, 'Import inventory results').click(), path.resolve('samples/sample-inventory.json'));
-  await dlg(page).getByText('Suggested questionnaire answers').waitFor();
-  await dlg(page).getByLabel(/Fusion \(Advanced multistage attack detection\)/).check();
-  await clickDlg(page, 'Import selected');
+  const panel = page.locator('#inventory-import');
+  await panel.getByRole('heading', { name: 'Found 1 workspace. Which are in scope?' }).waitFor();
+  assert.match(page.url(), /#\/item\/PREP-DET-01$/, 'the review opens on the step that asks you to run the script');
+  await panel.locator('.inv-drop').waitFor();
+  assert.equal(await page.locator('dialog[open]').count(), 0, 'no dialog per file');
+  await panel.getByRole('button', { name: 'Import 1 workspace' }).click();
+  await panel.locator('.callout', { hasText: 'Imported.' }).waitFor();
   await go(page, '#/item/PREP-DET-03');
   await page.locator('.evidence-item strong', { hasText: 'Imported inventory: 1 Microsoft incident creation rule' }).waitFor();
   await page.locator('.evidence-item .small', { hasText: 'imported' }).first().waitFor();
@@ -851,13 +855,18 @@ await step('Simplified: six questions, missions with progress, a mission questio
   await c3.close();
 });
 
-await step('Several inventory files import together, one dialog per workspace, and Skip leaves a file out', async () => {
+await step('Inventory files and workspaces.json import together on one screen, in any order; an unticked workspace is left out; importing again adds nothing twice', async () => {
   const sample = JSON.parse(fs.readFileSync(path.resolve('samples/sample-inventory.json'), 'utf8'));
+  const dir = path.join(work, 'inventory-multi');
+  fs.mkdirSync(dir, { recursive: true });
   const files = ['E2E-WS-A', 'E2E-WS-B', 'E2E-WS-C'].map((alias) => {
-    const f = path.join(work, `inventory-${alias}.json`);
+    const f = path.join(dir, `inventory-${alias}.json`);
     fs.writeFileSync(f, JSON.stringify({ ...sample, workspace: { alias } }));
     return f;
   });
+  // Windows PowerShell 5.1 writes workspaces.json with a byte order mark, and the file dialog may hand it over first.
+  const list = path.join(dir, 'workspaces.json');
+  fs.writeFileSync(list, '\ufeff' + JSON.stringify(['A', 'B', 'C'].map((x) => ({ subscriptionId: `sub-e2e-${x}`, resourceGroupName: `rg-e2e-${x}`, workspaceName: `E2E-WS-${x}`, alias: `E2E-WS-${x}`, region: 'westeurope' }))));
   const c5 = await chromium.launch({ channel, headless });
   const ctx5 = await c5.newContext({ viewport: { width: 1400, height: 900 } });
   ctx5.on('request', (r) => { const u = r.url(); if (/^(https?|wss?):/i.test(u)) network.push(u); });
@@ -866,19 +875,29 @@ await step('Several inventory files import together, one dialog per workspace, a
   await pg.goto(`${appUrl}?demo=1`);
   await pg.getByText('You are exploring a demo.').waitFor();
   await go(pg, '#/evidence');
-  await chooseFile(pg, () => btn(pg, 'Import inventory results').click(), files);
-  await dlg(pg).getByRole('heading', { name: 'Import inventory results (1 of 3)' }).waitFor();
-  await dlg(pg).getByText('Workspace E2E-WS-A').waitFor();
-  await clickDlg(pg, 'Import selected');
-  await dlg(pg).getByRole('heading', { name: 'Import inventory results (2 of 3)' }).waitFor();
-  await clickDlg(pg, 'Skip this file');
-  await dlg(pg).getByRole('heading', { name: 'Import inventory results (3 of 3)' }).waitFor();
-  assert.equal(await dlg(pg).getByRole('button', { name: 'Skip this file' }).count(), 0, 'the last file has no Skip');
-  await clickDlg(pg, 'Import selected');
-  await pg.getByText('2 of 3 inventory files imported.').waitFor();
+  await chooseFile(pg, () => btn(pg, 'Import inventory results').click(), [list, ...files]);
+  const panel = pg.locator('#inventory-import');
+  await panel.getByRole('heading', { name: 'Found 3 workspaces. Which are in scope?' }).waitFor();
+  assert.equal(await panel.locator('.callout', { hasText: 'Some files were not imported' }).count(), 0, 'workspaces.json first is read as the list, not refused');
+  await panel.locator('.import-ws', { hasText: 'rg-e2e-A in sub-e2e-A' }).waitFor();
+  assert.equal(await pg.locator('dialog[open]').count(), 0, 'one screen, no dialog per file');
+  await pg.locator('[data-focus-key="imp-scope-1"]').uncheck();
+  await panel.getByRole('button', { name: 'Import 2 workspaces' }).click();
+  await panel.locator('.callout', { hasText: 'Imported.' }).waitFor();
+  assert.match(await panel.locator('.callout').first().innerText(), /2 workspaces imported: 2 added to your list/);
   assert.ok(await pg.getByText(/Inventory file E2E-WS-A/).count() > 0, 'the first file is attached');
-  assert.equal(await pg.getByText(/Inventory file E2E-WS-B/).count(), 0, 'the skipped file is not attached');
+  assert.equal(await pg.getByText(/Inventory file E2E-WS-B/).count(), 0, 'the unticked workspace is left out');
   assert.ok(await pg.getByText(/Inventory file E2E-WS-C/).count() > 0, 'the third file is attached');
+  // Again, from the drop area on the step itself: nothing is added twice.
+  const shownA = await pg.getByText(/Inventory file E2E-WS-A/).count();
+  await chooseFile(pg, () => panel.getByRole('button', { name: 'Choose the inventory files' }).click(), [files[2], files[0]]);
+  await panel.getByRole('button', { name: 'Import 2 workspaces' }).click();
+  await panel.locator('.callout', { hasText: 'Nothing new.' }).waitFor();
+  assert.equal(await pg.getByText(/Inventory file E2E-WS-A/).count(), shownA, 'the file is kept once');
+  await go(pg, '#/project/environments');
+  assert.ok(await pg.locator('#sec-environments input').evaluateAll((els) => els.some((e) => e.value === 'rg-e2e-A')), 'the resource group came from workspaces.json');
+  assert.ok(await pg.locator('#sec-environments input').evaluateAll((els) => els.some((e) => e.value === 'sub-e2e-C')), 'and the subscription');
+  assert.ok(!(await pg.locator('#sec-environments input').evaluateAll((els) => els.some((e) => e.value === 'E2E-WS-B'))), 'the unticked workspace is not added');
   await c5.close();
 });
 

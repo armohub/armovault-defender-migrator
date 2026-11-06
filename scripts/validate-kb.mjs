@@ -15,7 +15,7 @@ const NOT_TEXT = new Set(['decisions', 'topics', 'informs', 'tool', 'id', 'depen
 const BANNED_WORDS = /\b(seamless(?:ly)?|leverag(?:e|es|ed|ing)|utili[sz](?:e|es|ed|ing|ation)|delve|robust|streamlin(?:e|ed|es|ing)|cutting-edge|game-?changer|empower(?:s|ed|ing)?|holistic|synerg(?:y|ies)|paradigm|in order to)\b/i;
 const STEP_KEYS = new Set(['text', 'bullets', 'tip']);
 // Interactive tools a step can show under "Do it here" (src/ui/tools.js).
-const TOOLS = ['workspaces', 'connection', 'primary', 'owners', 'briefing', 'window', 'mdc', 'urbac', 'tenants', 'comms', 'change'];
+const TOOLS = ['workspaces', 'connection', 'primary', 'owners', 'briefing', 'window', 'mdc', 'urbac', 'tenants', 'comms', 'change', 'inventory'];
 // Tools that are decision helpers: they render the step's `helper` (src/core/decision-helper.js).
 const HELPER_TOOLS = ['mdc', 'urbac', 'tenants'];
 const HELPER_ID = /^[a-z][a-z0-9_-]{0,39}$/;

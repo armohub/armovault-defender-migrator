@@ -1,12 +1,14 @@
 // Step flows shared by the step page and the mission rows: the "do it here" actions, setting a status
 // (with the evidence rules) and recording that no evidence is needed.
-import { h, toast, modal, field, saveBlob, reducedMotion, savedPulse } from './dom.js';
+import { h, toast, modal, field, reducedMotion, savedPulse } from './dom.js';
 import { state, mutate } from '../app/store.js';
 import { statusById, setCheckStatus, setEvidenceWaiver } from '../core/model.js';
 import { attachFiles, addNoteEvidence, addLinkEvidence } from './actions.js';
 import { editRegisterItem, CONTROL_FORM } from './views/records.js';
-import { importInventoryFlow } from './inventory.js';
+import { importInventoryFlow, downloadInventoryScript } from './inventory.js';
 import { saveSnapshotFlow } from './views/reports.js';
+
+export { downloadInventoryScript };
 
 // Moves focus to a field of "Your record" and briefly highlights it.
 export function focusRecord(key) {
@@ -19,12 +21,6 @@ export function focusRecord(key) {
   void box.offsetWidth;
   box.classList.add('flash');
   setTimeout(() => box.classList.remove('flash'), 1700);
-}
-
-export function downloadInventoryScript() {
-  const sn = state.kb.snippets.PS_INVENTORY_SCRIPT;
-  if (!sn) return;
-  saveBlob(new Blob([sn.code.split('\n').join('\r\n')], { type: 'text/plain' }), 'Get-ArMoSentinelInventory.ps1', { description: 'PowerShell script', accept: { 'text/plain': ['.ps1'] } });
 }
 
 export function actionsFor(c) {

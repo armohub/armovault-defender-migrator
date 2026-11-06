@@ -13,6 +13,7 @@ import { btn, callout, infoTip } from './components.js';
 import { planProfile, suggestedProfile, profileReasons } from '../core/planning.js';
 import { rich, renderList } from './rich.js';
 import { editRegisterItem } from './views/records.js';
+import { inventoryTool } from './inventory.js';
 
 const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
@@ -766,11 +767,11 @@ export function changeTool() { return h('div', { class: 'tool stack' }, readyTex
 export const TOOLS = {
   workspaces: () => workspaceTool(), connection: () => workspaceTool({ show: 'connection' }), primary: () => primaryTool(), owners: () => ownersTool(), briefing: () => briefingTool(), window: () => windowTool(),
   mdc: (c, ctx) => decisionHelperTool('mdc', c, ctx), urbac: (c, ctx) => decisionHelperTool('urbac', c, ctx), tenants: (c, ctx) => decisionHelperTool('tenants', c, ctx),
-  comms: () => commsTool(), change: () => changeTool(),
+  comms: () => commsTool(), change: () => changeTool(), inventory: () => inventoryTool(),
 };
 export const TOOL_TITLES = {
   workspaces: 'Your workspaces', connection: 'Connection state of your workspaces', primary: 'Choose the primary workspace', owners: 'Owners and approvers', briefing: 'Brief your stakeholders', window: 'Plan your window',
   mdc: 'Choose your connector approach', urbac: 'Decide on unified RBAC', tenants: 'Access model per tenant',
-  comms: 'Ready texts for your teams', change: 'Change request summary',
+  comms: 'Ready texts for your teams', change: 'Change request summary', inventory: 'Run the inventory script and import its results',
 };
 export { same };

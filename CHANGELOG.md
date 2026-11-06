@@ -22,6 +22,14 @@
 - Reports carry a masthead (the mark, the product name and "By ArMoHub · armohub.ch"), serif titles, mono labels, a gold rule under the cover and above the footer, and a footer line with armohub.ch and the ArMoHub LinkedIn page. The printed page footer names ArMoHub and armohub.ch.
 - The contrast test now also pins Signal figures, the primary button and champagne as large text, in both themes.
 
+### Inventory import on one screen
+- The step that asks you to run the script (Inventory and export analytics rules) now holds the whole import under **Do it here**: download the script, copy the command, then drop every file of the inventory folder there, or choose them. The same panel is in the Simplified mission row and in setup.
+- workspaces.json is read in any order, alone or with the inventory files. Before, inside a project, it filled in nothing when it was read before the inventory files, or when the workspaces were not in your list yet, and said "no workspace in your list was missing a subscription or resource group".
+- One review replaces the dialog per file: every workspace with its subscription and resource group, "In scope", the name and the type, whether it is new or already in your project, the workspaces workspaces.json lists without a file, and the answers the import fills in for all the workspaces in scope (Yes and No, as in setup). An answer you typed that differs is shown and left unticked; one that already matches is not offered again.
+- After **Import**, the panel says what changed, with links: the workspaces added or filled in (Project setup), the answers filled in (Your answers), the steps that got evidence, and how many steps your plan has now.
+- New workspaces are added with their subscription, resource group and region; for workspaces you have, only empty values are filled in. Importing the same files again adds no second note, file or workspace, and says "Nothing new".
+- **Import inventory results** on Stage 1 and on the Evidence page opens the same review on that step. The import logic is in `src/core/inventory-import.js`, shared by setup and the project, with unit tests in `tests/unit/inventory-import.test.mjs`.
+
 ## Unreleased: field feedback (5 November 2026)
 
 ### Version

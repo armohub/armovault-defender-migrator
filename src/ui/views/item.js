@@ -13,7 +13,6 @@ import { celebrateMigration, celebrateSignOff } from '../finale.js';
 import { formatDate, bytesLabel } from '../../core/util.js';
 import { extensionFor } from '../../core/files.js';
 import { editRegisterItem } from './records.js';
-import { importInventoryFlow } from '../inventory.js';
 import { revokeObjectUrls, trackUrl, orderedStageItems } from './work.js';
 import { rich, plain as plainText, renderSteps, renderList, renderPath } from '../rich.js';
 import { TOOLS, TOOL_TITLES, peopleList, personPicker } from '../tools.js';
