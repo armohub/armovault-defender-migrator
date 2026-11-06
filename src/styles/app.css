@@ -1133,6 +1133,7 @@ body[data-motion="reduced"] .confetti { display: none; }
 .finale-dot { position: absolute; top: 50%; left: 0; width: 12px; height: 12px; margin: -6px 0 0 -6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 25%, transparent); animation: finale-travel 1300ms 300ms var(--ease-out) both; }
 .finale-credits p { margin: 6px auto 0; font-size: .9rem; color: var(--text-2); }
 .finale-credits a { font-weight: 600; }
+.celebrate-card .finale-keep { margin: 16px auto 0; max-width: 46ch; font-size: .9rem; }
 @keyframes finale-travel { from { left: 0; } to { left: 100%; } }
 @keyframes finale-arrive { 0% { transform: scale(.9); } 60% { transform: scale(1.08); } 100% { transform: none; } }
 @keyframes finale-glow { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--good) 45%, transparent); } 100% { box-shadow: 0 0 0 26px transparent; } }

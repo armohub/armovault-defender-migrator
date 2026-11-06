@@ -22,6 +22,13 @@
 - Reports carry a masthead (the mark, the product name and "By ArMoHub · armohub.ch"), serif titles, mono labels, a gold rule under the cover and above the footer, and a footer line with armohub.ch and the ArMoHub LinkedIn page. The printed page footer names ArMoHub and armohub.ch.
 - The contrast test now also pins Signal figures, the primary button and champagne as large text, in both themes.
 
+### The finale after the sign-off
+- The big celebration ("You are in the Defender portal!", the route from the Azure portal to the Defender portal, the makers and the ArMoHub community) now comes when the move is signed off, the last step, and leads to the final report. Before, it came when the change was recorded as complete, a stage earlier, and the sign-off showed a smaller card.
+- In Simplified mode, signing off in the last mission opened "The move is signed off" with "Mission complete" on top of it, so the finale was never seen. A celebration now never opens on top of another: the sign-off shows the finale alone.
+- Finishing the last mission later, with the move signed off, also shows the finale.
+- Recording the change as complete is now a milestone: "The change is complete", with one stage left, and **Next: validate everything**.
+- The rules are in `celebrationFor` and `moveSignedOff` (`src/core/model.js`) and `holdsSignOff` (`src/core/missions.js`), with unit tests in `tests/unit/finale.test.mjs`.
+
 ### Inventory import on one screen
 - The step that asks you to run the script (Inventory and export analytics rules) now holds the whole import under **Do it here**: download the script, copy the command, then drop every file of the inventory folder there, or choose them. The same panel is in the Simplified mission row and in setup.
 - workspaces.json is read in any order, alone or with the inventory files. Before, inside a project, it filled in nothing when it was read before the inventory files, or when the workspaces were not in your list yet, and said "no workspace in your list was missing a subscription or resource group".

@@ -1,17 +1,17 @@
 // A mission: one workstream as a short checklist. Same records as the step pages; Details opens the full step.
 // Beside it, the journey rail shows how far you are across every mission, with a milestone per stage.
-import { h, icon, celebrate } from '../dom.js';
+import { h, icon, celebrate, celebrating } from '../dom.js';
 import { state, mutate } from '../../app/store.js';
 import { route, render, go, nudgeSave } from '../shell.js';
 import { applicabilityMap } from '../../core/applicability.js';
 import { effectiveStatus } from '../../core/readiness.js';
-import { missionOf, nextMission, firstOpenRow, journey, DONE_STATUSES } from '../../core/missions.js';
-import { setWorkstreamOwners, setShowExtras, workstreamKey, gateWarnings } from '../../core/model.js';
+import { missionOf, nextMission, firstOpenRow, journey, holdsSignOff, DONE_STATUSES } from '../../core/missions.js';
+import { setWorkstreamOwners, setShowExtras, workstreamKey, gateWarnings, moveSignedOff } from '../../core/model.js';
 import { btn, linkBtn, emptyState, infoTip, gateWarningCallouts } from '../components.js';
 import { actionsFor } from '../step-actions.js';
 import { changeAnswer } from './questionnaire.js';
 import { checkRow } from '../checkrow.js';
-import { celebrateMigration, migrationComplete } from '../finale.js';
+import { celebrateMigration } from '../finale.js';
 import { questionImportance, IMPORTANCE } from '../../core/depth.js';
 import { peopleList, personPicker } from '../tools.js';
 import { rich } from '../rich.js';
@@ -51,8 +51,10 @@ function missionQuestion(q, kb) {
 }
 
 async function celebrateMission(kb, m, j, next) {
-  // Checking everything after the change, with the change complete: that is the move done.
-  if (m.key === 'transition:post-change' && migrationComplete(state.project)) { celebrateMigration(); return; }
+  // The step that finished the mission already celebrates (the sign-off, the change outcome): one card, not two.
+  if (celebrating()) return;
+  // The last mission done, with the move signed off: that is the end of the route.
+  if (holdsSignOff(m) && moveSignedOff(state.project)) { celebrateMigration(); return; }
   const stage = j.stages.find((x) => x.stage.id === m.stage);
   const stageDone = stage && stage.complete;
   const nextHref = next ? `#/mission/${next.stage}/${next.workstream}` : '#/report/final';

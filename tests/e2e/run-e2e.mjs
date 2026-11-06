@@ -1014,7 +1014,7 @@ await step('Explainers: the Defender table review says first that nothing is los
   await c4.close();
 });
 
-await step('Connection check: a secondary needs a primary, all connected offers a checking focus, and Details stays in its mission', async () => {
+await step('Connection check: a secondary needs a primary, all connected offers a checking focus, and Details stays in its mission; the change complete is a milestone, the sign-off the finale', async () => {
   const c7 = await chromium.launch({ channel, headless });
   const ctx7 = await c7.newContext({ viewport: { width: 1440, height: 1000 } });
   ctx7.on('request', (r) => { const u = r.url(); if (/^(https?|wss?):/i.test(u)) network.push(u); });
@@ -1055,15 +1055,31 @@ await step('Connection check: a secondary needs a primary, all connected offers 
   // The demo's Stage 1 gate is deferred: Transition says so, and still lets you look ahead.
   await go(pg, '#/mission/transition/post-change');
   await pg.locator('.gate-warnings').getByText('The Stage 1 gate decision is deferred.').waitFor();
-  // Recording the change as complete celebrates the move, with the makers and the community.
+  // Recording the change as complete is a milestone: validation and the sign-off are still ahead.
   await go(pg, '#/item/TRN-17');
   assert.deepEqual(await pg.locator('select[data-focus-key="gate-dec-TRN-17"] option').allTextContents(), ['Choose the outcome', 'Complete', 'Complete with documented exceptions', 'Rolled back']);
   await pg.locator('select[data-focus-key="gate-dec-TRN-17"]').selectOption('complete');
   await pg.locator('[data-focus-key="gate-by-TRN-17"]').fill('Jordan Example');
   await pg.locator('#do-it-here').getByRole('button', { name: 'Record the outcome' }).click();
-  await pg.locator('dialog.celebrate.grand').getByText('You are in the Defender portal!').waitFor();
-  assert.equal(await pg.locator('dialog.celebrate.grand a[href="https://www.linkedin.com/company/armohub"]').count(), 1, 'the community is linked');
-  await pg.locator('dialog.celebrate.grand').getByRole('button', { name: 'Stay here' }).click();
+  await dlg(pg).getByRole('heading', { name: 'The change is complete' }).waitFor();
+  assert.equal(await pg.locator('dialog.celebrate.grand').count(), 0, 'the finale waits for the sign-off');
+  await clickDlg(pg, 'Stay here');
+  // Signing off in the last mission is the finale: one card, not a "Mission complete" on top, and it leads to the final report.
+  await go(pg, '#/mission/validate/closure');
+  const signoff = pg.locator('#gate-VAL-18');
+  await signoff.locator('select').selectOption('signed_off');
+  await signoff.getByLabel('Signed off by').fill('Morgan Example');
+  await signoff.getByRole('button', { name: 'Record the sign-off' }).click();
+  const finale = pg.locator('dialog.celebrate.grand[open]');
+  await finale.getByRole('heading', { name: 'You are in the Defender portal!' }).waitFor();
+  await pg.waitForTimeout(400);
+  assert.equal(await dlg(pg).count(), 1, 'only the finale is open');
+  assert.match(await finale.innerText(), /the move is signed off/);
+  assert.match(await finale.locator('.finale-route').innerText(), /Azure portal[\s\S]*Defender portal/);
+  assert.equal(await finale.locator('a[href="https://www.linkedin.com/company/armohub"]').count(), 1, 'the community is linked');
+  await finale.getByRole('button', { name: 'Open the final report' }).click();
+  await pg.waitForTimeout(250);
+  assert.match(pg.url(), /#\/report\/final$/, 'the finale leads to the final report');
   await c7.close();
 });
 
@@ -1116,7 +1132,7 @@ await step('Plan depth: how thorough, with topics; questions most important firs
   await c8.close();
 });
 
-await step('Manual save: a reminder after ten minutes, snoozed; sign-off choices, the celebration, and the branded final report', async () => {
+await step('Manual save: a reminder after ten minutes, snoozed; sign-off choices, the finale, and the branded final report', async () => {
   const c9 = await chromium.launch({ channel, headless });
   const ctx9 = await c9.newContext({ viewport: { width: 1440, height: 1000 } });
   ctx9.on('request', (r) => { const u = r.url(); if (/^(https?|wss?):/i.test(u)) network.push(u); });
@@ -1156,8 +1172,11 @@ await step('Manual save: a reminder after ten minutes, snoozed; sign-off choices
   await form.locator('select').selectOption('signed_off');
   await form.getByLabel('Signed off by').fill('Morgan Example');
   await form.getByRole('button', { name: 'Record the sign-off' }).click();
-  await dlg(pg).getByRole('heading', { name: 'The move is signed off' }).waitFor();
-  await clickDlg(pg, 'Open the final report');
+  // The sign-off, the last step, is the finale: then the final report.
+  const finale = pg.locator('dialog.celebrate.grand[open]');
+  await finale.getByRole('heading', { name: 'You are in the Defender portal!' }).waitFor();
+  assert.match(await finale.innerText(), /save the package now/, 'a real project is reminded to save');
+  await finale.getByRole('button', { name: 'Open the final report' }).click();
   // The report carries the ArMoHub masthead and footer.
   await pg.locator('.r-masthead .r-by', { hasText: 'By ArMoHub · armohub.ch' }).waitFor();
   assert.equal(await pg.locator('.r-footer-brand a[href="https://armohub.ch"]').count(), 1);

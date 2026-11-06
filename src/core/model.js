@@ -68,6 +68,15 @@ export const NEEDS_RATIONALE = new Set(['go_with_exceptions', 'no_go', 'complete
 export const APPROVED_DECISIONS = new Set(['go', 'go_with_exceptions', 'complete', 'complete_with_exceptions', 'signed_off', 'signed_off_with_risks']);
 export const decisionsFor = (check) => (check && check.decisions === 'outcome' ? OUTCOME_DECISIONS : check && check.decisions === 'signoff' ? SIGNOFF_DECISIONS : GATE_DECISIONS);
 export const decisionLabel = (id) => (ALL_DECISIONS.find((d) => d.id === id) || { label: id || 'Not recorded' }).label;
+// The sign-off (VAL-18) is the last step of the move: it gets the finale. The change being complete (TRN-17) is a
+// milestone on the way, with validation still ahead.
+const SIGNED_OFF = new Set(['signed_off', 'signed_off_with_risks']);
+export function celebrationFor(check, decision) {
+  if (check && check.decisions === 'signoff' && SIGNED_OFF.has(decision)) return 'finale';
+  if (check && check.decisions === 'outcome' && (decision === 'complete' || decision === 'complete_with_exceptions')) return 'milestone';
+  return null;
+}
+export const moveSignedOff = (p) => !!(p && p.gates && p.gates['VAL-18'] && SIGNED_OFF.has(p.gates['VAL-18'].decision));
 
 // Warnings on the stages after a gate that did not say go. They inform; nothing is blocked.
 export function gateWarnings(kb, project, { stage, workstream } = {}) {

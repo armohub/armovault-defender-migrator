@@ -44,6 +44,9 @@ export function missionOf(kb, project, stageId, workstreamId, appMap) {
   };
 }
 
+// The mission with the sign-off is the end of the route: finishing it with the move signed off is the finale.
+export const holdsSignOff = (m) => !!m && m.needed.some((r) => r.check.decisions === 'signoff');
+
 export function missionsForStage(kb, project, stageId, appMap) {
   return kb.workstreams.filter((w) => w.stage === stageId).map((w) => missionOf(kb, project, stageId, w.id, appMap));
 }

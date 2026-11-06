@@ -6,10 +6,10 @@ import { route, go, nudgeSave } from '../shell.js';
 import { applicabilityMap } from '../../core/applicability.js';
 import { effectiveStatus } from '../../core/readiness.js';
 import { missionContext, journey } from '../../core/missions.js';
-import { STATUSES, statusById, setCheckStatus, setCheckField, setApplicabilityOverride, recordGate, decisionsFor, decisionLabel, gateWarnings, setEvidenceWaiver, clearEvidenceWaiver, workstreamTeam } from '../../core/model.js';
+import { STATUSES, statusById, setCheckStatus, setCheckField, setApplicabilityOverride, recordGate, decisionsFor, decisionLabel, gateWarnings, setEvidenceWaiver, clearEvidenceWaiver, workstreamTeam, celebrationFor } from '../../core/model.js';
 import { statusPill, tierBadge, gateWarningCallouts, kindChip, applicabilityChip, provenanceChip, validationChip, callout, emptyState, sourceLine, btn, linkBtn, kv, stepExplainer } from '../components.js';
 import { attachFiles, addNoteEvidence, addLinkEvidence, removeEvidenceFlow } from '../actions.js';
-import { celebrateMigration, celebrateSignOff } from '../finale.js';
+import { celebrateMigration, celebrateChangeComplete } from '../finale.js';
 import { formatDate, bytesLabel } from '../../core/util.js';
 import { extensionFor } from '../../core/files.js';
 import { editRegisterItem } from './records.js';
@@ -338,7 +338,6 @@ export function gateForm(c) {
   if (!gateDrafts.has(c.id)) gateDrafts.set(c.id, { decision: g ? g.decision : '', decidedBy: '', decidedRole: '', rationale: '' });
   const draft = gateDrafts.get(c.id);
   const choices = decisionsFor(c);
-  const outcome = c.decisions === 'outcome';
   const L = GATE_WORDS[c.decisions || 'gate'];
   const sel = h('select', { 'data-focus-key': `gate-dec-${c.id}`, onchange: (e) => { draft.decision = e.target.value; } }, h('option', { value: '' }, L.choose), choices.map((d) => h('option', { value: d.id, selected: draft.decision === d.id }, d.label)));
   const by = h('input', { type: 'text', maxlength: '200', list: 'people-list', value: draft.decidedBy, placeholder: 'Name of the person who decided', 'data-focus-key': `gate-by-${c.id}`, oninput: (e) => { draft.decidedBy = e.target.value; } });
@@ -356,9 +355,11 @@ export function gateForm(c) {
       mutate((pr) => recordGate(pr, c.id, draft, { allowed: choices }));
       gateDrafts.delete(c.id);
       toast(L.done, 'good');
-      // The change is complete: the moment the move is done deserves a celebration.
-      if (outcome && (decided === 'complete' || decided === 'complete_with_exceptions')) celebrateMigration();
-      else if (c.decisions === 'signoff' && (decided === 'signed_off' || decided === 'signed_off_with_risks')) celebrateSignOff();
+      // The sign-off is the last step: the move is done, and the finale leads to the final report. The change
+      // being complete is a milestone on the way.
+      const moment = celebrationFor(c, decided);
+      if (moment === 'finale') celebrateMigration();
+      else if (moment === 'milestone') celebrateChangeComplete();
       else nudgeSave(L.done);
     }, { kind: 'primary', small: true }));
 }

@@ -353,9 +353,13 @@ export function savedPulse(text = 'Saved') {
   pulseTimer = setTimeout(() => pulseEl.classList.remove('show'), 1300);
 }
 
+export const celebrating = () => !!document.querySelector('dialog.celebrate[open]');
+
 // A short celebration when a mission or a whole stage is finished: a check that pops, a burst of confetti and
 // the way on. With reduced motion only the card appears. Resolves with the chosen action's value.
 export function celebrate({ title, text, milestone = false, actions = [], grand = false, extra = null }) {
+  // Never a second celebration on top of one that is open.
+  if (celebrating()) return Promise.resolve(undefined);
   return new Promise((resolve) => {
     const calm = reducedMotion();
     const titleId = `cel-${Math.random().toString(36).slice(2, 9)}`;
