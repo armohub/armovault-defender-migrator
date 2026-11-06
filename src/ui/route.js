@@ -1,6 +1,7 @@
 // The route: the journey from the Azure portal to the Defender portal drawn as one line with a stop
 // per stage and a "You are here" marker. Pure geometry (no layout reads), so it renders anywhere.
 import { h, setStyle } from './dom.js';
+import { routePosition } from '../core/readiness.js';
 
 const NS = 'http://www.w3.org/2000/svg';
 export function s(tag, attrs = {}, ...children) {
@@ -149,20 +150,14 @@ export function questionStrip({ sections, position }) {
 // Builds the route model from stage summaries (see the overview).
 export function routeModel(kb, stageInfo) {
   // stageInfo: [{ id, name, assessed, inScope, skipped, gateDone, href }]
-  let index = stageInfo.length;
-  let fraction = 1;
-  for (let i = 0; i < stageInfo.length; i += 1) {
-    const st = stageInfo[i];
-    if (st.skipped) continue;
-    const complete = st.inScope > 0 ? st.assessed >= st.inScope : true;
-    if (!complete || !st.gateDone) { index = i; fraction = st.inScope ? st.assessed / st.inScope : 0; break; }
-  }
+  const pos = routePosition(stageInfo);
+  const { index, fraction } = pos;
   const stages = stageInfo.map((st, i) => {
     let state = 'todo';
     if (st.skipped) state = 'skipped';
     else if (i < index) state = 'done';
     else if (i === index) state = 'current';
-    const meta = st.skipped ? 'skipped' : state === 'done' ? 'done' : st.meta || `${st.assessed} of ${st.inScope}`;
+    const meta = st.skipped ? 'skipped' : state === 'done' ? 'done' : i === index && pos.note ? pos.note : st.meta || `${st.assessed} of ${st.inScope}`;
     return { name: st.name, meta, href: st.href, state };
   });
   return { stages, marker: { index, fraction } };

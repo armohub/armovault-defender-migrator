@@ -2,7 +2,7 @@
 // Beside it, the journey rail shows how far you are across every mission, with a milestone per stage.
 import { h, icon, celebrate } from '../dom.js';
 import { state, mutate } from '../../app/store.js';
-import { route, render, go } from '../shell.js';
+import { route, render, go, nudgeSave } from '../shell.js';
 import { applicabilityMap } from '../../core/applicability.js';
 import { effectiveStatus } from '../../core/readiness.js';
 import { missionOf, nextMission, firstOpenRow, journey, DONE_STATUSES } from '../../core/missions.js';
@@ -66,6 +66,7 @@ async function celebrateMission(kb, m, j, next) {
     ],
   });
   if (choice === 'next') go(nextHref);
+  nudgeSave(`"${m.title}" is done.`);
 }
 
 route('mission', ({ params }) => {

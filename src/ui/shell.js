@@ -1,10 +1,11 @@
 // App shell: router, sidebar, top bar, banners and the render loop.
-import { h, icon, clear, toast, saveBlob, modal, initToasts, withLoader } from './dom.js';
+import { h, icon, clear, toast, saveBlob, modal, initToasts, withLoader, stickyToast } from './dom.js';
+import { saveReminderDue, unsavedMinutes, FIRST_REMINDER_MIN } from '../core/reminders.js';
 import { state, subscribe, subscribeStatus, exportPackage, markExported, autosaveEnabled, flushAutosave, hasUnprotectedChanges } from '../app/store.js';
 import { BRAND, APP_VERSION } from '../brand.js';
 import { applicabilityMap, upfrontQuestions } from '../core/applicability.js';
 import { summariseStage } from '../core/readiness.js';
-import { slugify, formatDate } from '../core/util.js';
+import { slugify, formatDate, nowIso } from '../core/util.js';
 import { STAGE_ICONS } from './components.js';
 import { brandMark } from './intro.js';
 
@@ -169,8 +170,38 @@ function saveStatusInner() {
     if (state.ui.saveState === 'error') return h('span', { class: 'save-status save-bad', title: state.ui.saveError }, icon('alert', 'icon-xs'), 'Browser save failed');
     return h('span', { class: 'save-status save-good', title: 'Autosaved in this browser\'s storage (IndexedDB). Not a file: save a project package for backup.' }, icon('check', 'icon-xs'), h('span', { class: 'long' }, `Saved in this browser${state.ui.lastBrowserSave ? ` at ${formatDate(state.ui.lastBrowserSave, true).slice(11)}` : ''}`));
   }
-  if (state.ui.unexported) return h('span', { class: 'save-status save-warn', title: 'Autosave is off. Changes exist only in this tab until you save a project package.' }, icon('alert', 'icon-xs'), h('span', null, 'Not saved yet'));
+  if (state.ui.unexported) {
+    const min = unsavedMinutes(state.ui.unsavedSince, nowIso());
+    return h('span', { class: ['save-status', min >= FIRST_REMINDER_MIN ? 'save-bad' : 'save-warn'], title: 'Autosave is off. Changes exist only in this tab until you save a project package.' }, icon('alert', 'icon-xs'), h('span', null, min >= 1 ? `Not saved for ${min} min` : 'Not saved yet'));
+  }
   return h('span', { class: 'save-status save-good' }, icon('check', 'icon-xs'), h('span', { class: 'long' }, state.ui.lastExport ? `Package saved at ${formatDate(state.ui.lastExport, true).slice(11)}` : 'No unsaved changes'));
+}
+
+// Autosave off: remind people to save. Checked every 30 seconds without redrawing the page, so typing is never
+// interrupted. The reminder stays until it is acted on; "later" snoozes it for fifteen minutes.
+let closeReminder = null;
+function checkSaveReminder() {
+  refreshSaveStatus();
+  const p = state.project;
+  if (closeReminder && !(p && state.ui.unexported)) { closeReminder(); closeReminder = null; }
+  if (closeReminder || !p) return;
+  const now = nowIso();
+  if (!saveReminderDue({ manual: !autosaveEnabled(), unexported: state.ui.unexported, demo: p.isDemo, unsavedSince: state.ui.unsavedSince, lastReminderAt: state.ui.lastReminderAt, now })) return;
+  state.ui.lastReminderAt = now;
+  const min = unsavedMinutes(state.ui.unsavedSince, now);
+  const done = () => { closeReminder = null; };
+  closeReminder = stickyToast(`Your work is not saved: ${min} minutes of changes exist only in this tab. Save a project package so nothing is lost.`, [
+    { label: 'Remind me in 15 minutes', kind: 'ghost', onClick: () => { state.ui.lastReminderAt = nowIso(); done(); } },
+    { label: 'Save package', kind: 'primary', onClick: () => { done(); savePackageFlow(); } },
+  ]);
+}
+export function startSaveReminders() { setInterval(checkSaveReminder, 30000); }
+
+// At a milestone (a decision, a finished mission), a good moment to save when autosave is off.
+export function nudgeSave(what) {
+  const p = state.project;
+  if (!p || p.isDemo || autosaveEnabled() || !state.ui.unexported) return;
+  toast(`${what} A good moment to save your project package.`, 'info', 9000);
 }
 
 export async function savePackageFlow() {

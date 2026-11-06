@@ -3,6 +3,12 @@
 // fields were filled in: critical items need verified evidence or an accepted, named exception.
 
 import { applicabilityMap } from './applicability.js';
+import { APPROVED_DECISIONS } from './model.js';
+import { REHEARSAL_OFF } from './depth.js';
+
+// The gate that closes each stage. When a named person approves it, the steps recorded as done without proof
+// count as reviewed and accepted: warnings, never verified.
+export const STAGE_GATES = { prepare: 'PREP-PLN-05', test: 'TEST-11', transition: 'TRN-17', validate: 'VAL-18' };
 
 export const STAGES_ORDER = ['prepare', 'test', 'transition', 'validate'];
 
@@ -22,6 +28,7 @@ export const CONCLUSION_LABELS = {
     undetermined: 'Test results incomplete',
     not_ready: 'Test found blocking issues',
     skipped: 'Test stage not available',
+    skippedByPlan: 'Not part of your plan',
   },
   transition: {
     ready: 'Transition executed as planned',
@@ -39,8 +46,8 @@ export const CONCLUSION_LABELS = {
 
 export const CONCLUSION_CRITERIA = [
   'Not ready / blocking: any in-scope critical or high item is Failed or Blocked without an accepted exception, or a critical open issue exists in the register.',
-  'Unable to determine: no blocking findings, but at least one in-scope critical or high item has not been assessed yet (Not started, In progress, Needs review, or applicability still uncertain), or a critical item is recorded only as a user assertion without evidence.',
-  'Ready with exceptions: every critical and high item is verified or covered by a named, accepted exception, but exceptions exist, or high items rely on user assertion, or medium/low items are open, failed or unverified.',
+  'Unable to determine: no blocking findings, but at least one in-scope critical or high item has not been assessed yet (Not started, In progress, Needs review, or applicability still uncertain), or a critical item is recorded only as a user assertion without evidence and the stage gate has not accepted it.',
+  'Ready with exceptions: every critical and high item is verified or covered by a named, accepted exception, but exceptions exist, or items recorded as done without proof were accepted at the stage gate by a named person, or high items rely on user assertion, or medium/low items are open, failed or unverified.',
   'Ready: every in-scope item is Passed with evidence or Not applicable with rationale, with no open blockers or exceptions.',
 ];
 
@@ -57,9 +64,13 @@ export function exceptionsByCheck(project) {
   return m;
 }
 
+// A gate step is done when its decision is recorded with an approving choice by a named person: the decision is its record.
 export function effectiveStatus(project, checkId) {
   const st = project.checks[checkId];
-  return st ? st.status : 'not_started';
+  const status = st ? st.status : 'not_started';
+  const g = project.gates && project.gates[checkId];
+  if (g && APPROVED_DECISIONS.has(g.decision) && UNASSESSED.has(status)) return 'passed';
+  return status;
 }
 
 export function evidenceCount(project, checkId) {
@@ -109,16 +120,20 @@ export function assessStage(kb, project, stageId, appMap = applicabilityMap(kb, 
   const open = [];
 
   if (stageId === 'test' && project.stages.test.availability === 'unavailable') {
+    const byPlan = project.stages.test.reason === REHEARSAL_OFF;
     return {
       stageId,
       level: 'skipped',
-      label: CONCLUSION_LABELS.test.skipped,
+      label: byPlan ? CONCLUSION_LABELS.test.skippedByPlan : CONCLUSION_LABELS.test.skipped,
       summary,
       reasons: { blocking, undetermined, exceptions, open: [] },
-      note: `No suitable test environment: ${project.stages.test.reason || 'no reason recorded'}. Production carries additional risk; see the compensating controls in Stage 2.`,
+      note: byPlan ? 'You chose not to include a test rehearsal in your plan. The change relies on the compensating controls in Stage 2.' : `No suitable test environment: ${project.stages.test.reason || 'no reason recorded'}. Production carries additional risk; see the compensating controls in Stage 2.`,
     };
   }
 
+  const gateId = STAGE_GATES[stageId];
+  const gate = gateId && project.gates[gateId] && APPROVED_DECISIONS.has(project.gates[gateId].decision) ? project.gates[gateId] : null;
+  const acceptedAtGate = gate ? `done without proof; reviewed and accepted at the stage gate by ${gate.decidedBy}${gate.decidedRole ? ` (${gate.decidedRole})` : ''} on ${String(gate.at || '').slice(0, 10)}` : '';
   for (const i of summary.inScope) {
     const c = i.check;
     const crit = c.criticality;
@@ -140,6 +155,7 @@ export function assessStage(kb, project, stageId, appMap = applicabilityMap(kb, 
     }
     if (i.status === 'not_verified') {
       if (accepted.length) exceptions.push({ id: c.id, text: `${label}: your word only, accepted by ${accepted.map((a) => a.acceptedBy).join(', ')}` });
+      else if (gate && (crit === 'critical' || crit === 'high')) exceptions.push({ id: c.id, text: `${label}: ${acceptedAtGate} (${crit})`, warning: true });
       else if (crit === 'critical') undetermined.push({ id: c.id, text: `${label}: recorded as done but not verified with evidence (critical)` });
       else if (crit === 'high') exceptions.push({ id: c.id, text: `${label}: your word only, no evidence (high)` });
       else open.push({ id: c.id, text: `${label}: your word only (${crit})` });
@@ -225,4 +241,20 @@ export function overallAssessment(kb, project, stageIds = STAGES_ORDER, appMap =
   for (const a of parts) if (rank[a.level] < rank[level]) level = a.level;
   if (!parts.length) level = 'undetermined';
   return { level, label: OVERALL_LABELS[level], stages: parts };
+}
+
+// Where the route marker stands. A stage holds it while it is incomplete, or while its gate has not approved, unless
+// a later stage is complete with an approved gate (that puts the earlier ones behind you). Returns the stage index
+// (stages.length when the journey is done), how far into that stage, and the gate note when a gate holds it.
+export function routePosition(stageInfo) {
+  const complete = (st) => (st.inScope > 0 ? st.assessed >= st.inScope : true);
+  let last = -1;
+  stageInfo.forEach((st, i) => { if (!st.skipped && complete(st) && st.gateDone) last = i; });
+  for (let i = 0; i < stageInfo.length; i += 1) {
+    const st = stageInfo[i];
+    if (st.skipped) continue;
+    if (!complete(st)) return { index: i, fraction: st.inScope ? st.assessed / st.inScope : 0, note: '' };
+    if (!st.gateDone && i > last) return { index: i, fraction: 1, note: st.gateNote || '' };
+  }
+  return { index: stageInfo.length, fraction: 1, note: '' };
 }

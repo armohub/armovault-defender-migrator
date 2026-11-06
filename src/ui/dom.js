@@ -236,6 +236,16 @@ export function initToasts() {
     document.body.appendChild(toastRegion);
   }
 }
+// A reminder that stays until you act on it. actions: [{ label, kind, onClick }]. Returns a function that closes it.
+export function stickyToast(message, actions = [], tone = 'caution') {
+  initToasts();
+  const t = h('div', { class: ['toast', 'toast-sticky', `toast-${tone}`], role: 'alert' });
+  const close = () => t.remove();
+  t.append(icon('alert'), h('span', null, message), h('span', { class: 'toast-actions' }, actions.map((a) => h('button', { type: 'button', class: ['btn', 'btn-sm', a.kind && `btn-${a.kind}`], onclick: () => { close(); if (a.onClick) a.onClick(); } }, a.label))));
+  toastRegion.appendChild(t);
+  return close;
+}
+
 export function toast(message, tone = 'info', timeout = 5000) {
   initToasts();
   const t = h('div', { class: ['toast', `toast-${tone}`] }, icon(tone === 'good' ? 'check' : tone === 'bad' ? 'alert' : 'info'), h('span', null, message));

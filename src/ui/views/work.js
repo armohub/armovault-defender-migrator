@@ -4,7 +4,7 @@ import { state, mutate } from '../../app/store.js';
 import { route, render, freshRoute, savePackageFlow } from '../shell.js';
 import { applicabilityMap, evaluateApplicability, questionIndex, upfrontQuestions } from '../../core/applicability.js';
 import { assessStage, summariseStage, dependencyStatus, CONCLUSION_CRITERIA, effectiveStatus } from '../../core/readiness.js';
-import { setTestAvailability, effectiveOwner, setGuidance, gateWarnings, APPROVED_DECISIONS } from '../../core/model.js';
+import { setTestAvailability, effectiveOwner, setGuidance, gateWarnings, APPROVED_DECISIONS, decisionLabel } from '../../core/model.js';
 import { missionsForStage, nextMission } from '../../core/missions.js';
 import { statusPill, tierBadge, gateWarningCallouts, kindChip, applicabilityChip, progressBar, conclusionBadge, callout, emptyState, btn, linkBtn, daysUntil, infoTip } from '../components.js';
 import { formatDate } from '../../core/util.js';
@@ -79,8 +79,10 @@ function stageFacts(kb, p, appMap) {
     const sum = summariseStage(kb, p, s.id, appMap);
     const gates = kb.checks.filter((c) => c.stage === s.id && c.kind === 'gate' && appMap.get(c.id).value !== 'not_applicable');
     const gateDone = gates.every((g) => p.gates[g.id] && APPROVED_DECISIONS.has(p.gates[g.id].decision));
+    const open = gates.find((g) => !(p.gates[g.id] && APPROVED_DECISIONS.has(p.gates[g.id].decision)));
+    const gateNote = open ? (p.gates[open.id] ? `Gate: ${decisionLabel(p.gates[open.id].decision)}` : 'Gate decision to record') : '';
     const skipped = s.id === 'test' && p.stages.test.availability === 'unavailable';
-    return { id: s.id, name: s.short, assessed: sum.counts.assessed, inScope: sum.counts.inScope, skipped, gateDone, href: `#/stage/${s.id}`, sum };
+    return { id: s.id, name: s.short, assessed: sum.counts.assessed, inScope: sum.counts.inScope, skipped, gateDone, gateNote, href: `#/stage/${s.id}`, sum };
   });
 }
 

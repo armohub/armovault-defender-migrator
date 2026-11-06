@@ -221,6 +221,9 @@ strong { font-weight: 640; }
 .crow-found { flex-basis: 100%; margin: 4px 0 0 34px; }
 .crow-found-text { white-space: pre-wrap; font: inherit; font-size: .82rem; color: var(--text-2); max-height: 260px; overflow: auto; margin: 6px 0 0; padding: 8px 10px; background: var(--surface-2); border-radius: var(--radius-sm); }
 .crow-queries { color: var(--text-2); margin: 6px 0; }
+/* A reminder that stays until it is acted on. */
+.toast-sticky { flex-wrap: wrap; max-width: 460px; }
+.toast-sticky .toast-actions { display: flex; gap: 8px; flex-basis: 100%; justify-content: flex-end; margin-top: 8px; }
 .item-chips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .state-pill { font-size: .78rem; font-weight: 640; border: 1px solid currentColor; border-radius: 999px; padding: 1px 10px; white-space: nowrap; }
 .tone-bad { color: var(--bad); } .tone-caution { color: var(--caution); } .tone-accent { color: var(--accent-strong); } .tone-good { color: var(--good); } .tone-muted { color: var(--muted); }

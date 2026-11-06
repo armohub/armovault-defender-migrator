@@ -2,14 +2,14 @@
 // Guidance text is rendered with rich(): links to other steps and pages, and buttons that act right here.
 import { h, icon, toast, modal, field, copyText, saveBlob, externalLink, reducedMotion, savedPulse } from '../dom.js';
 import { state, mutate, getEvidenceBlob } from '../../app/store.js';
-import { route, go } from '../shell.js';
+import { route, go, nudgeSave } from '../shell.js';
 import { applicabilityMap } from '../../core/applicability.js';
 import { effectiveStatus } from '../../core/readiness.js';
 import { missionContext, journey } from '../../core/missions.js';
 import { STATUSES, statusById, setCheckStatus, setCheckField, setApplicabilityOverride, recordGate, decisionsFor, decisionLabel, gateWarnings, setEvidenceWaiver, clearEvidenceWaiver, workstreamTeam } from '../../core/model.js';
 import { statusPill, tierBadge, gateWarningCallouts, kindChip, applicabilityChip, provenanceChip, validationChip, callout, emptyState, sourceLine, btn, linkBtn, kv, stepExplainer } from '../components.js';
 import { attachFiles, addNoteEvidence, addLinkEvidence, removeEvidenceFlow } from '../actions.js';
-import { celebrateMigration } from '../finale.js';
+import { celebrateMigration, celebrateSignOff } from '../finale.js';
 import { formatDate, bytesLabel } from '../../core/util.js';
 import { extensionFor } from '../../core/files.js';
 import { editRegisterItem } from './records.js';
@@ -134,7 +134,7 @@ function guidance(c, app, ctx) {
   const needs = [...c.roles, ...c.prerequisites];
   return h('div', null,
     c.tool && TOOLS[c.tool] ? h('section', { class: 'g-section' }, h('h2', null, icon('edit', 'icon-sm'), `Do it here: ${TOOL_TITLES[c.tool]}`), h('div', { class: 'g-panel do-here', id: c.kind === 'gate' ? 'do-it-here-tool' : 'do-it-here' }, TOOLS[c.tool](c, ctx))) : null,
-    c.kind === 'gate' ? h('section', { class: 'g-section' }, h('h2', null, icon('gate', 'icon-sm'), c.decisions === 'outcome' ? 'Do it here: record the outcome' : 'Do it here: record the decision'), h('div', { class: 'g-panel do-here', id: 'do-it-here' }, gateForm(c))) : null,
+    c.kind === 'gate' ? h('section', { class: 'g-section' }, h('h2', null, icon('gate', 'icon-sm'), GATE_WORDS[c.decisions || 'gate'].heading), h('div', { class: 'g-panel do-here', id: 'do-it-here' }, gateForm(c))) : null,
     applicabilitySection(c, app),
     section('Where', 'route',
       h('ul', { class: 'where' }, c.where.map((w) => h('li', null, h('span', { class: 'portal' }, w.portal), renderPath(w.path)))),
@@ -328,30 +328,39 @@ async function viewImage(ev) {
 
 const gateDrafts = new Map(); // keeps what the user typed across re-renders (for example after a validation error)
 
+const GATE_WORDS = {
+  gate: { choose: 'Choose a decision', field: 'Decision', by: 'Decided by', record: 'Record the decision', again: 'Record a new decision', done: 'Decision recorded.', heading: 'Do it here: record the decision' },
+  outcome: { choose: 'Choose the outcome', field: 'Outcome', by: 'Recorded by', record: 'Record the outcome', again: 'Record a new outcome', done: 'Outcome recorded.', heading: 'Do it here: record the outcome' },
+  signoff: { choose: 'Choose the sign-off', field: 'Sign-off', by: 'Signed off by', record: 'Record the sign-off', again: 'Record a new sign-off', done: 'Sign-off recorded.', heading: 'Do it here: sign off the move' },
+};
+
 export function gateForm(c) {
   const g = state.project.gates[c.id];
   if (!gateDrafts.has(c.id)) gateDrafts.set(c.id, { decision: g ? g.decision : '', decidedBy: '', decidedRole: '', rationale: '' });
   const draft = gateDrafts.get(c.id);
   const choices = decisionsFor(c);
   const outcome = c.decisions === 'outcome';
-  const sel = h('select', { 'data-focus-key': `gate-dec-${c.id}`, onchange: (e) => { draft.decision = e.target.value; } }, h('option', { value: '' }, outcome ? 'Choose the outcome' : 'Choose a decision'), choices.map((d) => h('option', { value: d.id, selected: draft.decision === d.id }, d.label)));
+  const L = GATE_WORDS[c.decisions || 'gate'];
+  const sel = h('select', { 'data-focus-key': `gate-dec-${c.id}`, onchange: (e) => { draft.decision = e.target.value; } }, h('option', { value: '' }, L.choose), choices.map((d) => h('option', { value: d.id, selected: draft.decision === d.id }, d.label)));
   const by = h('input', { type: 'text', maxlength: '200', list: 'people-list', value: draft.decidedBy, placeholder: 'Name of the person who decided', 'data-focus-key': `gate-by-${c.id}`, oninput: (e) => { draft.decidedBy = e.target.value; } });
   const role = h('input', { type: 'text', maxlength: '200', value: draft.decidedRole, placeholder: 'Their role', 'data-focus-key': `gate-role-${c.id}`, oninput: (e) => { draft.decidedRole = e.target.value; } });
   const rat = h('textarea', { rows: '3', maxlength: '20000', placeholder: 'Why, under which conditions, and which exceptions apply', 'data-focus-key': `gate-rat-${c.id}`, oninput: (e) => { draft.rationale = e.target.value; } });
   rat.value = draft.rationale;
   return h('div', { class: 'gate-form', id: `gate-${c.id}` },
     g ? callout('info', `Recorded: ${decisionLabel(g.decision)}`, h('div', { class: 'small' }, `by ${g.decidedBy}${g.decidedRole ? ` (${g.decidedRole})` : ''} on ${formatDate(g.at, true)}`), g.rationale ? h('p', { class: 'small' }, g.rationale) : null) : h('p', { class: 'small muted' }, 'No decision recorded yet. You type the decision maker\'s name: the assistant never fills it in.'),
-    field(outcome ? 'Outcome' : 'Decision', sel), field(outcome ? 'Recorded by' : 'Decided by', by, { required: true }), field('Role', role), field('Why', rat),
-    btn(outcome ? (g ? 'Record a new outcome' : 'Record the outcome') : (g ? 'Record a new decision' : 'Record the decision'), () => {
+    field(L.field, sel), field(L.by, by, { required: true }), field('Role', role), field('Why', rat),
+    btn(g ? L.again : L.record, () => {
       // Validate on a scratch copy first so a rejected attempt does not mark the project as changed.
       const probe = recordGate({ gates: {}, audit: [], meta: {} }, c.id, draft, { allowed: choices });
       if (!probe.ok) { toast(probe.error, 'bad'); return; }
       const decided = draft.decision;
       mutate((pr) => recordGate(pr, c.id, draft, { allowed: choices }));
       gateDrafts.delete(c.id);
-      toast(outcome ? 'Outcome recorded.' : 'Decision recorded.', 'good');
+      toast(L.done, 'good');
       // The change is complete: the moment the move is done deserves a celebration.
       if (outcome && (decided === 'complete' || decided === 'complete_with_exceptions')) celebrateMigration();
+      else if (c.decisions === 'signoff' && (decided === 'signed_off' || decided === 'signed_off_with_risks')) celebrateSignOff();
+      else nudgeSave(L.done);
     }, { kind: 'primary', small: true }));
 }
 

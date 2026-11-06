@@ -21,6 +21,8 @@ export const state = {
     lastBrowserSave: '',
     lastExport: '',
     unexported: false, // changes since the last package export / open
+    unsavedSince: '', // when the unsaved changes started (for the save reminders)
+    lastReminderAt: '',
     browserProjects: [],
     storageInfo: null,
   },
@@ -128,6 +130,7 @@ export function hasUnprotectedChanges() {
 export function mutate(fn, { silent = false } = {}) {
   if (!state.project) return undefined;
   const result = fn(state.project);
+  if (!state.ui.unexported || !state.ui.unsavedSince) state.ui.unsavedSince = nowIso();
   state.ui.unexported = true;
   scheduleAutosave();
   if (!silent) notify();
@@ -145,6 +148,8 @@ export function setProject(project, evidence = new Map(), { fromFile = false } =
   }
   state.project = project;
   state.ui.unexported = !fromFile;
+  state.ui.unsavedSince = fromFile ? '' : nowIso();
+  state.ui.lastReminderAt = '';
   state.ui.lastExport = '';
   state.ui.saveState = 'off';
   if (project && !project.isDemo && state.settings.storageMode === 'browser') {
@@ -160,6 +165,7 @@ export function closeProject() {
   pendingEvidence.clear();
   state.project = null;
   state.ui.unexported = false;
+  state.ui.unsavedSince = '';
   state.ui.saveState = 'off';
   notify();
 }
@@ -174,6 +180,7 @@ export async function openBrowserProject(id) {
   pendingEvidence.clear();
   state.project = res.project;
   state.ui.unexported = false;
+  state.ui.unsavedSince = '';
   state.ui.saveState = 'saved';
   state.ui.lastBrowserSave = res.project.updatedAt;
   updateSettings({ lastProjectId: id });
@@ -213,6 +220,7 @@ export async function clearEverything() {
   state.ui.browserProjects = [];
   state.ui.saveState = 'off';
   state.ui.unexported = false;
+  state.ui.unsavedSince = '';
   state.ui.storageInfo = await storage.storageEstimate();
   notify();
 }
@@ -252,6 +260,7 @@ export async function exportPackage() {
 
 export function markExported() {
   state.ui.unexported = false;
+  state.ui.unsavedSince = '';
   state.ui.lastExport = nowIso();
   notify();
 }

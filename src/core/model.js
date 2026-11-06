@@ -54,12 +54,19 @@ export const OUTCOME_DECISIONS = [
   { id: 'complete_with_exceptions', label: 'Complete with documented exceptions' },
   { id: 'rolled_back', label: 'Rolled back' },
 ];
-const ALL_DECISIONS = [...GATE_DECISIONS, ...OUTCOME_DECISIONS];
+// The final sign-off (VAL-18) closes the project.
+export const SIGNOFF_DECISIONS = [
+  { id: 'signed_off', label: 'Signed off: the move is complete' },
+  { id: 'signed_off_with_risks', label: 'Signed off with accepted residual risks' },
+  { id: 'not_signed_off', label: 'Not signed off: more work is needed' },
+  { id: 'deferred', label: 'Decision deferred' },
+];
+const ALL_DECISIONS = [...GATE_DECISIONS, ...OUTCOME_DECISIONS, ...SIGNOFF_DECISIONS];
 export const GATE_DECISION_IDS = ALL_DECISIONS.map((g) => g.id);
-export const NEEDS_RATIONALE = new Set(['go_with_exceptions', 'no_go', 'complete_with_exceptions', 'rolled_back']);
+export const NEEDS_RATIONALE = new Set(['go_with_exceptions', 'no_go', 'complete_with_exceptions', 'rolled_back', 'signed_off_with_risks', 'not_signed_off']);
 // Decisions that let the work go on: go, and a change that is complete.
-export const APPROVED_DECISIONS = new Set(['go', 'go_with_exceptions', 'complete', 'complete_with_exceptions']);
-export const decisionsFor = (check) => (check && check.decisions === 'outcome' ? OUTCOME_DECISIONS : GATE_DECISIONS);
+export const APPROVED_DECISIONS = new Set(['go', 'go_with_exceptions', 'complete', 'complete_with_exceptions', 'signed_off', 'signed_off_with_risks']);
+export const decisionsFor = (check) => (check && check.decisions === 'outcome' ? OUTCOME_DECISIONS : check && check.decisions === 'signoff' ? SIGNOFF_DECISIONS : GATE_DECISIONS);
 export const decisionLabel = (id) => (ALL_DECISIONS.find((d) => d.id === id) || { label: id || 'Not recorded' }).label;
 
 // Warnings on the stages after a gate that did not say go. They inform; nothing is blocked.

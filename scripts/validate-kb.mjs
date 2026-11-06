@@ -204,7 +204,7 @@ export function validateKb(kb) {
     for (const d of c.dependsOn || []) if (!checkIds.has(d)) errors.push(`${label}: dependsOn unknown ${d}.`);
     for (const qid of questionsUsed(c.applicability)) if (!questionIds.has(qid)) errors.push(`${label}: applicability uses unknown question ${qid}.`);
     for (const t of c.topics || []) if (t !== 'backups') errors.push(`${label}: unknown topic ${t}.`);
-    if (c.decisions && (c.decisions !== 'outcome' || c.kind !== 'gate')) errors.push(`${label}: decisions 'outcome' is for gates only.`);
+    if (c.decisions && (!['outcome', 'signoff'].includes(c.decisions) || c.kind !== 'gate')) errors.push(`${label}: decisions must be 'outcome' or 'signoff', on gates only.`);
     if (!['official', 'practice'].includes(c.provenance)) errors.push(`${label}: provenance.`);
     if (!['docs-verified', 'needs-review'].includes(c.validation)) errors.push(`${label}: validation.`);
     if (c.validation === 'needs-review' && (!c.caveats || !c.caveats.length)) errors.push(`${label}: needs-review items must explain the uncertainty in caveats.`);

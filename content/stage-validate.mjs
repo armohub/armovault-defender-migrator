@@ -412,7 +412,7 @@ export const VALIDATE = [
     sources: [src('move', 'Features not supported or Azure-portal only'), src('defportal', 'Azure portal support ends March 31, 2027')],
   }),
   k({
-    id: 'VAL-18', stage: 'validate', workstream: 'closure', order: 180, kind: 'gate', criticality: 'critical',
+    id: 'VAL-18', decisions: 'signoff', stage: 'validate', workstream: 'closure', order: 180, kind: 'gate', criticality: 'critical',
     title: 'Review residual risks and open actions, then sign off',
     objective: 'Close the transition with an explicit record of what is verified, what is not, and who accepted the remaining risk.',
     why: [

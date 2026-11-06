@@ -1,7 +1,7 @@
 // Entry point. The knowledge base is bundled into this file at build time (file:// pages cannot fetch local JSON).
 import { KB } from '../content/kb.mjs';
 import { initStore, state, updateSettings } from './app/store.js';
-import { startShell, go } from './ui/shell.js';
+import { startShell, go, startSaveReminders } from './ui/shell.js';
 import { showSplash, hideSplash, playIntro } from './ui/intro.js';
 import './ui/views/start.js';
 import './ui/views/questionnaire.js';
@@ -26,6 +26,7 @@ async function boot() {
   document.body.dataset.theme = state.settings.theme;
   document.body.dataset.motion = state.settings.motion;
   startShell();
+  startSaveReminders();
   const params = new URLSearchParams(location.search);
   const wantsDemo = params.get('demo') === '1' || location.hash === '#/demo';
   if (!wantsDemo && !location.hash) go(state.project ? '#/overview' : '#/welcome');

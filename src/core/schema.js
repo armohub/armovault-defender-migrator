@@ -204,7 +204,7 @@ export function validateProject(input, { kb } = {}) {
 
   for (const [k, g] of safeEntries(raw.gates, warnings, 'gates', 100)) {
     if (!isPlainObject(g) || !GATE_DECISION_IDS.includes(g.decision) || !str(g.decidedBy).trim()) { warnings.push(`Gate "${k}" ignored (incomplete decision record).`); continue; }
-    if (['no_go', 'go_with_exceptions', 'complete_with_exceptions', 'rolled_back'].includes(g.decision) && !str(g.rationale).trim()) { warnings.push(`Gate "${k}" ignored (decision "${g.decision}" without a rationale).`); continue; }
+    if (['no_go', 'go_with_exceptions', 'complete_with_exceptions', 'rolled_back', 'signed_off_with_risks', 'not_signed_off'].includes(g.decision) && !str(g.rationale).trim()) { warnings.push(`Gate "${k}" ignored (decision "${g.decision}" without a rationale).`); continue; }
     p.gates[k] = {
       decision: g.decision, decidedBy: str(g.decidedBy, 200), decidedRole: str(g.decidedRole, 200), rationale: str(g.rationale, MAX_TEXT), at: iso(g.at),
       history: Array.isArray(g.history) ? g.history.slice(-50).filter(isPlainObject).map((h) => ({ decision: oneOf(h.decision, GATE_DECISION_IDS, 'deferred'), decidedBy: str(h.decidedBy, 200), at: iso(h.at) })) : [],

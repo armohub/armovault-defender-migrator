@@ -33,3 +33,16 @@ export async function celebrateMigration() {
   });
   if (choice === 'next') go('#/stage/validate');
 }
+
+// The final sign-off closes the project: a quieter moment, pointing to the final report and a last save.
+export async function celebrateSignOff() {
+  const p = state.project;
+  if (!p) return;
+  const choice = await celebrate({
+    title: 'The move is signed off',
+    text: `Every stage is closed. Keep the final report and the project package with your change records${p.isDemo ? '' : ', and save the package now'}.`,
+    milestone: true,
+    actions: [{ label: 'Stay here', value: 'stay' }, { label: 'Open the final report', kind: 'primary', value: 'report' }],
+  });
+  if (choice === 'report') go('#/report/final');
+}
