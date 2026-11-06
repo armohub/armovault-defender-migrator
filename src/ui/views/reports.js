@@ -10,6 +10,7 @@ import { pageHead, btn, linkBtn, conclusionBadge, emptyState, callout } from '..
 import { toCsv } from '../../core/files.js';
 import { formatDate, slugify } from '../../core/util.js';
 import { BRAND, APP_VERSION } from '../../brand.js';
+import { armoMark } from '../logo.js';
 import { revokeObjectUrls, trackUrl } from './work.js';
 import { thanksLine } from './start.js';
 
@@ -106,8 +107,11 @@ export function renderReport(m, { live, snapshot, includeImages }) {
   const table = (head, rows, cls) => h('table', { class: ['r-table', cls] }, h('thead', null, h('tr', null, head.map((x) => h('th', { scope: 'col' }, x)))), h('tbody', null, rows));
   const tone = { ready: 'good', ready_with_exceptions: 'caution', undetermined: 'neutral', not_ready: 'bad', skipped: 'muted' };
 
+  // The masthead: the ArMo mark, the product in the display serif, and who made it.
+  const site = BRAND.community.website.replace(/^https:\/\//, '');
   const cover = h('header', { class: 'r-cover' },
-    h('div', { class: 'r-brand' }, BRAND.productName),
+    h('div', { class: 'r-masthead' }, h('span', { class: 'r-mark', 'aria-hidden': 'true' }, armoMark()),
+      h('div', { class: 'r-brandline' }, h('span', { class: 'r-wordmark' }, BRAND.brandName, h('em', null, ` ${BRAND.productName.replace(/^ArMo\s*/, '')}`)), h('span', { class: 'r-by' }, `By ${BRAND.community.name} · ${site}`))),
     h('h1', null, m.title),
     h('p', { class: 'r-project' }, m.project.name || 'Untitled project', m.project.organisation ? `, ${m.project.organisation}` : ''),
     m.project.isDemo ? h('p', { class: 'r-demo' }, 'DEMO, FICTIONAL DATA. Not a record of any real organisation.') : null,
@@ -196,5 +200,7 @@ export function renderReport(m, { live, snapshot, includeImages }) {
     table(['', 'Name', 'Role', 'Date', 'Signature'], ['Prepared by', 'Reviewed by', 'Approved by'].map((r) => h('tr', { class: 'r-sign' }, h('th', { scope: 'row' }, r), h('td'), h('td'), h('td'), h('td')))));
 
   return h('article', { class: ['report', m.project.isDemo && 'report-demo'] }, cover, exec, scope, ...findings, register, gates, evidence, appendix, sources, limits, signoff,
-    h('footer', { class: 'r-footer' }, `${BRAND.productName} ${m.appVersion}, knowledge base ${m.kbVersion}, generated ${formatDate(m.generatedAt, true)}${snapshot ? `, snapshot ${snapshot.sha256.slice(0, 16)}…` : ''}. Not affiliated with Microsoft.`));
+    h('footer', { class: 'r-footer' },
+      h('p', null, `${BRAND.productName} ${m.appVersion}, knowledge base ${m.kbVersion}, generated ${formatDate(m.generatedAt, true)}${snapshot ? `, snapshot ${snapshot.sha256.slice(0, 16)}…` : ''}. Not affiliated with Microsoft.`),
+      h('p', { class: 'r-footer-brand' }, `Made by ${BRAND.makers.map((x) => x.name).join(' and ')} of ${BRAND.community.name}. `, h('a', { href: BRAND.community.website }, site), ' · ', h('a', { href: BRAND.community.url }, 'linkedin.com/company/armohub'))));
 }

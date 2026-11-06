@@ -70,7 +70,7 @@ route('welcome', () => {
   return h('div', { class: 'page welcome' },
     h('section', { class: 'welcome-hero' },
       h('div', null,
-        h('h1', { id: 'page-title', tabindex: '-1' }, 'Move Microsoft Sentinel to the Defender portal, one clear step at a time.'),
+        h('h1', { id: 'page-title', tabindex: '-1' }, 'Move Microsoft Sentinel to the Defender portal, ', h('em', null, 'one clear step at a time.')),
         h('p', { class: 'hero-lede' }, `The ${BRAND.productName} guides you from readiness to sign-off: what to check, where to click, and what to record. It runs offline, in this one file.`),
         continueCard,
         h('div', { class: 'hero-actions' },

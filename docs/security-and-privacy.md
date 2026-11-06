@@ -15,13 +15,13 @@ manifest-src 'none'; base-uri 'none'; form-action 'none'
 ```
 
 - The browser blocks fetch, XHR, WebSocket, beacons, remote images, remote fonts, frames and workers.
-- `font-src data:` allows only fonts embedded in the file itself. The assistant embeds one typeface, Mona Sans, as `data:` URLs. No font is downloaded.
+- `font-src data:` allows only fonts embedded in the file itself. The assistant embeds three typefaces, Instrument Serif, Inter Tight and JetBrains Mono, as `data:` URLs. No font is downloaded.
 - Only the exact script and style in the file can run. Injected scripts and `eval` are blocked.
 
 **How it is verified:**
 - Prototype P3 showed blocked requests with the network enabled.
 - A static test checks the CSP in each build: `default-src 'none'`, `connect-src 'none'`, no `unsafe-*` and no hosts.
-- A unit test checks that the embedded typeface is the only font source in the styles.
+- A unit test checks that the embedded typefaces are the only font sources in the styles.
 - The end-to-end suite records every http(s) and ws request across the full journey. The latest recorded Edge run saw **none** (see [test-results.md](test-results.md)).
 - The source has no network APIs (static test).
 

@@ -45,7 +45,7 @@ Microsoft states that *"After March 31, 2027, Microsoft Sentinel will no longer 
 - **Step pages** that read like instructions, not a database. Item codes stay out of the reading text (a small reference line sits at the bottom). Links to other steps are clickable, and inline buttons let you act right there: add a decision, risk, issue, action or exception to the register, linked to the step; add evidence; jump to the owner, due date, notes or gate form; import results or download the inventory script. **Previous step** and **Next step** cards sit at the bottom.
 - **Project setup** as its own page, so guidance can link straight to the planned transition window or the workspaces in scope.
 - **The demo** uses a fictional company. A banner says so, and **Exit demo** takes you back to the start page, ready for your own project.
-- **A calm, console-style design** in graphite. Dark by default, with a light theme in Settings. Reports always print on white. Short loading overlays appear while a project opens, a package is packed or the demo is prepared. Motion follows your system's reduced-motion setting, and **Reduce motion** in Settings turns it down inside the assistant.
+- **The ArMoHub look** ("Noir Champagne"): near-black with one champagne accent, Instrument Serif headings, Inter Tight text and JetBrains Mono labels, and thin gold rules instead of boxes. The reports carry the same masthead and a footer with armohub.ch and the ArMoHub LinkedIn page. Dark by default, with an Ivory light theme in Settings. Reports always print on white. Short loading overlays appear while a project opens, a package is packed or the demo is prepared. Motion follows your system's reduced-motion setting, and **Reduce motion** in Settings turns it down inside the assistant.
 
 ## Quick start (Windows)
 
@@ -64,7 +64,7 @@ To open the demo straight away, add `?demo=1` to the file's address.
 ## Offline and privacy: exactly what is promised
 
 **No network requests.**
-- The file carries a Content-Security-Policy with `connect-src 'none'` and `default-src 'none'`, so the browser itself blocks every network request. The only other allowance is `font-src data:`, for the typeface built into the file.
+- The file carries a Content-Security-Policy with `connect-src 'none'` and `default-src 'none'`, so the browser itself blocks every network request. The only other allowance is `font-src data:`, for the typefaces built into the file.
 - The end-to-end tests record every request across the whole journey. The latest recorded run in Edge saw none ([docs/test-results.md](docs/test-results.md)).
 - Links to Microsoft documentation and to the makers' LinkedIn profiles open only when you click them, and they need internet.
 
@@ -96,7 +96,7 @@ Details: [docs/security-and-privacy.md](docs/security-and-privacy.md).
 ## Knowledge base and provenance
 
 - The content lives in [`content/`](content/), separate from the UI. It is checked at build time and published as `dist/kb.json`.
-- Knowledge base version **2026.11.05**: 145 Microsoft Learn sources (114 verified on 2026-10-19, 3 on 2026-10-20, 2 on 2026-10-26, 8 on 2026-10-29, 18 on 2026-11-04), 33 read-only snippets, and 13 steps marked "Sources differ" where Microsoft sources conflict or are unclear.
+- Knowledge base version **2026.11.06**: 145 Microsoft Learn sources (114 verified on 2026-10-19, 3 on 2026-10-20, 2 on 2026-10-26, 8 on 2026-10-29, 18 on 2026-11-04), 33 read-only snippets, and 13 steps marked "Sources differ" where Microsoft sources conflict or are unclear.
 - Every step states its provenance:
   - **Microsoft documentation:** derived from current pages.
   - **Practical guidance:** the makers' good practice, *not* a Microsoft requirement.
@@ -113,8 +113,8 @@ Details: [docs/security-and-privacy.md](docs/security-and-privacy.md).
 | `ArMo-MS-Defender-Migration-Assistant.html` | The whole assistant in one file |
 | `kb.json` | The knowledge base, for review or reuse |
 | `tools/Get-ArMoSentinelInventory.ps1` | The read-only inventory script |
-| `licenses/MonaSans-OFL.txt` | The licence of the embedded Mona Sans typeface (SIL Open Font License 1.1) |
-| `SHA256SUMS.txt` | SHA-256 checksums of the four files above |
+| `licenses/InstrumentSerif-OFL.txt`, `licenses/InterTight-OFL.txt`, `licenses/JetBrainsMono-OFL.txt` | The licences of the three embedded typefaces (SIL Open Font License 1.1) |
+| `SHA256SUMS.txt` | SHA-256 checksums of the six files above |
 
 ## Disclaimer
 
@@ -153,7 +153,7 @@ npm run test:e2e:chrome
 Layout:
 - `src/core`: pure logic (model, applicability, readiness, ZIP, package, schema, report);
 - `src/ui`: DOM views, with no `innerHTML`;
-- `src/fonts`: the Mona Sans font files and their licence;
+- `src/fonts`: the Instrument Serif, Inter Tight and JetBrains Mono font files and their licences;
 - `content/`: the knowledge base;
 - `tools/`: the inventory script;
 - `tests/`, `prototypes/`, `docs/`, `research/`.

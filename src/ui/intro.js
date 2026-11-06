@@ -3,9 +3,11 @@
 import { h, icon } from './dom.js';
 import { s, smooth, pathD, totalLength } from './route.js';
 import { BRAND } from '../brand.js';
+import { armoMark } from './logo.js';
 
+// The ArMo mark (the puzzle pieces locked inside a safe's dial), in a span that sets its size and colour.
 export function brandMark(cls = 'brand-mark') {
-  return h('span', { class: cls, 'aria-hidden': 'true' }, icon('mark', 'icon'));
+  return h('span', { class: cls, 'aria-hidden': 'true' }, armoMark());
 }
 
 let splashEl = null;

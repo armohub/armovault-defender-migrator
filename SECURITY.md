@@ -10,6 +10,6 @@ Include the app version and knowledge base version (both on the About page), you
 
 - The single-file ArMo MS Defender Migration Assistant: its Content-Security-Policy, import validation, rendering of untrusted content, and storage.
 - The inventory script `tools/Get-ArMoSentinelInventory.ps1`. It must only send GET requests.
-- The build pipeline, for example CSP hashing and the embedding of the typeface.
+- The build pipeline, for example CSP hashing and the embedding of the typefaces.
 
 Design notes: [docs/security-and-privacy.md](docs/security-and-privacy.md).

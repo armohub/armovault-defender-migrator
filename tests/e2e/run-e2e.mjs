@@ -127,8 +127,9 @@ await step('The welcome page has a strict CSP; the intro does not return on the 
   await page.getByRole('heading', { name: WELCOME }).waitFor();
   await page.waitForTimeout(900);
   assert.equal(await page.locator('.intro').count(), 0);
-  const font = await page.evaluate(async () => { await document.fonts.ready; return document.fonts.check('16px "Mona Sans"'); });
-  assert.equal(font, true, 'embedded typeface is available offline');
+  const fonts = await page.evaluate(async () => { await document.fonts.ready; return ['16px "Inter Tight"', '32px "Instrument Serif"', 'italic 32px "Instrument Serif"', '12px "JetBrains Mono"'].map((f) => document.fonts.check(f)); });
+  assert.deepEqual(fonts, [true, true, true, true], 'the three embedded brand typefaces are available offline');
+  assert.match(await page.locator('link[rel="icon"]').getAttribute('href'), /^data:image\/svg\+xml,/, 'the favicon is inline');
 });
 
 await step('CSP blocks a deliberate network request from the page (defence verified in-browser)', async () => {
@@ -1094,6 +1095,55 @@ await step('Plan depth: how thorough, with topics; questions most important firs
   await go(pg, '#/item/PREP-CON-05');
   assert.equal(await pg.locator('.item-chips').getByText('Left out by your plan').count(), 0, 'the backups topic keeps the baseline');
   await c8.close();
+});
+
+await step('Manual save: a reminder after ten minutes, snoozed; sign-off choices, the celebration, and the branded final report', async () => {
+  const c9 = await chromium.launch({ channel, headless });
+  const ctx9 = await c9.newContext({ viewport: { width: 1440, height: 1000 } });
+  ctx9.on('request', (r) => { const u = r.url(); if (/^(https?|wss?):/i.test(u)) network.push(u); });
+  const pg = await ctx9.newPage();
+  watch(pg);
+  await pg.clock.install();
+  await pg.goto(appUrl);
+  await pg.getByRole('button', { name: 'Skip intro' }).click();
+  await pg.getByRole('button', { name: 'Start my project' }).click();
+  await pg.getByLabel('Project or customer label').fill('Sign-off E2E');
+  await pg.getByLabel('Your name').fill('Sam');
+  await btn(pg, 'Continue').click();
+  await btn(pg, 'Continue').click();
+  await pg.getByText('Type them in myself', { exact: true }).click();
+  await btn(pg, 'Continue').click();
+  await pg.getByText('I save project packages myself (default)', { exact: true }).click();
+  await btn(pg, 'Continue').click();
+  await pg.locator('label.choice', { has: pg.getByText('Detailed', { exact: true }) }).click();
+  await pg.locator('[data-focus-key="full-checklist"]').check();
+  await pg.getByLabel(/I understand this assistant gives guidance only/).check();
+  await btn(pg, 'Create my project').click();
+  await pg.locator('.next-panel').waitFor();
+  // Eleven minutes of unsaved work: the reminder stays until it is acted on, and "later" snoozes it.
+  await pg.clock.fastForward('11:00');
+  const reminder = pg.locator('.toast-sticky', { hasText: 'Your work is not saved' });
+  await reminder.waitFor();
+  await pg.locator('.topbar').getByText(/Not saved for \d+ min/).waitFor();
+  await reminder.getByRole('button', { name: 'Remind me in 15 minutes' }).click();
+  await reminder.waitFor({ state: 'detached' });
+  await pg.clock.fastForward('05:00');
+  assert.equal(await reminder.count(), 0, 'snoozed: no reminder five minutes later');
+  // The sign-off has its own choices and words.
+  await go(pg, '#/item/VAL-18');
+  const form = pg.locator('#do-it-here');
+  const options = (await form.locator('select option').allTextContents()).slice(1);
+  assert.deepEqual(options, ['Signed off: the move is complete', 'Signed off with accepted residual risks', 'Not signed off: more work is needed', 'Decision deferred']);
+  await form.locator('select').selectOption('signed_off');
+  await form.getByLabel('Signed off by').fill('Morgan Example');
+  await form.getByRole('button', { name: 'Record the sign-off' }).click();
+  await dlg(pg).getByRole('heading', { name: 'The move is signed off' }).waitFor();
+  await clickDlg(pg, 'Open the final report');
+  // The report carries the ArMoHub masthead and footer.
+  await pg.locator('.r-masthead .r-by', { hasText: 'By ArMoHub · armohub.ch' }).waitFor();
+  assert.equal(await pg.locator('.r-footer-brand a[href="https://armohub.ch"]').count(), 1);
+  assert.equal(await pg.locator('.r-footer-brand a[href="https://www.linkedin.com/company/armohub"]').count(), 1);
+  await c9.close();
 });
 
 await step('No network request was made during the whole run, and no console errors occurred', async () => {

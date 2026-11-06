@@ -4,38 +4,37 @@ This review lists everything that ships to users, everything used to build and t
 
 ## Runtime (what ships to users)
 
-**No runtime libraries.** The released HTML file contains this project's own code, styles, knowledge base and icons, plus **one bundled third-party asset: the Mona Sans typeface.**
+**No runtime libraries.** The released HTML file contains this project's own code, styles, knowledge base, icons and the ArMo mark, plus **three bundled third-party assets: the Instrument Serif, Inter Tight and JetBrains Mono typefaces** of the ArMoHub brand.
 
-- The icons are simple SVG paths drawn for this project.
+- The icons and the ArMo mark (the puzzle pieces in a safe's dial) are SVG drawn for this project.
 - The ZIP reader and writer, the CSV writer and the hashing are this project's code, using browser built-ins (`CompressionStream`, `crypto.subtle`).
 - PDF output uses the browser's own print engine.
-- Fallback and code fonts are system fonts that are not bundled: Segoe UI Variable Text, Segoe UI and system-ui for text, and Cascadia Mono, Cascadia Code, Consolas and Courier New for code.
+- Fallback fonts are system fonts that are not bundled: Iowan Old Style and Georgia for the serif, Segoe UI Variable Text, Segoe UI and system-ui for text, Cascadia Mono and Consolas for labels and code.
 
-### Bundled third-party asset: Mona Sans
+### Bundled third-party assets: the brand typefaces
 
-| | |
-|---|---|
-| Asset | Mona Sans typeface (variable font, weight and width axes) |
-| Version | 2.000 (from the name table of the font files) |
-| Authors | The Mona Sans Project Authors (https://github.com/github/mona-sans), a GitHub project |
-| Copyright notice | "Copyright 2022 The Mona Sans Project Authors (https://github.com/github/mona-sans), with Reserved Font Name "Mona"" |
-| Licence | SIL Open Font License, Version 1.1 (OFL-1.1) |
-| Files in the repository | `src/fonts/MonaSans-latin.woff2` (98,124 bytes) and `src/fonts/MonaSans-latin-ext.woff2` (32,800 bytes), with the licence text in `src/fonts/OFL.txt` |
-| How it ships | `scripts/build.mjs` embeds both files in the stylesheet as `data:` URLs (`font-src data:` in the CSP). Nothing is downloaded at runtime. |
-| Licence text in the release | `dist/licenses/MonaSans-OFL.txt`, listed in `dist/SHA256SUMS.txt` |
-| Shown to users | The About page names the typeface and its licence |
+| | Instrument Serif | Inter Tight | JetBrains Mono |
+|---|---|---|---|
+| Use | Headings and figures (regular and italic) | Reading text (variable weight) | Labels, data and code (variable weight) |
+| Version (from the name table) | 1.000 | 3.004 | 2.211 |
+| Copyright notice | "Copyright 2022 The Instrument Serif Project Authors (https://github.com/Instrument/instrument-serif)" | "Copyright 2022 The Inter Project Authors (https://github.com/rsms/inter-tight)" | "Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono)" |
+| Reserved Font Name | None declared | None declared | None declared |
+| Licence | SIL Open Font License, Version 1.1 (OFL-1.1) | OFL-1.1 | OFL-1.1 |
+| Files in the repository | `InstrumentSerif-latin.woff2` (21,032 bytes), `InstrumentSerif-latin-ext.woff2` (11,604), `InstrumentSerif-italic-latin.woff2` (22,128), `InstrumentSerif-italic-latin-ext.woff2` (12,384); licence `OFL-InstrumentSerif.txt` | `InterTight-latin.woff2` (44,872 bytes), `InterTight-latin-ext.woff2` (89,800); licence `OFL-InterTight.txt` | `JetBrainsMono-latin.woff2` (40,404 bytes), `JetBrainsMono-latin-ext.woff2` (15,196); licence `OFL-JetBrainsMono.txt` |
+| Licence text in the release | `dist/licenses/InstrumentSerif-OFL.txt` | `dist/licenses/InterTight-OFL.txt` | `dist/licenses/JetBrainsMono-OFL.txt` |
 
-**What the OFL asks for** (a summary of conditions 1 to 5 in `src/fonts/OFL.txt`; read the licence itself for the exact terms):
-- The font may be bundled, embedded and redistributed with software, provided each copy contains the copyright notice and the licence.
-- The font may not be sold by itself.
-- A Modified Version may not use the Reserved Font Name ("Mona") without written permission from the copyright holder. This applies to the primary font name as presented to users.
+- **How they ship.** `scripts/build.mjs` embeds all eight files in the stylesheet as `data:` URLs (`font-src data:` in the CSP). Nothing is downloaded at runtime. The three licence texts, with their copyright notices, are embedded in a comment at the top of the HTML file's stylesheet, so they travel with every copy, and the release keeps them beside the file in `dist/licenses/`, listed in `dist/SHA256SUMS.txt`.
+- **Shown to users.** The About page names the typefaces and their licence.
+
+**What the OFL asks for** (a summary of conditions 1 to 5 in the licence files; read the licence itself for the exact terms):
+- The fonts may be bundled, embedded and redistributed with software, provided each copy contains the copyright notice and the licence.
+- The fonts may not be sold by themselves.
+- A Modified Version may not use a Reserved Font Name without permission. None of the three declares one.
 - The authors' names may not be used to promote a Modified Version, except to acknowledge their contribution.
-- The font stays under the OFL. Documents made with it, such as the PDF reports, are not covered by that requirement.
+- The fonts stay under the OFL. Documents made with them, such as the PDF reports, are not covered by that requirement.
 
-**Open points for the makers**:
-- **Where the files came from.** The two `.woff2` files (Latin and Latin Extended subsets, weight and width axes) are taken unchanged from the npm package `@fontsource-variable/mona-sans` version 5.3.0 (licence field OFL-1.1), which redistributes the upstream Mona Sans release. Confirm this provenance is acceptable.
-- **Subsets and the Reserved Font Name.** The OFL counts "changing formats" and removing components as a Modified Version. Confirm that shipping these subsets under the name "Mona Sans" is acceptable under condition 3, for example by checking the upstream distribution terms or the OFL FAQ.
-- **The HTML file shared on its own.** Resolved in the build: the full OFL text, with the copyright notice, is embedded in a comment at the top of the HTML file's stylesheet, so it travels with every copy. The release also keeps it beside the file in `dist/licenses/MonaSans-OFL.txt`.
+**Open point for the makers**:
+- **Where the files came from.** The `.woff2` files are the Latin and Latin Extended subsets served by the Google Fonts CSS2 API, saved unchanged on 6 November 2026; the licence texts are the `OFL.txt` files of the three families in the google/fonts repository on GitHub. Confirm this provenance is acceptable, or replace the files with the upstream releases.
 
 ## Build and test tools (not shipped)
 
@@ -81,5 +80,5 @@ From research note 04. Sizes are gzip.
 
 **Caveats.**
 - The makers choose the licence.
-- Whatever licence the code gets, Mona Sans stays under the OFL (condition 5). The README should say so once a licence is chosen.
+- Whatever licence the code gets, the three typefaces stay under the OFL (condition 5). The README should say so once a licence is chosen.
 - Do not add a `LICENSE` file until then. A repository without one is "all rights reserved" by default, which is the safe state while it is private.

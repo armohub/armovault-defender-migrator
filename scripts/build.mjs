@@ -39,15 +39,23 @@ const toLf = (s) => s.replace(/\r\n?/g, '\n');
 let js = toLf(result.outputFiles[0].text);
 // Neutralise sequences that would end the inline <script> element early ("<\/script" is equivalent inside JS strings).
 js = js.replace(/<\/script/gi, '<\\/script').replace(/<!--/g, '<\\!--');
-// The typeface (Mona Sans, SIL Open Font License 1.1) is embedded as data: URLs so the file stays offline and self-contained.
+// The ArMoHub typefaces (Instrument Serif, Inter Tight, JetBrains Mono; SIL Open Font License 1.1) are embedded as
+// data: URLs so the file stays offline and self-contained.
 const fontUrl = (file) => `data:font/woff2;base64,${fs.readFileSync(path.join(root, 'src/fonts', file)).toString('base64')}`;
-const fonts = { __FONT_MONA_LATIN__: fontUrl('MonaSans-latin.woff2'), __FONT_MONA_LATIN_EXT__: fontUrl('MonaSans-latin-ext.woff2') };
+const FONT_FILES = {
+  __FONT_SERIF_LATIN__: 'InstrumentSerif-latin.woff2', __FONT_SERIF_LATIN_EXT__: 'InstrumentSerif-latin-ext.woff2',
+  __FONT_SERIF_ITALIC_LATIN__: 'InstrumentSerif-italic-latin.woff2', __FONT_SERIF_ITALIC_LATIN_EXT__: 'InstrumentSerif-italic-latin-ext.woff2',
+  __FONT_SANS_LATIN__: 'InterTight-latin.woff2', __FONT_SANS_LATIN_EXT__: 'InterTight-latin-ext.woff2',
+  __FONT_MONO_LATIN__: 'JetBrainsMono-latin.woff2', __FONT_MONO_LATIN_EXT__: 'JetBrainsMono-latin-ext.woff2',
+};
+const FONT_FAMILIES = [['Instrument Serif', 'InstrumentSerif'], ['Inter Tight', 'InterTight'], ['JetBrains Mono', 'JetBrainsMono']];
+const fonts = Object.fromEntries(Object.entries(FONT_FILES).map(([k, f]) => [k, fontUrl(f)]));
 let css = toLf(['app.css', 'print.css'].map((f) => fs.readFileSync(path.join(root, 'src/styles', f), 'utf8')).join('\n'));
 for (const [k, v] of Object.entries(fonts)) css = css.split(k).join(v);
 if (/__FONT_[A-Z_]+__/.test(css)) throw new Error('Unresolved font placeholder in CSS');
-// The OFL requires its text to travel with every copy of the font, so the single HTML file carries it too.
-const ofl = toLf(fs.readFileSync(path.join(root, 'src/fonts/OFL.txt'), 'utf8')).replace(/\*\//g, '* /');
-css = `/* Embedded typeface licence (Mona Sans)\n\n${ofl}\n*/\n${css}`;
+// The OFL requires its text to travel with every copy of the font, so the single HTML file carries the three licences.
+const ofl = FONT_FAMILIES.map(([name, file]) => `${name}\n\n${toLf(fs.readFileSync(path.join(root, `src/fonts/OFL-${file}.txt`), 'utf8')).replace(/\*\//g, '* /')}`).join('\n\n');
+css = `/* Embedded typeface licences (Instrument Serif, Inter Tight, JetBrains Mono)\n\n${ofl}\n*/\n${css}`;
 if (/<\/style/i.test(css)) throw new Error('CSS must not contain </style');
 
 const sha = (s) => crypto.createHash('sha256').update(s, 'utf8').digest('base64');
@@ -87,9 +95,10 @@ fs.writeFileSync(path.join(dist, 'kb.json'), JSON.stringify(KB, null, 2), 'utf8'
 fs.mkdirSync(path.join(dist, 'tools'), { recursive: true });
 fs.copyFileSync(path.join(root, 'tools/Get-ArMoSentinelInventory.ps1'), path.join(dist, 'tools/Get-ArMoSentinelInventory.ps1'));
 fs.mkdirSync(path.join(dist, 'licenses'), { recursive: true });
-fs.copyFileSync(path.join(root, 'src/fonts/OFL.txt'), path.join(dist, 'licenses/MonaSans-OFL.txt'));
+for (const [, file] of FONT_FAMILIES) fs.copyFileSync(path.join(root, `src/fonts/OFL-${file}.txt`), path.join(dist, `licenses/${file}-OFL.txt`));
+for (const f of fs.readdirSync(path.join(dist, 'licenses'))) if (/^MonaSans/.test(f)) fs.rmSync(path.join(dist, 'licenses', f));
 const hashFile = (f) => crypto.createHash('sha256').update(fs.readFileSync(path.join(dist, f))).digest('hex');
-const files = [outName, 'kb.json', 'tools/Get-ArMoSentinelInventory.ps1', 'licenses/MonaSans-OFL.txt'];
+const files = [outName, 'kb.json', 'tools/Get-ArMoSentinelInventory.ps1', ...FONT_FAMILIES.map(([, file]) => `licenses/${file}-OFL.txt`)];
 fs.writeFileSync(path.join(dist, 'SHA256SUMS.txt'), files.map((f) => `${hashFile(f)}  ${f}`).join('\n') + '\n', 'utf8');
 console.log(`Built dist/${outName} (${(html.length / 1024).toFixed(0)} KB), app ${APP_VERSION}, KB ${KB.meta.version}, ${kbCheck.stats.checks} items`);
 console.log(`SHA-256 ${hashFile(outName)}`);

@@ -21,8 +21,8 @@ The product must run locally and offline after download, need no account or back
 ## Decision
 
 1. **Ship one self-contained HTML file** (`ArMo-MS-Defender-Migration-Assistant.html`, about 870 KB in 1.0). esbuild bundles the app and the knowledge base into one inline classic script at build time. There are no runtime dependencies, no CDN and no remote assets.
-2. **Embed the typeface.** Mona Sans (SIL Open Font License 1.1) is built into the stylesheet as `data:` URLs, so nothing is downloaded. Its licence text ships beside the file as `dist/licenses/MonaSans-OFL.txt`. Fallbacks are system fonts.
-3. **Enforce "no network" with a strict meta Content-Security-Policy:** `connect-src 'none'`, `default-src 'none'`, hash-pinned script and style, and `font-src data:` for the embedded typeface only. The browser itself blocks all requests, and the end-to-end tests check this. External documentation links open only when the user clicks them.
+2. **Embed the typefaces.** The ArMoHub brand faces, Instrument Serif, Inter Tight and JetBrains Mono (all SIL Open Font License 1.1), are built into the stylesheet as `data:` URLs, so nothing is downloaded. Their licence texts are embedded in the file and ship beside it in `dist/licenses/`. Fallbacks are system fonts.
+3. **Enforce "no network" with a strict meta Content-Security-Policy:** `connect-src 'none'`, `default-src 'none'`, hash-pinned script and style, and `font-src data:` for the embedded typefaces only. The browser itself blocks all requests, and the end-to-end tests check this. External documentation links open only when the user clicks them.
 4. **Persistence:**
    - Settings go in `localStorage`.
    - Projects and evidence go in **IndexedDB, only with opt-in browser autosave** (off by default).
@@ -54,7 +54,7 @@ The product must run locally and offline after download, need no account or back
 - **No silent settings file.** Preferences live in the browser, and export and import cover moving between machines.
 - **PDF needs one extra click** ("Save as PDF" in the print dialog). The instructions are on the report page.
 - **No live tenant checks.** The inventory script and evidence attachments cover this, and connected mode stays on the roadmap.
-- **A larger file.** The embedded typeface adds about 130 KB of font data (more once encoded in the file). In return there is no font download and no change to the network promise.
+- **A larger file.** The embedded typefaces add about 257 KB of font data (more once encoded in the file). In return there is no font download and no change to the network promise.
 
 **Browser support:** current Microsoft Edge and Google Chrome on Windows (tested on version 155). Firefox and Safari are **not tested** (they are not installed in the build environment) and are not supported in 1.0.
 

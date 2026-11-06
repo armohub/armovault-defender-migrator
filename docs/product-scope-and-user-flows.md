@@ -48,7 +48,7 @@ Version 1.0.0 is the first public version, released as one final version (no rel
 - Import-based assistance: a read-only inventory script whose output becomes imported evidence and suggested answers that the user confirms.
 - Knowledge views: feature changes, portal map, key dates, terminology, all steps, coverage and sources.
 - A synthetic demo project with a banner and an **Exit demo** button.
-- A graphite design, dark by default with a light theme, the embedded Mona Sans typeface, and motion that respects reduced motion (plus an in-app **Reduce motion** setting).
+- The ArMoHub "Noir Champagne" design (near-black, one champagne accent, gold rules), dark by default with an Ivory light theme, the embedded Instrument Serif, Inter Tight and JetBrains Mono typefaces, and motion that respects reduced motion (plus an in-app **Reduce motion** setting).
 - A thanks note with links to the makers' LinkedIn profiles on the welcome page, on About, and when the final report is complete.
 
 **Out of scope for 1.0** (roadmap)

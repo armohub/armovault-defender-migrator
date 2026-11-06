@@ -72,10 +72,15 @@ test('brand and version for the 1.0 release', () => {
   assert.ok(!/rc|beta|pilot/i.test(KB.meta.version));
 });
 
-test('the embedded typeface ships with its licence and is the only font source', () => {
-  assert.ok(fs.existsSync('src/fonts/OFL.txt'));
-  assert.match(fs.readFileSync('src/fonts/OFL.txt', 'utf8'), /SIL Open Font License/);
+test('the brand typefaces ship with their licences and are the only font sources', () => {
+  // ArMoHub brand: Instrument Serif (display), Inter Tight (text), JetBrains Mono (labels), all SIL OFL 1.1.
+  for (const family of ['InstrumentSerif', 'InterTight', 'JetBrainsMono']) {
+    assert.match(fs.readFileSync(`src/fonts/OFL-${family}.txt`, 'utf8'), /SIL OPEN FONT LICENSE/i, `${family} licence`);
+    assert.ok(fs.readdirSync('src/fonts').some((f) => f.startsWith(`${family}-`) && f.endsWith('.woff2')), `${family} font file`);
+  }
+  assert.ok(!fs.readdirSync('src/fonts').some((f) => /^MonaSans/.test(f)), 'the previous typeface is gone');
   const css = fs.readFileSync('src/styles/app.css', 'utf8');
   const urls = [...css.matchAll(/url\(\s*["']?([^"')]+)/g)].map((m) => m[1]);
-  assert.deepEqual(urls.filter((u) => !/^__FONT_[A-Z_]+__$/.test(u)), []);
+  assert.deepEqual(urls.filter((u) => !/^__FONT_[A-Z_]+__$/.test(u) && !/^#[\w-]+$/.test(u)), []);
+  for (const family of ['Instrument Serif', 'Inter Tight', 'JetBrains Mono']) assert.match(css, new RegExp(`font-family: "${family}"`), `${family} is declared`);
 });

@@ -1,5 +1,27 @@
 # Changelog
 
+## Unreleased: sign-off, save reminders and the ArMoHub brand (6 November 2026)
+
+### Version
+- Knowledge base version `2026.11.06` (it was `2026.11.05`): the final sign-off has its own choices.
+
+### Gates and conclusions
+- The final sign-off offers Signed off, Signed off with accepted residual risks, Not signed off, or Decision deferred, with its own words ("Signed off by", "Record the sign-off"). A sign-off opens a celebration with a link to the final report; risks and a refusal need a reason.
+- A stage whose gate was approved no longer reads "Incomplete" or "Unable to determine" because of steps that were done without proof. The gate's approval accepts them: they are listed as warnings ("done without proof; reviewed and accepted at the stage gate by ..."), never as verified.
+- A test stage left out of your plan (the test rehearsal switched off) reads "Not part of your plan" instead of "Test stage not available".
+- The route marker follows the gates: when a later stage's gate is approved, the earlier stages count as behind you, so a finished move shows the marker at the Defender end instead of at Prepare.
+
+### Saving
+- With manual saving, the top bar counts the minutes of unsaved work, and after ten minutes a reminder stays on screen until you save the package or choose "Remind me in 15 minutes". Recording a decision or finishing a mission suggests saving too.
+
+### The ArMoHub brand ("Noir Champagne")
+- The app, the reports and the ArMoHub website now look like one brand: Obsidian and Graphite with Ivory text, one champagne accent used as a signal (the route, the marker, the active page, the rule under a title, one italic word), Signal cyan for real figures only, and thin gold rules instead of boxes.
+- Instrument Serif for headings and figures, Inter Tight for text, JetBrains Mono for labels, all embedded under the SIL Open Font License 1.1, with their licences in `dist/licenses/`. Mona Sans is removed.
+- A new ArMo mark: the puzzle pieces locked inside a safe's dial, in the sidebar, the splash, the introduction, the reports and as an inline favicon.
+- Primary buttons are Ivory on Obsidian (Obsidian on Ivory in the light theme); the light theme is Ivory paper with deep champagne.
+- Reports carry a masthead (the mark, the product name and "By ArMoHub · armohub.ch"), serif titles, mono labels, a gold rule under the cover and above the footer, and a footer line with armohub.ch and the ArMoHub LinkedIn page. The printed page footer names ArMoHub and armohub.ch.
+- The contrast test now also pins Signal figures, the primary button and champagne as large text, in both themes.
+
 ## Unreleased: field feedback (5 November 2026)
 
 ### Version

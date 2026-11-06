@@ -8,20 +8,20 @@ Only results that were recorded in files are reported as results here. Where no 
 
 | Suite | Command | Recorded result |
 |---|---|---|
-| End-to-end, Edge | `npm run test:e2e` | ✔ **45 of 45 steps passed** on 2026-11-05 at 21:48 UTC, against the 1.0.0 build with knowledge base 2026.11.05 (`test-results/e2e-results-msedge.json`) |
-| Network requests and console errors during those runs | recorded by the end-to-end runner (step 45) | ✔ **none**, in Edge and in Chrome |
-| End-to-end, Chrome | `npm run test:e2e:chrome` | ✔ **45 of 45 steps passed** on 2026-11-05 at 21:50 UTC, against the same build (`test-results/e2e-results-chrome.json`). An earlier Chrome run that day failed once on the reduced-motion step, which reads the introduction 200 ms after load, while the machine was busy; reruns passed. |
-| Unit tests | `npm run test:unit` | ✔ **175 of 175 passed** on 2026-11-05 against the same source |
+| End-to-end, Edge | `npm run test:e2e` | ✔ **46 of 46 steps passed** on 2026-11-06 at 10:29 UTC, against the 1.0.0 build with knowledge base 2026.11.06 (`test-results/e2e-results-msedge.json`) |
+| Network requests and console errors during those runs | recorded by the end-to-end runner (step 46) | ✔ **none**, in Edge and in Chrome |
+| End-to-end, Chrome | `npm run test:e2e:chrome` | ✔ **46 of 46 steps passed** on 2026-11-06 at 10:33 UTC, against the same build (`test-results/e2e-results-chrome.json`). |
+| Unit tests | `npm run test:unit` | ✔ **180 of 180 passed** on 2026-11-06 against the same source |
 | Knowledge base integrity and writing rules | `npm run validate-kb` (also runs in every build) | No stored result. Every build runs it and stops on any error. The knowledge base has 110 steps, 35 questions (plus one answer set from the connection check), 145 sources and 33 snippets. |
-| Inventory script parse and mock run | `powershell -File tests/tools/mock-inventory-run.ps1`, `tests/tools/mock-inventory-multi.ps1` and `tests/tools/mock-inventory-discover.ps1` | ✔ **all three passed** on 2026-11-05 at 21:44 UTC in Windows PowerShell 5.1, against a mocked API (`test-results/mock-inventory-*.txt`). The single-workspace run checks every part of schema 2 (customer-managed keys, settings, workspace manager, repositories, bookmarks and hunts, installed content, Sentinel playbooks, role assignment counts, connectors from both API versions), the alias defaulting to the workspace name, a refused part that leaves the others collected, a Logic App with empty parameters, Owner and Reader counted by what they allow, a refused subscription lookup named, a workspace manager that is not set up counted as not used, connector titles, and no resource path, principal or tenant ID in the file. The multi-workspace run checks one file per workspace, a failing workspace that does not stop the others, and refusal of duplicate or missing aliases before any request. The discovery run checks discovery with no parameters, only Sentinel workspaces collected with their region, tenant fingerprints that tell tenants apart, disabled subscriptions not searched, shared names getting their own alias and file, and a refused check reported, not skipped. |
+| Inventory script parse and mock run | `powershell -File tests/tools/mock-inventory-run.ps1`, `tests/tools/mock-inventory-multi.ps1` and `tests/tools/mock-inventory-discover.ps1` | ✔ **all three passed** on 2026-11-06 at 10:28 UTC in Windows PowerShell 5.1, against a mocked API (`test-results/mock-inventory-*.txt`). The single-workspace run checks every part of schema 2 (customer-managed keys, settings, workspace manager, repositories, bookmarks and hunts, installed content, Sentinel playbooks, role assignment counts, connectors from both API versions), the alias defaulting to the workspace name, a refused part that leaves the others collected, a Logic App with empty parameters, Owner and Reader counted by what they allow, a refused subscription lookup named, a workspace manager that is not set up counted as not used, connector titles, and no resource path, principal or tenant ID in the file. The multi-workspace run checks one file per workspace, a failing workspace that does not stop the others, and refusal of duplicate or missing aliases before any request. The discovery run checks discovery with no parameters, only Sentinel workspaces collected with their region, tenant fingerprints that tell tenants apart, disabled subscriptions not searched, shared names getting their own alias and file, and a refused check reported, not skipped. |
 | Platform prototypes P1 to P3 | `node prototypes/run-p1-platform.mjs` and the others | Stored results in `prototypes/*.json`. See [prototypes/README.md](../prototypes/README.md). |
 
 The Edge run also generated `test-results/report-prepare-msedge.pdf` and `test-results/report-final-demo-msedge.pdf`. The `test-results/` folder is git-ignored and is rewritten on each run.
 
-## End-to-end journey (45 steps, Edge and Chrome runs of 2026-11-05)
+## End-to-end journey (46 steps, Edge and Chrome runs of 2026-11-06)
 
 1. First launch plays the introduction with its six promises, and it can be skipped.
-2. The welcome page has a strict CSP, and the introduction does not return on the next start.
+2. The welcome page has a strict CSP, the introduction does not return on the next start, the three brand typefaces (Inter Tight, Instrument Serif regular and italic, JetBrains Mono) are available offline, and the favicon is inline.
 3. The CSP blocks a deliberate network request from the page.
 4. The welcome page passes basic accessibility checks, and the skip link works by keyboard.
 5. The demo is clearly labelled, and "Exit demo" returns to the start page, ready for your own project.
@@ -64,7 +64,8 @@ The Edge run also generated `test-results/report-prepare-msedge.pdf` and `test-r
 42. Explainers: the Defender table review says first that nothing is lost, the ⓘ opens and closes with Escape or a click elsewhere, practical tips say they are practice, and the planner offers a small-team profile.
 43. Connection check: a lone secondary is refused, every production workspace connected offers **Focus on checking**, which sets aside the steps for connecting; Details stays inside its mission, and the rail shows done and total per mission. The deferred Stage 1 gate warns Transition, the change outcome offers Complete, Complete with documented exceptions or Rolled back, and Complete opens the finale with the makers and the community.
 44. Plan depth: Recommended is the default, Thorough lists the question groups most important first, **Skip the optional questions** moves to the end, steps carry their tags, Essentials in Project setup sets a step aside with the reason, the preparation report lists the questions the plan never asked apart, and the backups switch brings the step back.
-45. No network request was made during the whole run, and no console errors occurred.
+45. Manual save: with the browser clock moved on 11 minutes, the reminder "Your work is not saved" appears and the top bar counts the minutes; "Remind me in 15 minutes" snoozes it. The final sign-off offers its four choices, "Record the sign-off" opens "The move is signed off", and the final report it opens carries the ArMoHub masthead ("By ArMoHub · armohub.ch") and the footer links to armohub.ch and the ArMoHub LinkedIn page.
+46. No network request was made during the whole run, and no console errors occurred.
 
 ## What the unit tests cover
 
@@ -98,7 +99,7 @@ There is no stored result for the unit tests, so this lists what they check, by 
   - guidance that sends you to the register or project setup is a link or an action;
   - new settings have safe defaults (dark theme, motion following the system) and are validated, and an old auto-advance preference is dropped;
   - the brand name, version 1.0.0, the makers' profile links and a knowledge base version without "rc", "beta" or "pilot";
-  - the embedded typeface ships with its licence and is the only font source.
+  - the three brand typefaces (Instrument Serif, Inter Tight, JetBrains Mono) ship with their licences and are the only font sources; Mona Sans is gone.
 - **`tools-and-waiver.test.mjs`: "do it here" tools and evidence waivers.**
   - "evidence not needed" needs a reason, lets a step pass, and withdrawing it downgrades an unsupported pass; reports and CSV show the reason;
   - steps show their workstream owner unless they have their own; approvers and owners are suggested as known people;
@@ -118,8 +119,9 @@ There is no stored result for the unit tests, so this lists what they check, by 
 - **`connection-check.test.mjs`:** a secondary needs a primary in its tenant, the connection state and the "already connected" answer, focusing on checking (what is set aside, what stays), the derived answer never asked, and "who connects" per tenant.
 - **`plan-depth.test.mjs`:** the four tags; what each level and topic keeps and leaves out (must-do never left out, a topic on keeps its steps, off leaves its non-must steps out); answers, reviewer decisions and the full checklist before the plan; the test rehearsal and the Test stage; question tags, order and hiding, in the questions and in missions; the plan through a project package; and the plan in reports.
 - **`feedback-1105.test.mjs`:** workspaces.json read as a workspace list, connectors listed by the name the portal shows, the last-record query without a TableName clash, the change outcome choices, warnings from gates that did not say go, the preparation summary that lists only what was asked, and the community link.
+- **`feedback-1105b.test.mjs`:** the final sign-off choices, steps done without proof accepted at an approved stage gate as warnings (never as verified), a test stage left out by the plan, the route marker at the end of a finished journey, and save reminders after ten minutes and not again for fifteen.
 - **`review-fixes.test.mjs`: regression tests for the findings of the independent review** (see the history below).
-- **`contrast.test.mjs`:** WCAG AA (4.5:1) for 14 text and background token pairs, in the light and the dark theme.
+- **`contrast.test.mjs`:** WCAG AA (4.5:1) for 19 text and background token pairs, including Signal figures and the Ivory-on-Obsidian primary button, and 3:1 for champagne as large display text, in the light and the dark theme.
 - **`static.test.mjs`: static safety.**
   - no `innerHTML`, `outerHTML`, `insertAdjacentHTML`, `document.write`, `eval`, `new Function` or string timers;
   - no network APIs;

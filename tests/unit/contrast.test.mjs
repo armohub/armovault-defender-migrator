@@ -20,13 +20,21 @@ const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p);
 const pairs = [
   ['text', 'bg'], ['text', 'surface'], ['text-2', 'surface'], ['muted', 'surface'], ['muted', 'bg'], ['accent-strong', 'surface'], ['accent-text', 'accent'],
   ['good', 'good-soft'], ['bad', 'bad-soft'], ['caution', 'caution-soft'], ['info', 'info-soft'], ['neutral', 'neutral-soft'], ['accent-strong', 'accent-soft'], ['muted', 'surface-2'],
+  // The brand: Signal figures (some are small, in the facts line), and the Ivory-on-Obsidian primary button.
+  ['signal', 'surface'], ['signal', 'bg'], ['signal', 'surface-2'], ['primary-text', 'primary'], ['primary-text', 'primary-hover'],
 ];
+// Champagne as text appears only in large display type (the italic accent word in a heading): WCAG AA large text, 3:1.
+const largePairs = [['accent', 'bg'], ['accent', 'surface']];
 for (const [name, t] of [['light', light], ['dark', dark]]) {
   test(`${name} theme: text/background pairs meet WCAG AA (4.5:1)`, () => {
     const fails = [];
     for (const [fg, bg] of pairs) {
       const r = ratio(t[fg], t[bg]);
       if (r < 4.5) fails.push(`${fg} on ${bg}: ${r.toFixed(2)}`);
+    }
+    for (const [fg, bg] of largePairs) {
+      const r = ratio(t[fg], t[bg]);
+      if (r < 3) fails.push(`${fg} on ${bg} (large text): ${r.toFixed(2)}`);
     }
     assert.deepEqual(fails, []);
   });

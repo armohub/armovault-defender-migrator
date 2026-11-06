@@ -25,7 +25,7 @@ Thank you for helping SOC teams move to the Defender portal safely. Accuracy mat
 
 - Vanilla JavaScript only, with no runtime dependencies.
 - Insert all content with the `h()` helper (`textContent`). Never use `innerHTML`, `eval`, network APIs or remote resources. A static test enforces this.
-- The only font is the embedded Mona Sans in `src/fonts/`. Do not add other font files or remote fonts: a unit test checks that the embedded typeface is the only font source.
+- The only fonts are the embedded Instrument Serif, Inter Tight and JetBrains Mono in `src/fonts/`. Do not add other font files or remote fonts: a unit test checks that the embedded typefaces are the only font sources. The look follows `DESIGN.md` (ArMoHub "Noir Champagne").
 - Text in the app follows the same style guide. A unit test rejects long dashes anywhere in `src/` and `content/`.
 - Treat every imported file as hostile: validate it, cap it and sniff its type.
 - Keep logic in `src/core` (pure and testable in Node) and DOM code in `src/ui`.
