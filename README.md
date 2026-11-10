@@ -1,10 +1,98 @@
 # ArMo MS Defender Migration Assistant
 
-> **Version 1.0.0.** The licence is still to be decided by the makers. Until a `LICENSE` file is added, all rights are reserved.
+> **Version 1.0.0, released on 10 November 2026.** Free to use. The licence is still to be decided by the makers: until a `LICENSE` file is added, all rights are reserved.
 
 A guided, evidence-based companion for moving your **Microsoft Sentinel experience from the Azure portal to the Microsoft Defender portal**, from readiness to sign-off. It runs **offline**, from **one HTML file**, with **no account, no backend and no telemetry**.
 
 Microsoft states that *"After March 31, 2027, Microsoft Sentinel will no longer be supported in the Azure portal and will be available only in the Microsoft Defender portal."* Sentinel itself continues. Connecting a workspace to the Defender portal keeps your log data in Log Analytics, but it changes incident handling, automation, connectors, access and several analyst workflows. The assistant helps you find out which of those changes affect you, prepare for them, make the change, validate it and keep evidence of what you did.
+
+More about it, and the "Let's talk Cyber Defense" vodcast episode: [security.armohub.ch/defendermigrator](https://security.armohub.ch/defendermigrator/).
+
+## Get started
+
+You need a Windows computer with a current **Microsoft Edge** or **Google Chrome**. Nothing to install, no account, and no internet once the file is downloaded.
+
+### 1. Download the assistant
+
+From the [latest release](https://github.com/armohub/armovault-defender-migrator/releases/latest):
+
+| File | Do you need it? |
+|---|---|
+| [**ArMo-MS-Defender-Migration-Assistant.html**](https://github.com/armohub/armovault-defender-migrator/releases/latest/download/ArMo-MS-Defender-Migration-Assistant.html) | **Yes.** The whole assistant, in one file. |
+| [SHA256SUMS.txt](https://github.com/armohub/armovault-defender-migrator/releases/latest/download/SHA256SUMS.txt) | Recommended: to check that the file is the one we published. |
+| [Get-ArMoSentinelInventory.ps1](https://github.com/armohub/armovault-defender-migrator/releases/latest/download/Get-ArMoSentinelInventory.ps1) | Optional: a read-only script that pre-fills answers (see below). |
+
+> Don't use the green **Code > Download ZIP** button: that is the source code, not the ready-to-use assistant.
+
+### 2. Check the file (recommended)
+
+In PowerShell, in the folder where you saved it:
+
+```powershell
+Get-FileHash .\ArMo-MS-Defender-Migration-Assistant.html -Algorithm SHA256
+```
+
+The result must match the line for the HTML file in `SHA256SUMS.txt` (upper or lower case doesn't matter). If it doesn't, delete the file and download it again.
+
+### 3. Open it
+
+Double-click the HTML file. It opens in your browser. If it opens in another browser, right-click it and choose **Open with > Microsoft Edge** (or Google Chrome).
+
+### 4. Choose how to start
+
+- **Try the demo:** a fictional company ("Lakeview Logistics") with invented data, to look around first. Nothing you do there is saved. **Exit demo** takes you back.
+- **Start my project:** your own migration.
+- **Open a saved project:** continue from a project package (`.zip`) you saved earlier.
+
+### 5. Set up your project
+
+Five short steps: about the project, timing, your workspaces, where to keep your work, and how to work.
+- **Simplified** (the default) suits most teams: the plan is a list of missions with short checklists.
+- **Detailed** shows every step in full. You can switch at any time.
+
+Then answer the questions, one per screen ("I don't know yet" is a fine answer: the work stays in your plan). The assistant builds your plan from your answers.
+
+### 6. Work through your plan
+
+The overview always shows **the next step to do**. On each step: follow the instructions, add your evidence (a screenshot is enough), and record decisions, risks and exceptions where they come up. The route at the top shows where you are, from Azure portal to Defender portal.
+
+### 7. Save your work
+
+Use **Save package** (top bar) regularly. It writes one `.zip` file with everything: your answers, evidence, decisions and reports. Keep it somewhere safe and treat it as confidential: it isn't encrypted. Autosave in the browser is optional and is not a backup.
+
+### 8. Share the reports
+
+**Reports** has a report for each stage and a final report. Choose **Print or save as PDF** to share them with your stakeholders.
+
+## Optional: pre-fill answers with the inventory script
+
+The read-only script finds your Microsoft Sentinel workspaces and can suggest answers to 28 of the 35 questions. It only sends GET requests and never changes anything. You confirm every suggestion.
+
+You need the **Az.Accounts** PowerShell module and **Microsoft Sentinel Reader** (or higher) on the workspaces' resource groups.
+
+```powershell
+# Once, if you don't have the module yet
+Install-Module Az.Accounts -Scope CurrentUser
+
+# Sign in to Azure
+Connect-AzAccount
+
+# Allow the downloaded script to run in this window only, then run it
+Unblock-File .\Get-ArMoSentinelInventory.ps1
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned
+.\Get-ArMoSentinelInventory.ps1 -OutFolder .\armo-inventory
+```
+
+It writes `workspaces.json` and one `inventory-<workspace>.json` per workspace into `armo-inventory`. Review them first (rule, watchlist and playbook names can be sensitive), then in the assistant choose **Import inventory results** in the **Your workspaces** step and select the files.
+
+More options (one workspace, a list of workspaces, specific subscriptions): run `Get-Help .\Get-ArMoSentinelInventory.ps1 -Full`.
+
+## Questions and problems
+
+- **The file opens as text or code.** You saved the GitHub page, not the file. Use the download link above (or right-click it and choose **Save link as**).
+- **Does it need internet?** No. Links to Microsoft Learn open only when you click them.
+- **Where is my data?** Only on your computer: in the open tab, in your browser if you turn on autosave, and in the files you save. See [Offline and privacy](#offline-and-privacy-exactly-what-is-promised).
+- **Something is wrong in the guidance?** Open an issue with the **Content correction** template. For security problems, see [SECURITY.md](SECURITY.md).
 
 ## What it does
 
@@ -46,20 +134,6 @@ Microsoft states that *"After March 31, 2027, Microsoft Sentinel will no longer 
 - **Project setup** as its own page, so guidance can link straight to the planned transition window or the workspaces in scope.
 - **The demo** uses a fictional company. A banner says so, and **Exit demo** takes you back to the start page, ready for your own project.
 - **The ArMoHub look** ("Noir Champagne"): near-black with one champagne accent, Instrument Serif headings, Inter Tight text and JetBrains Mono labels, and thin gold rules instead of boxes. The reports carry the same masthead and a footer with armohub.ch and the ArMoHub LinkedIn page. Dark by default, with an Ivory light theme in Settings. Reports always print on white. Short loading overlays appear while a project opens, a package is packed or the demo is prepared. Motion follows your system's reduced-motion setting, and **Reduce motion** in Settings turns it down inside the assistant.
-
-## Quick start (Windows)
-
-1. Download `ArMo-MS-Defender-Migration-Assistant.html` and `SHA256SUMS.txt`. Optionally download `tools/Get-ArMoSentinelInventory.ps1` too.
-2. Check the file before you open it. In PowerShell, run the command below and compare the result with the line for the HTML file in `SHA256SUMS.txt` (upper or lower case does not matter):
-
-   ```powershell
-   Get-FileHash .\ArMo-MS-Defender-Migration-Assistant.html -Algorithm SHA256
-   ```
-
-3. Double-click the HTML file. It opens in your default browser. Current versions of **Microsoft Edge** and **Google Chrome** are supported.
-4. Choose **Start my project**, **Open a saved project** or **Try the demo** (fictional data).
-
-To open the demo straight away, add `?demo=1` to the file's address.
 
 ## Offline and privacy: exactly what is promised
 
@@ -158,7 +232,7 @@ Layout:
 - `tools/`: the inventory script;
 - `tests/`, `prototypes/`, `docs/`, `research/`.
 
-Internal identifiers such as `armohub.dma.project` and `armohub.dma.settings` keep their earlier names on purpose, so packages and preferences saved by the earlier internal build still open.
+Internal identifiers such as `armohub.dma.project` and `armohub.dma.settings` keep their earlier names on purpose, so packages and preferences saved by earlier builds still open.
 
 Read [CONTRIBUTING.md](CONTRIBUTING.md) before you change content.
 
@@ -166,4 +240,4 @@ Read [CONTRIBUTING.md](CONTRIBUTING.md) before you change content.
 
 Built by **Arno and Moise** ([ArMo](https://armohub.ch)): "Built to make your migration journey easy."
 
-Found it useful? Say thanks to [Arno](https://www.linkedin.com/in/arnoyan) and [Moise](https://www.linkedin.com/in/m-aub/) on LinkedIn. A contact channel for security reports will be published with the public release ([SECURITY.md](SECURITY.md)).
+Found it useful? Say thanks to [Arno](https://www.linkedin.com/in/arnoyan) and [Moise](https://www.linkedin.com/in/m-aub/) on LinkedIn. Security reports: see [SECURITY.md](SECURITY.md).

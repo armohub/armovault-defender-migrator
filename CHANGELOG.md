@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased: sign-off, save reminders and the ArMoHub brand (6 November 2026)
+## 1.0.0, released on 10 November 2026
+
+The first public release, published on GitHub Releases with `SHA256SUMS.txt`. It includes every change below.
+
+## Sign-off, save reminders and the ArMoHub brand (6 November 2026)
 
 ### Version
 - Knowledge base version `2026.11.06` (it was `2026.11.05`): the final sign-off has its own choices.
@@ -37,7 +41,7 @@
 - New workspaces are added with their subscription, resource group and region; for workspaces you have, only empty values are filled in. Importing the same files again adds no second note, file or workspace, and says "Nothing new".
 - **Import inventory results** on Stage 1 and on the Evidence page opens the same review on that step. The import logic is in `src/core/inventory-import.js`, shared by setup and the project, with unit tests in `tests/unit/inventory-import.test.mjs`.
 
-## Unreleased: field feedback (5 November 2026)
+## Field feedback (5 November 2026)
 
 ### Version
 - Knowledge base version `2026.11.05` (it was `2026.11.04`): the exact last-record query and the change outcome choices changed.
@@ -62,7 +66,7 @@
 - "Recommended extras" are called good-practice extras everywhere, so they are not mistaken for the Recommended steps.
 - Reports list answered questions apart from questions not answered yet, and from questions the plan never asked, with the reason.
 
-## Unreleased: inventory and flow review (4 November 2026)
+## Inventory and flow review (4 November 2026)
 
 ### Version
 - Knowledge base version `2026.11.04` (it was `2026.11.03`): new questions logic, 18 new sources and a larger inventory script. The app version stays 1.0.0 until the release.
@@ -108,7 +112,7 @@
 - In Simplified, Details opens the step inside its mission: the breadcrumb names the mission, the mission's progress and the overall progress stay on screen, and the buttons are Back to the mission and Next in this mission (then the next mission).
 - The journey rail shows done and total for every mission, and the questions still open in it.
 
-## Unreleased: onboarding and guidance review (29 October 2026)
+## Onboarding and guidance review (29 October 2026)
 
 ### Version
 - Knowledge base version `2026.11.03` (it was `2026.10.26`), because the guidance, the sources (now 127) and the embedded inventory script changed. The app version stays 1.0.0 until the release.
@@ -144,7 +148,7 @@
 - 74 more checks have an explainer (ⓘ) that says in plain words what the check means, what to look for and why, written only from that check's own content and sources. Four checks have clearer wording, for example "resource-context access" is now explained.
 - New sources: feature support per cloud, Defender XDR for US Government, conditions on role assignments, alert schema differences, and the three REST APIs used by `-Discover`.
 
-## 1.0.0 (2026-10-19)
+## 1.0.0: first complete build (2026-10-19)
 
 The first public version, released as one final version. There are no release candidates or pilot stages. It replaces the internal release candidate 0.9.0-rc.1, which was never published.
 
@@ -271,7 +275,7 @@ We compared the assistant with four public resources on the same move (a field g
 - No connected mode. The assistant never contacts your tenant.
 - Evidence rules, register, gates, reports, snapshots, project packages and the read-only inventory script work as before.
 
-## 0.9.0-rc.1 (2026-10-19, internal release candidate, never published)
+## 0.9.0-rc.1 (2026-10-19, release candidate, never published)
 
 - First complete guided workflow: Prepare (62 items), optional Test (11), the Transition runbook (17) and Validate (19), with a 35-question tailoring questionnaire and three-valued applicability.
 - Knowledge base `2026.10.19-rc1`: 101 Microsoft Learn sources verified on 2026-10-19 and 32 read-only snippets.

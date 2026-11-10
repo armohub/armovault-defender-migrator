@@ -2,7 +2,7 @@
 
 ## Reporting a vulnerability
 
-Report suspected vulnerabilities privately. **The contact channel will be published with the public release.** The makers have not supplied one yet, so this is a placeholder. Until then, do not open public issues for security problems.
+Report suspected vulnerabilities privately, not in a public issue: use **[Report a vulnerability](https://github.com/armohub/armovault-defender-migrator/security/advisories/new)** on this repository's Security tab, or email **info@armohub.ch**.
 
 Include the app version and knowledge base version (both on the About page), your browser and its version, the steps to reproduce, and the impact.
 

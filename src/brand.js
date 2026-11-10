@@ -7,7 +7,7 @@ export const BRAND = Object.freeze({
   tagline: 'Your guided, evidence-based move of Microsoft Sentinel from the Azure portal to the Microsoft Defender portal',
   quote: 'Built to make your migration journey easy.',
   website: 'https://armohub.ch',
-  repositoryUrl: null, // set when the repository is public
+  repositoryUrl: 'https://github.com/armohub/armovault-defender-migrator',
   // The makers' community, supplied by them.
   community: { name: 'ArMoHub', url: 'https://www.linkedin.com/company/armohub', website: 'https://armohub.ch' },
   makers: [
