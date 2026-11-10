@@ -20,3 +20,9 @@ playwright-report/
 
 # Local bundles (never commit)
 share/
+
+# Working files that stay out of the public repository
+marketing/
+docs/superpowers/
+.impeccable/
+docs/dry-run-guide.md
